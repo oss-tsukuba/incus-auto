@@ -18,6 +18,7 @@
 import os
 import logging
 import subprocess
+import json
 from types import SimpleNamespace
 from pprint import pprint
 
@@ -119,7 +120,7 @@ class Command():
             try:
                 err = err.decode().rstrip()
             except Exception:
-                self.logger.debug('cannot decode: err={}', err)
+                self.logger.debug('cannot decode: err=%s', err)
                 pass
             msg = '{}: {}'.format(str(args), err)
             if err:
@@ -129,11 +130,11 @@ class Command():
 
     def execv_raw(self, args, stdin=subprocess.DEVNULL, stderr=subprocess.PIPE,
                   timeout=None, textmode=False):
+        self.logger.debug('Popen(args=%s)', str(args))
         if textmode:
             encoding = self.encoding
         else:
             encoding = None
-        print(args) #TODO
         proc = subprocess.Popen(
             args, shell=False, encoding=encoding, close_fds=True,
             stdin=stdin, stdout=subprocess.PIPE, stderr=stderr)
@@ -208,17 +209,54 @@ class IncusAuto(Command):
         self.conf = self.dict_to_namespace(self.conf_dict)
         pprint(self.conf)  # TODO
 
-        self.incus_cmd = self.conf.config.incus_command
-        print("!!!!!!!!!!!!!" + self.incus_cmd)  # TODO
-
-    def run(self):
-        self.logger.debug("test!!!!!!")  # TODO
-        print(self.execv(['date'], textmode=True))
-        print(self.incus(['list']))
+        self.project_prefix = self.conf.config.project + '-'
 
     def incus(self, args):
-        args = [self.incus_cmd] + args
+        if isinstance(args, str):
+            args = args.split()
+        args = [self.conf.config.incus_command] + args
         return self.execv(args, textmode=True)
+
+    def run(self):
+        commands = {
+            'ls': self.ls,
+            'ps': self.ps,
+        }
+        commands[self.opt['<command>']]()
+
+        # self.logger.debug("test!!!!!!")  # TODO
+        # print(self.execv(['date'], textmode=True))
+        # print(self.incus(['list']))
+
+    def ls(self):
+        print(self.incus(f'ls -c ns4t {self.conf.config.project}-'))
+
+    @classmethod
+    def conf_keys(cls, conf):
+        return [attr for attr in dir(conf) if not callable(getattr(conf, attr)) and not attr.startswith("__")]
+
+    def ps(self):
+        state_dict = {}
+        host_max = 0
+        state_max = 0
+        #for key in self.conf_dict['host'].keys():
+        for key in self.conf_keys(self.conf.host):
+            host = self.project_prefix + key
+            j_str = self.incus(f'ls -f json {host}\$')
+            j = json.loads(j_str)
+            if len(j) > 0:
+                state = j[0]['config']['volatile.last_state.power']
+            else:
+                state = "NOTCREATED"
+            state_dict[host] = state
+            host_len = len(host)
+            if host_len > host_max:
+                host_max = host_len
+            state_len = len(state)
+            if state_len > state_max:
+                state_max = state_len
+        for host, state in state_dict.items():
+            print(f'{host:{host_max}}  {state:{state_max}}')
 
 
 if __name__ == '__main__':
