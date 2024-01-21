@@ -1,0 +1,105 @@
+config:
+  #incus_command: incus  # default
+  project: gfarm-lustre
+  profile:
+    gfarm-lustre:
+      disk: 30GB
+      networks:
+        eth0:  # gfarm-lustre-eth0
+          subnet: 10.123.123.1/24
+        #eth1:
+        #  subnet: 10.210.210.1/24
+
+remote:
+  password_file: remote-password.txt
+  server:
+    incus1: 192.168.1.100  # or DNS name
+    incus2: 192.168.1.101
+
+build:
+  images:
+    lustre-server:
+      image: images:rockylinux/8
+      vm: true
+      install:
+        - install-lustre-server.sh
+      push:
+        - incus1
+        - incus2
+    lustre-client:
+      image: images:rockylinux/8
+      vm: true
+      install:
+        - install-lustre-client.sh
+      push:
+        - incus1
+        - incus2
+    gfarm:
+      image: images:rockylinux/8
+      vm: false
+      install:
+        - install-gfarm.sh
+      push:
+        - incus1
+        - incus2
+
+host:
+  mgs:
+    profile: gfarm-lustre
+    image: incus1:lustre-server
+    vm: true
+    disk: 20GB
+    networks:
+      eth0:
+        #ifname: ens5s0  # (default for VM)
+        ipv4: 192.168.1.101
+    setup:
+      - setup-lustre-mgs.sh
+    #entrypoint:
+    #  - true
+  oss0:
+    profile: gfarm-lustre
+    image: incus1:lustre-server
+    vm: true
+    disk: 20GB
+    networks:
+      eth0:
+        #ifname: ens5s0 # (default for VM)
+        ipv4: 192.168.1.102
+    setup:
+      - "setup-lustre-oss.sh 0 192.168.1.101"
+    #entrypoint:
+    #  - true
+  lclient1:
+    profile: gfarm-lustre
+    image: incus1:lustre-client
+    vm: true
+    disk: 10GB
+    networks:
+      eth0:
+        #ifname: ens5s0 # (default for VM)
+        # ipv4: 192.168.1.103  (default: dhcp)
+    setup:
+      - "setup-lustre-client.sh 0 192.168.1.101"
+    #entrypoint:
+    #  - true
+  gfmd1:
+    profile: gfarm-lustre
+    image: incus1:gfarm
+    vm: false
+    disk: 10GB
+    networks:
+      eth0:
+        #ifname: eth0 # (default for container)
+        ipv4: 192.168.1.104
+    setup:
+      - setup-install-gfmd.sh
+    #entrypoint:
+    #  - entrypoint.sh
+  gfsd1:
+  gclient1:
+  keycloak:
+
+script:
+  - script1.sh
+  - test1.sh

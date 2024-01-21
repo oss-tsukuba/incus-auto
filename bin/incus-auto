@@ -1,0 +1,225 @@
+#!/usr/bin/env python3
+
+# Requirements:
+# --- for Debian,Ubuntu series ---
+# apt-get install python3 python3-docopt python3-schema python3-yaml
+#
+# --- for RHEL,CentOS series ---
+# yum install     epel-release
+# yum install     python3 python3-docopt python3-schema python3-pyyaml
+#
+# --- Or, install to ~/.local just for user's environment ---
+# (required: python3-pip)
+# pip3 install --user docopt schema PyYAML
+#
+# Coding style check:
+# flake8 ./incus-auto
+
+import os
+import logging
+import subprocess
+from types import SimpleNamespace
+from pprint import pprint
+
+from docopt import docopt
+from schema import Schema
+from yaml import safe_load  # TODO, unsafe_load, full_load
+
+program_name = os.path.basename(__file__)
+
+__doc__ = """
+Automating deployment system by Incus or LXD.
+
+Usage:
+  {f} <command> <name>... [options]
+  {f} <command> --all [options]
+
+Options:
+  --all                     all images or all instances
+  -f, --file=FILE           configuration YAML file
+                            [default: incus-auto.yaml]
+  -l, --loglevel=LEVEL      log level (debug, info, warning, error)
+                            [default: debug]
+  --encoding=CODEC          codec for filename encoding
+          (https://docs.python.org/3/library/codecs.html#standard-encodings)
+                            [default: utf-8]
+  -?, -h, --help            show this help and exit
+
+Command:
+  build
+  launch
+  ps
+  ls
+  stop
+  start
+  restart
+  delete
+""".format(f=program_name)
+
+_schema = Schema({
+    '--all': bool,
+    '--file': str,
+    '--loglevel': str,
+    '--encoding': str,
+    '--help': bool,
+    '<name>': [str],
+    '<command>': str,
+})
+
+
+class Command():
+    def init(self, name):
+        self.name = name
+        self._docopt = docopt(self.getDoc())
+        self.opt = self.getSchema().validate(self._docopt)
+        self.loglevel_str = self.opt['--loglevel']
+
+        loglevel_dict = {
+            'debug': logging.DEBUG,
+            'info': logging.INFO,
+            'warning': logging.WARNING,
+            'error': logging.ERROR,
+        }
+        self.loglevel = loglevel_dict[self.loglevel_str.lower()]
+        # use stderr
+        self.logger = self.logger_init()
+
+    def logger_init(self):
+        logger = logging.getLogger()  # RootLogger
+        logger.setLevel(self.loglevel)
+        stream = logging.StreamHandler()  # stderr
+        if self.loglevel == logging.DEBUG:
+            fmt = '%(filename)s:%(levelname)s:L%(lineno)d:' + \
+                '%(asctime)s: %(message)s'
+            fmt = fmt.format(self.name)
+        elif self.loglevel == logging.INFO:
+            fmt = '{}:%(levelname)s: %(message)s'.format(self.name)
+        else:
+            fmt = '%(message)s'
+        formatter_stream = logging.Formatter(fmt=fmt, datefmt='%Y%m%d%H%M%S')
+        stream.setFormatter(formatter_stream)
+        stream.setLevel(self.loglevel)
+        logger.addHandler(stream)
+        return logger
+
+    def getDoc(self):
+        raise NotImplementedError
+
+    def getSchema(self):
+        raise NotImplementedError
+
+    def run(self):
+        raise NotImplementedError
+
+    def execv(self, args, stdin=subprocess.DEVNULL, stderr=subprocess.PIPE,
+              timeout=None, textmode=False):
+        out, err, ret = self.execv_raw(args, stdin, stderr,
+                                       timeout, textmode)
+        if ret != 0:
+            try:
+                err = err.decode().rstrip()
+            except Exception:
+                self.logger.debug('cannot decode: err={}', err)
+                pass
+            msg = '{}: {}'.format(str(args), err)
+            if err:
+                self.logger.debug(msg)
+                raise Exception(msg)
+        return out
+
+    def execv_raw(self, args, stdin=subprocess.DEVNULL, stderr=subprocess.PIPE,
+                  timeout=None, textmode=False):
+        if textmode:
+            encoding = self.encoding
+        else:
+            encoding = None
+        print(args) #TODO
+        proc = subprocess.Popen(
+            args, shell=False, encoding=encoding, close_fds=True,
+            stdin=stdin, stdout=subprocess.PIPE, stderr=stderr)
+        try:
+            out, err = proc.communicate(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            out, err = proc.communicate()
+        ret = proc.wait()
+        return out, err, ret
+
+    @classmethod
+    def dict_to_namespace(cls, d):
+        return SimpleNamespace(**{k: cls.dict_to_namespace(v)
+                                  if isinstance(v, dict)
+                                  else v for k, v in d.items()})
+
+
+class IncusAuto(Command):
+    def __init__(self, name):
+        self.init(name)
+        self.parse_opt()
+        self.load_conf()
+
+    def getDoc(self):
+        return __doc__
+
+    def getSchema(self):
+        return _schema
+
+    def parse_opt(self):
+        self.use_all = self.opt['--all']
+        self.conf_file = self.opt['--file']
+        self.encoding = self.opt['--encoding']
+
+    def set_default(self, base_dict, defaults):
+        def common(base, key, val):
+            base_val = base.get(key, None)
+            if isinstance(val, dict):
+                if base_val is None:
+                    base[key] = {}
+                self.set_default(base[key], val)
+            elif base_val is None:
+                base[key] = val
+
+        for k, v in defaults.items():
+            if k == '__ANY__':
+                for k2 in list(base_dict.keys()):
+                    common(base_dict, k2, v)
+            else:
+                common(base_dict, k, v)
+
+    def load_conf(self):
+        with open(self.conf_file) as f:
+            self.conf_dict = safe_load(f)
+        pprint(self.opt)  # TODO
+        pprint(self.conf_dict)  # TODO
+
+        # TODO
+        config_defaults = {
+            'config': {
+                'incus_command': 'incus',
+            },
+            'host': {
+                '__ANY__': {
+                    'disk': '5GB',
+                }
+            }
+        }
+        self.set_default(self.conf_dict, config_defaults)
+        pprint(self.conf_dict)  # TODO
+        self.conf = self.dict_to_namespace(self.conf_dict)
+        pprint(self.conf)  # TODO
+
+        self.incus_cmd = self.conf.config.incus_command
+        print("!!!!!!!!!!!!!" + self.incus_cmd)  # TODO
+
+    def run(self):
+        self.logger.debug("test!!!!!!")  # TODO
+        print(self.execv(['date'], textmode=True))
+        print(self.incus(['list']))
+
+    def incus(self, args):
+        args = [self.incus_cmd] + args
+        return self.execv(args, textmode=True)
+
+
+if __name__ == '__main__':
+    IncusAuto(program_name).run()
