@@ -2,18 +2,23 @@ config:
   #incus_command: incus  # default
   project: gfarm-lustre
   network:
-    gflustrenet1:
-      ipv4.address: 10.123.123.1/24
-      ipv4.dhcp.ranges: 10.123.123.101-10.123.123.200
-      ipv4.nat: true
-    gflustrenet2:
-      ipv4.address: 10.210.210.1/24
-      ipv4.dhcp: false
-      ipv4.nat: false
-      ipv6.nat: false
-      ipv6.address: none
+    gflnet1:
+      description: "gfarm lustre net1"
+      config:
+        ipv4.address: 10.123.123.1/24
+        ipv4.dhcp.ranges: 10.123.123.101-10.123.123.200
+        ipv4.nat: true
+    gflnet2:
+      description: "gfarm lustre net2"
+      config:
+        ipv4.address: 10.210.210.1/24
+        ipv4.dhcp: false
+        ipv4.nat: false
+        ipv6.nat: false
+        ipv6.address: none
   profile:
     gfarm-lustre:
+      description: "gfarm lustre profile1"
       devices:
         root:
           type: disk
@@ -21,12 +26,14 @@ config:
           pool: mypool
           size: 30GB
     gfarm-lustre-net:
-      eth0:
-        network: gfarm-lustre-net1
-        type: nic
-      eth1:
-        network: gfarm-lustre-net2
-        type: nic
+      description: "gfarm lustre profile2"
+      devices:
+        eth0:
+          network: gflnet1
+          type: nic
+        eth1:
+          network: gflnet2
+          type: nic
 
 build:
   lustre-server:

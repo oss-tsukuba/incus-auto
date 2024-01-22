@@ -261,18 +261,29 @@ class IncusAuto(CUI):
         # create networks
         for netname in self.conf_keys(self.conf.config.network):
             self.incus(f'network create {netname}')
-            d = {}
-            d['config'] = self.conf_dict['config']['network'][netname]
+            d = self.conf_dict['config']['network'][netname]
             ystr = yaml.dump(d)
             self.logger.debug(ystr)
             strio = StringIO(ystr)
             self.incus(f'network edit {netname}', stdin=strio)
+        # create profiles
+        for profname in self.conf_keys(self.conf.config.profile):
+            self.incus(f'profile create {profname}')
+            d = self.conf_dict['config']['profile'][profname]
+            ystr = yaml.dump(d)
+            self.logger.debug(ystr)
+            strio = StringIO(ystr)
+            self.incus(f'profile edit {profname}', stdin=strio)
 
     def delete(self):
         # delete hosts
         #TODO
         # delete profiles
-        #TODO
+        for profname in self.conf_keys(self.conf.config.profile):
+            try:
+                self.incus(f'profile delete {profname}')
+            except Exception as e:
+                self.logger.info('Ignored: %s', str(e))
         # delete networks
         for netname in self.conf_keys(self.conf.config.network):
             try:
