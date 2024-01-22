@@ -20,7 +20,7 @@ import logging
 import subprocess
 import json
 from types import SimpleNamespace
-from pprint import pprint
+from pprint import pprint, pformat
 
 from docopt import docopt
 from schema import Schema
@@ -69,8 +69,8 @@ _schema = Schema({
 
 
 class Command():
-    def init(self, name):
-        self.name = name
+    def init(self, program_name):
+        self.program_name = program_name
         self._docopt = docopt(self.getDoc())
         self.opt = self.getSchema().validate(self._docopt)
         self.loglevel_str = self.opt['--loglevel']
@@ -92,9 +92,9 @@ class Command():
         if self.loglevel == logging.DEBUG:
             fmt = '%(filename)s:%(levelname)s:L%(lineno)d:' + \
                 '%(asctime)s: %(message)s'
-            fmt = fmt.format(self.name)
+            fmt = fmt.format(self.program_name)
         elif self.loglevel == logging.INFO:
-            fmt = '{}:%(levelname)s: %(message)s'.format(self.name)
+            fmt = '{}:%(levelname)s: %(message)s'.format(self.program_name)
         else:
             fmt = '%(message)s'
         formatter_stream = logging.Formatter(fmt=fmt, datefmt='%Y%m%d%H%M%S')
@@ -154,8 +154,8 @@ class Command():
 
 
 class IncusAuto(Command):
-    def __init__(self, name):
-        self.init(name)
+    def __init__(self, program_name):
+        self.init(program_name)
         self.parse_opt()
         self.load_conf()
 
@@ -166,6 +166,7 @@ class IncusAuto(Command):
         return _schema
 
     def parse_opt(self):
+        self.names = self.opt['<name>']
         self.use_all = self.opt['--all']
         self.conf_file = self.opt['--file']
         self.encoding = self.opt['--encoding']
@@ -190,8 +191,8 @@ class IncusAuto(Command):
     def load_conf(self):
         with open(self.conf_file) as f:
             self.conf_dict = safe_load(f)
-        pprint(self.opt)  # TODO
-        pprint(self.conf_dict)  # TODO
+        self.logger.debug(pformat(self.opt))
+        self.logger.debug(pformat(self.conf_dict))
 
         # TODO
         config_defaults = {
@@ -205,11 +206,25 @@ class IncusAuto(Command):
             }
         }
         self.set_default(self.conf_dict, config_defaults)
-        pprint(self.conf_dict)  # TODO
+        self.logger.debug(pformat(self.conf_dict))
         self.conf = self.dict_to_namespace(self.conf_dict)
-        pprint(self.conf)  # TODO
+        self.logger.debug(pformat(self.conf))
 
         self.project_prefix = self.conf.config.project + '-'
+        # same as: host_all = self.conf_dict['host'].keys():
+        self.host_all = self.conf_keys(self.conf.host)
+
+    @classmethod
+    def conf_keys(cls, conf):
+        return [attr for attr in dir(conf) if not
+                callable(getattr(conf, attr)) and not attr.startswith("__")]
+
+    def is_defined_host(self, hostname):
+        return hostname in self.host_all
+
+    def check_defined_host(self, hostname):
+        if not self.is_defined_host(hostname):
+            raise Exception(f'Undefined host: {hostname}')
 
     def incus(self, args):
         if isinstance(args, str):
@@ -221,33 +236,44 @@ class IncusAuto(Command):
         commands = {
             'ls': self.ls,
             'ps': self.ps,
+            'build': self.build,
+            'launch': self.launch,
         }
+        # execute method
         commands[self.opt['<command>']]()
 
-        # self.logger.debug("test!!!!!!")  # TODO
-        # print(self.execv(['date'], textmode=True))
-        # print(self.incus(['list']))
-
     def ls(self):
-        print(self.incus(f'ls -c ns4t {self.conf.config.project}-'))
-
-    @classmethod
-    def conf_keys(cls, conf):
-        return [attr for attr in dir(conf) if not callable(getattr(conf, attr)) and not attr.startswith("__")]
+        if self.use_all:
+            print(self.incus(f'ls -c ns4t {self.conf.config.project}-'))
+        else:
+            for name in self.names:
+                self.check_defined_host(name)
+            for name in self.names:
+                print(self.incus(f'ls -c ns4t {self.conf.config.project}-{name}$'))
 
     def ps(self):
         state_dict = {}
         host_max = 0
         state_max = 0
-        #for key in self.conf_dict['host'].keys():
-        for key in self.conf_keys(self.conf.host):
-            host = self.project_prefix + key
-            j_str = self.incus(f'ls -f json {host}\$')
-            j = json.loads(j_str)
-            if len(j) > 0:
-                state = j[0]['config']['volatile.last_state.power']
-            else:
+        if self.use_all:
+            names = host_all
+        else:
+            names = self.names
+            for name in names:
+                self.check_defined_host(name)
+
+        j_str = self.incus(f'ls -f json')
+        j = json.loads(j_str)
+        host_dict = {}
+        for hostinfo in j:
+            host_dict[hostinfo['name']] = hostinfo
+        for name in names:
+            host = self.project_prefix + name
+            hostinfo = host_dict.get(host, None)
+            if hostinfo is None:
                 state = "NOTCREATED"
+            else:
+                state = hostinfo['config']['volatile.last_state.power']
             state_dict[host] = state
             host_len = len(host)
             if host_len > host_max:
@@ -256,8 +282,15 @@ class IncusAuto(Command):
             if state_len > state_max:
                 state_max = state_len
         for host, state in state_dict.items():
-            print(f'{host:{host_max}}  {state:{state_max}}')
+            print(f'{host:<{host_max}}  {state:<{state_max}}')
 
+    def build(self):
+        # TODO
+        pass
+
+    def launch(self):
+        # TODO
+        pass
 
 if __name__ == '__main__':
     IncusAuto(program_name).run()
