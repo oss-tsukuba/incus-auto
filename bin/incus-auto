@@ -47,14 +47,15 @@ Options:
   -?, -h, --help            show this help and exit
 
 Command:
-  build
-  launch
-  ps
-  ls
-  stop
-  start
-  restart
-  delete
+  init       initialize profile and network
+  build      build images
+  launch     launch hosts
+  ps         list status of hosts
+  ls         list hosts by `incus list` command
+  stop       stop hosts
+  start      start hosts
+  restart    restart hosts
+  delete     delete stopped hosts, profile and network
 """.format(f=program_name)
 
 _schema = Schema({
