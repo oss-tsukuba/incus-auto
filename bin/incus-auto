@@ -34,6 +34,8 @@ Automating deployment system by Incus or LXD.
 
 Usage:
   {f} init [options]
+  {f} ls [options]
+  {f} ps [options]
   {f} <command> <name>... [options]
   {f} <command> --all [options]
 
@@ -68,6 +70,8 @@ _schema = Schema({
     '--help': bool,
     '<command>': Or(str, None),
     'init': bool,
+    'ls': bool,
+    'ps': bool,
     '<name>': [str],
 })
 
@@ -255,6 +259,10 @@ class IncusAuto(CUI):
         # execute method
         if self.opt['init']:
             commands['init']()
+        elif self.opt['ls']:
+            commands['ls']()
+        elif self.opt['ps']:
+            commands['ps']()
         else:
             commands[self.opt['<command>']]()
 
@@ -313,7 +321,7 @@ class IncusAuto(CUI):
                     self.logger.info('Ignored: %s', str(e))
 
     def ls(self):
-        if self.use_all:
+        if self.use_all or len(self.names) == 0:
             print(self.incus(f'ls -c ns4t {self.conf.config.project}-'))
         else:
             for name in self.names:
@@ -325,7 +333,7 @@ class IncusAuto(CUI):
         state_dict = {}
         host_max = 0
         state_max = 0
-        if self.use_all:
+        if self.use_all or len(self.names) == 0:
             names = self.host_all
         else:
             names = self.names

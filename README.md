@@ -23,7 +23,7 @@ instlal `bin/incus-auto` to any directory. (PATH)
 example:
 
 ```
-install bin/incus-auto /usr/local/bin/
+install -m 755 bin/incus-auto /usr/local/bin/
 ```
 
 ### Prepare storage pool
@@ -42,6 +42,8 @@ $ lxc storage create mypool dir source=/mnt/disk2/incus-mypool
 ### server
 incus config set core.https_address "[::]"
 incus config trust add client1 > token-client1.txt
+##### (for LXD)
+##### incus config trust add --name client1 > token-client1.txt
 
 ### client
 incus remote add server1 `cat token-client1.txt`

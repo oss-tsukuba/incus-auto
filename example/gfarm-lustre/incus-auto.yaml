@@ -38,30 +38,33 @@ config:
 build:
   lustre-server:
     image: images:rockylinux/8
+    series: rhel
+    vm: true
     profile:
       - gfarm-lustre
       - gfarm-lustre-net
-    vm: true
     install:
       - install-lustre-server.sh
     publish-remote:
       - incus1
   lustre-client:
     image: images:rockylinux/8
+    series: rhel
+    vm: true
     profile:
       - gfarm-lustre
       - gfarm-lustre-net
-    vm: true
     install:
       - install-lustre-client.sh
     publish-remote:
       - incus1
   gfarm:
-    image: images:rockylinux/8
+    image: images:ubuntu/22.04
+    series: rhel
+    vm: false
     profile:
       - gfarm-lustre
       - gfarm-lustre-net
-    vm: false
     install:
       - install-gfarm.sh
     publish-remote:
