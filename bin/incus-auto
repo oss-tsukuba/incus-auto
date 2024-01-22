@@ -76,7 +76,7 @@ class CUI():
     def cui_init(self, program_name):
         self.program_name = program_name
         self._docopt = docopt(self.getDoc())
-        pprint(self._docopt)  #TODO
+        # pprint(self._docopt)  # for debug
         self.opt = self.getSchema().validate(self._docopt)
         self.loglevel_str = self.opt['--loglevel']
 
@@ -131,7 +131,8 @@ class CUI():
             if err:
                 self.logger.debug(msg)
                 raise Exception(msg)
-        self.logger.info(err)
+        if err:
+            self.logger.info(err)
         return out
 
     def execv_raw(self, args, stdin=None,
@@ -266,6 +267,7 @@ class IncusAuto(CUI):
             self.logger.debug(ystr)
             strio = StringIO(ystr)
             self.incus(f'network edit {netname}', stdin=strio)
+            self.logger.info(f'network: "{netname}" created')
         # create profiles
         for profname in self.conf_keys(self.conf.config.profile):
             self.incus(f'profile create {profname}')
@@ -274,22 +276,41 @@ class IncusAuto(CUI):
             self.logger.debug(ystr)
             strio = StringIO(ystr)
             self.incus(f'profile edit {profname}', stdin=strio)
+            self.logger.info(f'profile: "{profname}" created')
 
     def delete(self):
-        # delete hosts
-        #TODO
-        # delete profiles
-        for profname in self.conf_keys(self.conf.config.profile):
-            try:
-                self.incus(f'profile delete {profname}')
-            except Exception as e:
-                self.logger.info('Ignored: %s', str(e))
-        # delete networks
-        for netname in self.conf_keys(self.conf.config.network):
-            try:
-                self.incus(f'network delete {netname}')
-            except Exception as e:
-                self.logger.info('Ignored: %s', str(e))
+        if self.use_all:
+            # delete hosts
+            for hostname in self.host_all:
+                try:
+                    self.incus(f'delete {hostname}')
+                    self.logger.info(f'host: "{hostname}" deleted')
+                except Exception as e:
+                    self.logger.info('Ignored: %s', str(e))  #TODO debug?
+            # delete profiles
+            for profname in self.conf_keys(self.conf.config.profile):
+                try:
+                    self.incus(f'profile delete {profname}')
+                    self.logger.info(f'profile: "{profname}" deleted')
+                except Exception as e:
+                    self.logger.info('Ignored: %s', str(e))
+            # delete networks
+            for netname in self.conf_keys(self.conf.config.network):
+                try:
+                    self.incus(f'network delete {netname}')
+                    self.logger.info(f'network: "{netname}" deleted')
+                except Exception as e:
+                    self.logger.info('Ignored: %s', str(e))
+        else:
+            # delete specified hosts only
+            for hostname in self.names:
+                self.check_defined_host(hostname)
+            for hostname in self.names:
+                try:
+                    self.incus(f'delete {hostname}')
+                    self.logger.info(f'host: "{hostname}" deleted')
+                except Exception as e:
+                    self.logger.info('Ignored: %s', str(e))
 
     def ls(self):
         if self.use_all:
@@ -305,7 +326,7 @@ class IncusAuto(CUI):
         host_max = 0
         state_max = 0
         if self.use_all:
-            names = host_all
+            names = self.host_all
         else:
             names = self.names
             for name in names:
