@@ -2,12 +2,12 @@ config:
   #incus_command: incus  # default
   project: gfarm-lustre
   network:
-    gfarm-lustre-net1:
-      ipv4.addres: 10.123.123.1/24
+    gflustrenet1:
+      ipv4.address: 10.123.123.1/24
       ipv4.dhcp.ranges: 10.123.123.101-10.123.123.200
       ipv4.nat: true
-    gfarm-lustre-net2:
-      ipv4.addres: 10.210.210.1/24
+    gflustrenet2:
+      ipv4.address: 10.210.210.1/24
       ipv4.dhcp: false
       ipv4.nat: false
       ipv6.nat: false
