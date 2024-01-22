@@ -1,52 +1,73 @@
 config:
   #incus_command: incus  # default
   project: gfarm-lustre
+  network:
+    gfarm-lustre-net1:
+      ipv4.addres: 10.123.123.1/24
+      ipv4.dhcp.ranges: 10.123.123.101-10.123.123.200
+      ipv4.nat: true
+    gfarm-lustre-net2:
+      ipv4.addres: 10.210.210.1/24
+      ipv4.dhcp: false
+      ipv4.nat: false
+      ipv6.nat: false
+      ipv6.address: none
   profile:
     gfarm-lustre:
-      disk: 30GB
-      networks:
-        eth0:  # gfarm-lustre-eth0
-          subnet: 10.123.123.1/24
-        #eth1:
-        #  subnet: 10.210.210.1/24
-
-remote:
-  password_file: remote-password.txt
-  server:
-    incus1: 192.168.1.100  # or DNS name
-    incus2: 192.168.1.101
+      devices:
+        root:
+          type: disk
+          path: /
+          pool: mypool
+          size: 30GB
+    gfarm-lustre-net:
+      eth0:
+        network: gfarm-lustre-net1
+        type: nic
+      eth1:
+        network: gfarm-lustre-net2
+        type: nic
 
 build:
-  images:
-    lustre-server:
-      image: images:rockylinux/8
-      vm: true
-      install:
-        - install-lustre-server.sh
-      push:
-        - incus1
-        - incus2
-    lustre-client:
-      image: images:rockylinux/8
-      vm: true
-      install:
-        - install-lustre-client.sh
-      push:
-        - incus1
-        - incus2
-    gfarm:
-      image: images:rockylinux/8
-      vm: false
-      install:
-        - install-gfarm.sh
-      push:
-        - incus1
-        - incus2
+  lustre-server:
+    image: images:rockylinux/8
+    profile:
+      - gfarm-lustre
+      - gfarm-lustre-net
+    vm: true
+    install:
+      - install-lustre-server.sh
+    publish-remote:
+      - incus1
+  lustre-client:
+    image: images:rockylinux/8
+    profile:
+      - gfarm-lustre
+      - gfarm-lustre-net
+    vm: true
+    install:
+      - install-lustre-client.sh
+    publish-remote:
+      - incus1
+  gfarm:
+    image: images:rockylinux/8
+    profile:
+      - gfarm-lustre
+      - gfarm-lustre-net
+    vm: false
+    install:
+      - install-gfarm.sh
+    publish-remote:
+      - incus1
 
 host:
   mgs:
-    profile: gfarm-lustre
     image: incus1:lustre-server
+    profile:
+      - gfarm-lustre
+      - gfarm-lustre-net
+    #remote: local  # default
+    remote: incus1
     vm: true
     disk: 20GB
     networks:
@@ -101,5 +122,5 @@ host:
   keycloak:
 
 script:
-  - script1.sh
   - test1.sh
+  - script1.sh

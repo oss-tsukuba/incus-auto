@@ -2,9 +2,19 @@
 
 incus-auto is automating deployment system by Incus or LXD.
 
-## Example
+## Usage Summary
 
-./example/gfarm-lustre
+- Prepare storage pool
+- Prepare remote server if needed
+- Create `incus-auto.yaml`
+  - define profile
+  - define network
+  - define images to build
+  - define hosts
+  - define scripts to deploy
+- Initialize profile and network
+- Build images
+- Launch containers or virtual machines
 
 ## Install
 
@@ -49,36 +59,16 @@ $ incus remote ls
 +-----------------+------------------------------------------+---------------+-------------+--------+--------+--------+
 ```
 
-## Usage
+## Commands
 
-- Create incus-auto.yaml
-
-- TRGET_IMAGE_NAME or TARGET_INSTANCE_NAME
-  - all names when `--all` is specified
-
-- Build or rebuild images
+See:
 
 ```
-incus-auto build TARGET_IMAGE_NAME
+incus -h
 ```
 
-- Launch containers or virtual machines
+## Format of incus-auto.yml
 
-```
-incus-auto launch TARGET_INSTANCE_NAME
-```
-
-- Other commands
-  - Usage: incus-auto COMMAND TARGET_INSTANCE_NAME
-  - COMMAND
-    - ps: List containers or virtual machines
-    - ls: List by incus list
-    - stop: Stop containers or virtual machines
-    - start: Start containers or virtual machines
-    - restart: Restart containers or virtual machines
-    - delete: Delete containers or virtual machines
-      - stopped instance only
-
-## incus-auto.yml
+- Example: ./example/gfarm-lustre/
 
 TODO
