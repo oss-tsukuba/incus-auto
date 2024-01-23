@@ -19,7 +19,6 @@ import os
 import logging
 import subprocess
 import json
-from types import SimpleNamespace
 from pprint import pprint, pformat
 from io import StringIO
 
@@ -161,17 +160,12 @@ class CUI():
         ret = proc.wait()
         return out, err, ret
 
-    @classmethod
-    def dict_to_namespace(cls, d):
-        return SimpleNamespace(**{k: cls.dict_to_namespace(v)
-                                  if isinstance(v, dict)
-                                  else v for k, v in d.items()})
-
 
 class IncusAuto(CUI):
     def __init__(self, program_name):
         self.cui_init(program_name)
         self.parse_opt()
+        self.change_dir()
         self.load_conf()
 
     def getDoc(self):
@@ -185,6 +179,10 @@ class IncusAuto(CUI):
         self.use_all = self.opt['--all']
         self.conf_file = self.opt['--file']
         self.encoding = self.opt['--encoding']
+
+    def change_dir(self):
+        print(self.conf_file)
+        os.chdir(os.path.dirname(os.path.abspath(self.conf_file)))
 
     def set_default(self, base_dict, defaults):
         def common(base, key, val):
@@ -222,17 +220,26 @@ class IncusAuto(CUI):
         }
         self.set_default(self.conf_dict, config_defaults)
         self.logger.debug(pformat(self.conf_dict))
-        self.conf = self.dict_to_namespace(self.conf_dict)
-        self.logger.debug(pformat(self.conf))
 
-        self.project_prefix = self.conf.config.project + '-'
-        # same as: host_all = self.conf_dict['host'].keys():
-        self.host_all = self.conf_keys(self.conf.host)
+        self.project_prefix = self.conf('/config/project') + '-'
+        self.host_all = self.conf('/host').keys()
+
+    def conf(self, confpath):
+        return self.dictpath(self.conf_dict, confpath)
 
     @classmethod
-    def conf_keys(cls, conf):
-        return [attr for attr in dir(conf) if not
-                callable(getattr(conf, attr)) and not attr.startswith("__")]
+    def dictpath(cls, d, dpath):
+        if isinstance(dpath, list):
+            keys = dpath
+        else:
+            keys = [key for key in dpath.split('/') if key]
+        result = d
+        for key in keys:
+            try:
+                result = result[key]
+            except (KeyError, TypeError):
+                return None
+        return result
 
     def is_defined_host(self, hostname):
         return hostname in self.host_all
@@ -244,7 +251,7 @@ class IncusAuto(CUI):
     def incus(self, args, stdin=None):
         if isinstance(args, str):
             args = args.split()
-        args = [self.conf.config.incus_command] + args
+        args = [self.conf('/config/incus_command')] + args
         return self.execv(args, textmode=True, stdin=stdin)
 
     def execute(self):
@@ -268,18 +275,18 @@ class IncusAuto(CUI):
 
     def init(self):
         # create networks
-        for netname in self.conf_keys(self.conf.config.network):
+        for netname in self.conf('/config/network').keys():
             self.incus(f'network create {netname}')
-            d = self.conf_dict['config']['network'][netname]
+            d = self.conf(['config', 'network', netname])
             ystr = yaml.dump(d)
             self.logger.debug(ystr)
             strio = StringIO(ystr)
             self.incus(f'network edit {netname}', stdin=strio)
             self.logger.info(f'network: "{netname}" created')
         # create profiles
-        for profname in self.conf_keys(self.conf.config.profile):
+        for profname in self.conf('/config/profile').keys():
             self.incus(f'profile create {profname}')
-            d = self.conf_dict['config']['profile'][profname]
+            d = self.conf(['config', 'profile', profname])
             ystr = yaml.dump(d)
             self.logger.debug(ystr)
             strio = StringIO(ystr)
@@ -296,14 +303,14 @@ class IncusAuto(CUI):
                 except Exception as e:
                     self.logger.info('Ignored: %s', str(e))  #TODO debug?
             # delete profiles
-            for profname in self.conf_keys(self.conf.config.profile):
+            for profname in self.conf('/config/profile').keys():
                 try:
                     self.incus(f'profile delete {profname}')
                     self.logger.info(f'profile: "{profname}" deleted')
                 except Exception as e:
                     self.logger.info('Ignored: %s', str(e))
             # delete networks
-            for netname in self.conf_keys(self.conf.config.network):
+            for netname in self.conf('/config/network').keys():
                 try:
                     self.incus(f'network delete {netname}')
                     self.logger.info(f'network: "{netname}" deleted')
@@ -322,12 +329,12 @@ class IncusAuto(CUI):
 
     def ls(self):
         if self.use_all or len(self.names) == 0:
-            print(self.incus(f'ls -c ns4t {self.conf.config.project}-'))
+            print(self.incus(f'ls -c ns4t {self.conf("/config/project")}-'))
         else:
             for name in self.names:
                 self.check_defined_host(name)
             for name in self.names:
-                print(self.incus(f'ls -c ns4t {self.conf.config.project}-{name}$'))
+                print(self.incus(f'ls -c ns4t {self.conf("/config/project")}-{name}$'))
 
     def ps(self):
         state_dict = {}
@@ -363,6 +370,12 @@ class IncusAuto(CUI):
             print(f'{host:<{host_max}}  {state:<{state_max}}')
 
     def build(self):
+        # build images and publish to remote
+        for imagename in self.conf('/build').keys():
+            info = self.conf(['build', imagename])
+            print(imagename)
+            print(info['image'])
+            #self.incus(f'launch {info['image']})
         # TODO
         pass
 
