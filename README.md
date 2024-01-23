@@ -33,7 +33,7 @@ See <https://linuxcontainers.org/incus/docs/main/howto/storage_pools/>
 ```
 ### Example
 $ mkdir /mnt/disk2/incus-mypool
-$ lxc storage create mypool dir source=/mnt/disk2/incus-mypool
+$ incus storage create mypool dir source=/mnt/disk2/incus-mypool
 ```
 
 ## Add remote Incus server

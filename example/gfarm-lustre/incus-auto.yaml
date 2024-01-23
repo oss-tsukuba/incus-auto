@@ -1,6 +1,8 @@
 config:
   #incus_command: incus  # default
   project: gfarm-lustre
+  idmap: true  # bool or uid
+  ssh_authorized_keys: ssh_authorized_keys
   network:
     gflnet1:
       description: "gfarm lustre net1"
@@ -19,12 +21,15 @@ config:
   profile:
     gfarm-lustre:
       description: "gfarm lustre profile1"
+      config:
+        limits.memory: 2GB
+        limits.cpu: 4
       devices:
         root:
           type: disk
           path: /
           pool: mypool
-          size: 30GB
+          size: 5GB
     gfarm-lustre-net:
       description: "gfarm lustre profile2"
       devices:
@@ -35,16 +40,24 @@ config:
           network: gflnet2
           type: nic
 
-build:
+buildimage:
   lustre-server:
     image: images:rockylinux/8
     series: rhel
     vm: true
+    devices:
+      root:
+        size: 8GB
+    config:
+      limits.memory: 4GB
+      limits.cpu: 6
     profile:
       - gfarm-lustre
       - gfarm-lustre-net
-    install:
-      - install-lustre-server.sh
+    volume:
+      - ./SCRIPT:/SCRIPT
+    setup:
+      - /SCRIPT/install-lustre-server.sh
     publish-remote:
       - incus1
   lustre-client:
@@ -54,8 +67,10 @@ build:
     profile:
       - gfarm-lustre
       - gfarm-lustre-net
-    install:
-      - install-lustre-client.sh
+    volume:
+      - ./SCRIPT:/SCRIPT
+    setup:
+      - /SCRIPT/install-lustre-client.sh
     publish-remote:
       - incus1
   gfarm:
@@ -65,8 +80,10 @@ build:
     profile:
       - gfarm-lustre
       - gfarm-lustre-net
-    install:
-      - install-gfarm.sh
+    volume:
+      - ./SCRIPT:/SCRIPT
+    setup:
+      - /SCRIPT/install-gfarm.sh
     publish-remote:
       - incus1
 
@@ -79,7 +96,6 @@ host:
     #remote: local  # default
     remote: incus1
     vm: true
-    disk: 20GB
     networks:
       eth0:
         #ifname: ens5s0  # (default for VM)
@@ -92,7 +108,9 @@ host:
     profile: gfarm-lustre
     image: incus1:lustre-server
     vm: true
-    disk: 20GB
+    devices:
+      root:
+        size: 8GB
     networks:
       eth0:
         #ifname: ens5s0 # (default for VM)
@@ -105,7 +123,6 @@ host:
     profile: gfarm-lustre
     image: incus1:lustre-client
     vm: true
-    disk: 10GB
     networks:
       eth0:
         #ifname: ens5s0 # (default for VM)
@@ -118,7 +135,6 @@ host:
     profile: gfarm-lustre
     image: incus1:gfarm
     vm: false
-    disk: 10GB
     networks:
       eth0:
         #ifname: eth0 # (default for container)

@@ -21,6 +21,7 @@ import subprocess
 import json
 from pprint import pprint, pformat
 from io import StringIO
+import time
 
 from docopt import docopt
 from schema import Schema, Or
@@ -33,13 +34,15 @@ Automating deployment system by Incus or LXD.
 
 Usage:
   {f} init [options]
+  {f} destroy [options]
   {f} ls [options]
   {f} ps [options]
   {f} <command> <name>... [options]
   {f} <command> --all [options]
 
 Options:
-  --all                     all images or all instances
+  -a, --all                 all buildimages or all hosts
+  -b, --buildimage          control buildimages
   -f, --file=FILE           configuration YAML file
                             [default: incus-auto.yaml]
   -l, --loglevel=LEVEL      log level (debug, info, warning, error)
@@ -50,8 +53,9 @@ Options:
   -?, -h, --help            show this help and exit
 
 Command:
-  init       initialize profile and network
-  build      build images
+  init       initialize networks, profiles and buildimages
+  destroy    destroy buildimages, profiles and networks
+  build      (re)build images
   launch     launch hosts
   ps         list status of hosts
   ls         list hosts by `incus list` command
@@ -61,26 +65,32 @@ Command:
   delete     delete stopped hosts, profile and network
 """.format(f=program_name)
 
-_schema = Schema({
+opt_schema = Schema({
     '--all': bool,
+    '--buildimage': bool,
     '--file': str,
     '--loglevel': str,
     '--encoding': str,
     '--help': bool,
     '<command>': Or(str, None),
     'init': bool,
+    'destroy': bool,
     'ls': bool,
     'ps': bool,
     '<name>': [str],
 })
 
+#TODO
+conf_schema = Schema({
+    
+})
 
 class CUI():
     def cui_init(self, program_name):
         self.program_name = program_name
-        self._docopt = docopt(self.getDoc())
+        self._docopt = docopt(self.get_doc())
         # pprint(self._docopt)  # for debug
-        self.opt = self.getSchema().validate(self._docopt)
+        self.opt = self.get_opt_schema().validate(self._docopt)
         self.loglevel_str = self.opt['--loglevel']
 
         loglevel_dict = {
@@ -111,16 +121,17 @@ class CUI():
         logger.addHandler(stream)
         return logger
 
-    def getDoc(self):
+    def get_doc(self):
         raise NotImplementedError
 
-    def getSchema(self):
+    def get_opt_chema(self):
         raise NotImplementedError
 
     def run(self):
         raise NotImplementedError
 
-    def execv(self, args, stdin=None, timeout=None, textmode=False):
+    def execv(self, args, stdin=None, stdout=False,
+              timeout=None, textmode=False):
         out, err, ret = self.execv_raw(args, stdin, timeout, textmode)
         if textmode:
             err = err.rstrip()
@@ -160,6 +171,26 @@ class CUI():
         ret = proc.wait()
         return out, err, ret
 
+    @classmethod
+    def dictpath(cls, d, dpath):
+        if isinstance(dpath, list):
+            keys = dpath
+        else:
+            keys = [key for key in dpath.split('/') if key]
+        result = d
+        for key in keys:
+            try:
+                result = result[key]
+            except (KeyError, TypeError):
+                return None
+        return result
+
+    @classmethod
+    def tobool(cls, s):
+        if isinstance(s, bool):
+            return s
+        t = ['true', 'yes', 'on', '1']
+        return s.lower() in t
 
 class IncusAuto(CUI):
     def __init__(self, program_name):
@@ -168,20 +199,21 @@ class IncusAuto(CUI):
         self.change_dir()
         self.load_conf()
 
-    def getDoc(self):
+    def get_doc(self):
         return __doc__
 
-    def getSchema(self):
-        return _schema
+    def get_opt_schema(self):
+        return opt_schema
 
     def parse_opt(self):
         self.names = self.opt['<name>']
         self.use_all = self.opt['--all']
+        self.control_buildimage = self.opt['--buildimage']
         self.conf_file = self.opt['--file']
+        # TODO self.override_file = self.opt['--override']
         self.encoding = self.opt['--encoding']
 
     def change_dir(self):
-        print(self.conf_file)
         os.chdir(os.path.dirname(os.path.abspath(self.conf_file)))
 
     def set_default(self, base_dict, defaults):
@@ -212,41 +244,49 @@ class IncusAuto(CUI):
             'config': {
                 'incus_command': 'incus',
             },
+            'buildimage': {
+                '__ANY__': {
+                    'disk': '5GB',
+                }
+            },
             'host': {
                 '__ANY__': {
                     'disk': '5GB',
                 }
-            }
+            },
         }
         self.set_default(self.conf_dict, config_defaults)
         self.logger.debug(pformat(self.conf_dict))
 
+        for name in self.conf('/buildimage').keys():
+            if self.is_defined(name, '/host'):
+                raise Exception(
+                    'Error: buildimage and host cannot be duplicated: '
+                    + f'{dname}')
         self.project_prefix = self.conf('/config/project') + '-'
-        self.host_all = self.conf('/host').keys()
+        self.stop_timeout = 60
 
     def conf(self, confpath):
         return self.dictpath(self.conf_dict, confpath)
 
-    @classmethod
-    def dictpath(cls, d, dpath):
-        if isinstance(dpath, list):
-            keys = dpath
+    def host_iter(self, build=False):
+        if build:
+            for name in self.dictpath(self.conf_dict, '/buildimage').keys():
+                yield (name, self.project_prefix + name)
         else:
-            keys = [key for key in dpath.split('/') if key]
-        result = d
-        for key in keys:
-            try:
-                result = result[key]
-            except (KeyError, TypeError):
-                return None
-        return result
+            for name in self.dictpath(self.conf_dict, '/host').keys():
+                yield (name, self.project_prefix + name)
 
-    def is_defined_host(self, hostname):
-        return hostname in self.host_all
+    def is_defined(self, hostname, dpath):
+        return hostname in self.conf(dpath).keys()
 
     def check_defined_host(self, hostname):
-        if not self.is_defined_host(hostname):
+        if not self.is_defined(hostname, '/host'):
             raise Exception(f'Undefined host: {hostname}')
+
+    def check_defined_buildimage(self, buildname):
+        if not self.is_defined(buildname, '/buildimage'):
+            raise Exception(f'Undefined buildimage: {buildname}')
 
     def incus(self, args, stdin=None):
         if isinstance(args, str):
@@ -254,18 +294,85 @@ class IncusAuto(CUI):
         args = [self.conf('/config/incus_command')] + args
         return self.execv(args, textmode=True, stdin=stdin)
 
-    def execute(self):
+    def incus_ls_json(self):
+        j_str = self.incus('ls -f json')
+        return json.loads(j_str)
+
+    def incus_is_running(self, name):
+        try:
+            self.incus(['exec', name, 'hostname'])
+            return True
+        except Exception:
+            return False
+
+    def incus_wait_for_wakeup(self, name, net_if):
+        while not self.incus_is_running(name):
+            self.logger.info(f'Waiting for wake up: {name}')
+            time.sleep(1)
+        while self.incus_get_ipv4(name, net_if) is None:
+            self.logger.info(f'Waiting until seeing IP address: {name}')
+            time.sleep(1)
+
+    def incus_get_ipv4(self, name, net_if):
+        for hostinfo in self.incus_ls_json():
+            if name != hostinfo['name']:
+                continue
+            addresses = self.dictpath(
+                hostinfo, ['state', 'network', net_if, 'addresses'])
+            if addresses is None:
+                break
+            for a in addresses:
+                if a.get('family') == 'inet' \
+                   and a.get('address', None) is not None:
+                    return a['address']
+            break
+        return None
+
+    def incus_cmd(self, cmd, args=[], build=False, ignore_error=False):
+        if self.use_all:
+            for name, fullname in self.host_iter(build):
+                try:
+                    self.incus([cmd, fullname] + args)
+                    self.logger.info(f'Success: {cmd} "{name}"')
+                except Exception as e:
+                    if ignore_error:
+                        self.logger.info(
+                            f'Ignored: {cmd} "{name}": {str(e)}')
+                    else:
+                        raise
+        else:  # specified hosts
+            for hostname in self.names:
+                if build:
+                    self.check_defined_buildimage(hostname)
+                else:
+                    self.check_defined_host(hostname)
+            for hostname in self.names:
+                try:
+                    self.incus([cmd, self.project_prefix + hostname] + args)
+                    self.logger.info(f'Success: {cmd} "{hostname}"')
+                except Exception as e:
+                    if ignore_error:
+                        self.logger.info(
+                            f'Ignored: {cmd} "{hostname}": {str(e)}')
+                    else:
+                        raise
+
+    def main(self):
         commands = {
             'init': self.init,
+            'destroy': self.destroy,
             'ls': self.ls,
             'ps': self.ps,
             'build': self.build,
             'launch': self.launch,
+            'stop': self.stop,
             'delete': self.delete,
         }
         # execute method
         if self.opt['init']:
             commands['init']()
+        elif self.opt['destroy']:
+            commands['destroy']()
         elif self.opt['ls']:
             commands['ls']()
         elif self.opt['ps']:
@@ -292,65 +399,64 @@ class IncusAuto(CUI):
             strio = StringIO(ystr)
             self.incus(f'profile edit {profname}', stdin=strio)
             self.logger.info(f'profile: "{profname}" created')
+        # create buildimages
+        self.use_all = True
+        self.build()
+
+    def destroy(self):
+        # delete buildimages
+        self.use_all = True
+        self.incus_cmd('stop', ['-f'], build=True, ignore_error=True)
+        self.incus_cmd('delete', ['-f'], build=True, ignore_error=True)
+        # delete profiles
+        for profname in self.conf('/config/profile').keys():
+            try:
+                self.incus(f'profile delete {profname}')
+                self.logger.info(f'profile: "{profname}" deleted')
+            except Exception as e:
+                self.logger.info('Ignored: %s', str(e))
+        # delete networks
+        for netname in self.conf('/config/network').keys():
+            try:
+                self.incus(f'network delete {netname}')
+                self.logger.info(f'network: "{netname}" deleted')
+            except Exception as e:
+                self.logger.info('Ignored: %s', str(e))
+
+    def stop(self):
+        self.incus_cmd('stop', ['--timeout', str(self.stop_timeout)],
+                       build=self.control_buildimage, ignore_error=True)
 
     def delete(self):
-        if self.use_all:
-            # delete hosts
-            for hostname in self.host_all:
-                try:
-                    self.incus(f'delete {hostname}')
-                    self.logger.info(f'host: "{hostname}" deleted')
-                except Exception as e:
-                    self.logger.info('Ignored: %s', str(e))  #TODO debug?
-            # delete profiles
-            for profname in self.conf('/config/profile').keys():
-                try:
-                    self.incus(f'profile delete {profname}')
-                    self.logger.info(f'profile: "{profname}" deleted')
-                except Exception as e:
-                    self.logger.info('Ignored: %s', str(e))
-            # delete networks
-            for netname in self.conf('/config/network').keys():
-                try:
-                    self.incus(f'network delete {netname}')
-                    self.logger.info(f'network: "{netname}" deleted')
-                except Exception as e:
-                    self.logger.info('Ignored: %s', str(e))
-        else:
-            # delete specified hosts only
-            for hostname in self.names:
-                self.check_defined_host(hostname)
-            for hostname in self.names:
-                try:
-                    self.incus(f'delete {hostname}')
-                    self.logger.info(f'host: "{hostname}" deleted')
-                except Exception as e:
-                    self.logger.info('Ignored: %s', str(e))
+        self.incus_cmd('delete',
+                       build=self.control_buildimage, ignore_error=True)
 
     def ls(self):
         if self.use_all or len(self.names) == 0:
-            print(self.incus(f'ls -c ns4t {self.conf("/config/project")}-'))
+            print(self.incus(f'ls -c ns4t {self.project_prefix}'))
         else:
             for name in self.names:
                 self.check_defined_host(name)
             for name in self.names:
-                print(self.incus(f'ls -c ns4t {self.conf("/config/project")}-{name}$'))
+                print(self.incus(f'ls -c ns4t {self.project_prefix}{name}$'))
 
     def ps(self):
         state_dict = {}
         host_max = 0
         state_max = 0
         if self.use_all or len(self.names) == 0:
-            names = self.host_all
+            names = [n for n, full in
+                     self.host_iter(build=self.control_buildimage)]
         else:
             names = self.names
             for name in names:
-                self.check_defined_host(name)
+                if self.control_buildimage:
+                    self.check_defined_buildimage(name)
+                else:
+                    self.check_defined_host(name)
 
-        j_str = self.incus('ls -f json')
-        j = json.loads(j_str)
         host_dict = {}
-        for hostinfo in j:
+        for hostinfo in self.incus_ls_json():
             host_dict[hostinfo['name']] = hostinfo
         for name in names:
             host = self.project_prefix + name
@@ -370,18 +476,49 @@ class IncusAuto(CUI):
             print(f'{host:<{host_max}}  {state:<{state_max}}')
 
     def build(self):
-        # build images and publish to remote
-        for imagename in self.conf('/build').keys():
-            info = self.conf(['build', imagename])
-            print(imagename)
-            print(info['image'])
-            #self.incus(f'launch {info['image']})
-        # TODO
-        pass
+        # build buildimages and publish to remote
+        for name, fullname in self.host_iter(build=True):
+            # TODO self.incus_launch()
+            info = self.conf(['buildimage', name])
+            image = info['image']
+            args = ['launch', image, fullname]
+            for p in info.get('profile', {}):
+                args += ['-p', p]
+            for devname, params in info.get('devices', {}).items():
+                kvlist = []
+                for key, val in params.items():
+                    kvlist.append(key + '=' + str(val))
+                val = devname + ',' + ','.join(kvlist)
+                args += ['-d', val]
+            for key, val in info.get('config', {}).items():
+                args += ['-c', key + '=' + str(val)]
+            if self.tobool(info.get('vm', False)):  # default: container
+                args += ['--vm']
+            else:  # container
+                args += ['-c', 'security.nesting=true']
+            self.incus(args)
+        for name, fullname in self.host_iter(build=True):
+            info = self.conf(['buildimage', name])
+            if self.tobool(info.get('vm', False)):
+                net_if = 'enp5s0'
+            else:
+                net_if = 'eth0'
+            self.incus_wait_for_wakeup(fullname, net_if)
+            # TODO growpart for rhel VM
+            # TODO configure eth1
+        # TODO stop hosts
+        # TODO configure static IP address for eth0 when dhcp == True
+        # TODO configure raw.idmap : /config/idpmap
+        # TODO incus_mount : /host|buildimage/NAME/mount : SRC:DST
+        # TODO start hosts
+        # TODO setup sshd
+        # TODO run /host|buildimage/NAME/setup
+        # TODO stop hosts
+        # TODO publish buildimage
 
     def launch(self):
         # TODO
         pass
 
 if __name__ == '__main__':
-    IncusAuto(program_name).execute()
+    IncusAuto(program_name).main()
