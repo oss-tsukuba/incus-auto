@@ -41,9 +41,9 @@ $ incus storage create mypool dir source=/mnt/disk2/incus-mypool
 ```
 ### server
 incus config set core.https_address "[::]"
-incus config trust add client1 > token-client1.txt
+incus config trust add client1 | tail -n +2 > token-client1.txt
 ##### (for LXD)
-##### incus config trust add --name client1 > token-client1.txt
+##### incus config trust add --name client1 | tail -n +2 > token-client1.txt
 
 ### client
 incus remote add server1 `cat token-client1.txt`

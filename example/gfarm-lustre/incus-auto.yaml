@@ -19,7 +19,7 @@ config:
         ipv6.nat: false
         ipv6.address: none
   profile:
-    gfarm-lustre:
+    prof1:
       description: "gfarm lustre profile1"
       config:
         limits.memory: 2GB
@@ -30,7 +30,11 @@ config:
           path: /
           pool: mypool
           size: 5GB
-    gfarm-lustre-net:
+        SCRIPT:
+          type: disk
+          source: ./SCRIPT  # cd $(dirname $(realpath incus-auto.yaml)); $(realpath ./SCRIPT)
+          path: /SCRIPT
+    prof2net:
       description: "gfarm lustre profile2"
       devices:
         eth0:
@@ -41,7 +45,7 @@ config:
           type: nic
 
 buildimage:
-  lustre-server:
+  img-lserver:
     image: images:rockylinux/8
     series: rhel
     vm: true
@@ -52,34 +56,34 @@ buildimage:
       limits.memory: 4GB
       limits.cpu: 6
     profile:
-      - gfarm-lustre
-      - gfarm-lustre-net
+      - prof1
+      - prof2net
     volume:
       - ./SCRIPT:/SCRIPT
     setup:
       - /SCRIPT/install-lustre-server.sh
     publish-remote:
       - incus1
-  lustre-client:
+  img-lclient:
     image: images:rockylinux/8
     series: rhel
     vm: true
     profile:
-      - gfarm-lustre
-      - gfarm-lustre-net
+      - prof1
+      - prof2net
     volume:
       - ./SCRIPT:/SCRIPT
     setup:
       - /SCRIPT/install-lustre-client.sh
     publish-remote:
       - incus1
-  gfarm:
+  img-gfarm:
     image: images:ubuntu/22.04
     series: rhel
     vm: false
     profile:
-      - gfarm-lustre
-      - gfarm-lustre-net
+      - prof1
+      - prof2net
     volume:
       - ./SCRIPT:/SCRIPT
     setup:
@@ -89,64 +93,58 @@ buildimage:
 
 host:
   mgs:
-    image: incus1:lustre-server
+    image: incus1:img-lserver
+    vm: true
     profile:
-      - gfarm-lustre
-      - gfarm-lustre-net
-    #remote: local  # default
+      - prof1
+      - prof2net
+    #remote: NOT DEFINED  # use default server
     remote: incus1
-    vm: true
-    networks:
+    devices:
       eth0:
-        #ifname: ens5s0  # (default for VM)
-        ipv4: 192.168.1.101
+        ipv4.address: 10.123.123.101
     setup:
-      - setup-lustre-mgs.sh
-    #entrypoint:
-    #  - true
+      - /SCRIPT/setup-lustre-mgs.sh
   oss0:
-    profile: gfarm-lustre
-    image: incus1:lustre-server
+    image: incus1:img-lserver
     vm: true
+    profile:
+      - prof1
+      - prof2net
     devices:
       root:
         size: 8GB
-    networks:
       eth0:
-        #ifname: ens5s0 # (default for VM)
-        ipv4: 192.168.1.102
+        ipv4.address: 10.123.123.102
     setup:
-      - "setup-lustre-oss.sh 0 192.168.1.101"
-    #entrypoint:
-    #  - true
+      - "/SCRIPT/setup-lustre-oss.sh 0 10.123.123.101"
   lclient1:
-    profile: gfarm-lustre
-    image: incus1:lustre-client
+    image: incus1:img-lclient
     vm: true
-    networks:
+    profile:
+      - prof1
+      - prof2net
+    devices:
       eth0:
-        #ifname: ens5s0 # (default for VM)
-        # ipv4: 192.168.1.103  (default: dhcp)
+        ipv4.address: 10.123.123.103
     setup:
-      - "setup-lustre-client.sh 0 192.168.1.101"
-    #entrypoint:
-    #  - true
+      - "/SCRIPT/setup-lustre-client.sh 0 10.123.123.101"
   gfmd1:
-    profile: gfarm-lustre
-    image: incus1:gfarm
+    image: incus1:img-gfarm
     vm: false
-    networks:
+    profile:
+      - prof1
+      - prof2net
+    devices:
       eth0:
-        #ifname: eth0 # (default for container)
-        ipv4: 192.168.1.104
+        ipv4.address: 10.123.123.104
     setup:
-      - setup-install-gfmd.sh
-    #entrypoint:
-    #  - entrypoint.sh
-  gfsd1:
-  gclient1:
-  keycloak:
+      - /SCRIPT/setup-install-gfmd.sh
+  # gfsd1:
+  # gclient1:
+  # keycloak:
 
 script:
+  - generate-etchosts.sh
+  - update-etchosts.h
   - test1.sh
-  - script1.sh

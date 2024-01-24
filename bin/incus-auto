@@ -22,12 +22,15 @@ import json
 from pprint import pprint, pformat
 from io import StringIO
 import time
+import copy
 
 from docopt import docopt
 from schema import Schema, Or
 import yaml
 
 program_name = os.path.basename(__file__)
+
+#TODO   {f} exec <name> <args>... [options]
 
 __doc__ = """
 Automating deployment system by Incus or LXD.
@@ -214,7 +217,8 @@ class IncusAuto(CUI):
         self.encoding = self.opt['--encoding']
 
     def change_dir(self):
-        os.chdir(os.path.dirname(os.path.abspath(self.conf_file)))
+        self.basedir = os.path.dirname(os.path.realpath(self.conf_file))
+        os.chdir(self.basedir)
 
     def set_default(self, base_dict, defaults):
         def common(base, key, val):
@@ -328,6 +332,18 @@ class IncusAuto(CUI):
             break
         return None
 
+    def convert_disk_source(self, devices):
+        for device, params in devices.items():
+            if params.get('type') == 'disk':
+                source = params.get('source', None)
+                if source is not None \
+                   and not source.startswith('/'):
+                    found = os.path.realpath(
+                        os.path.join(self.basedir, source))
+                    self.logger.debug("source found=" + str(found))
+                    devices[device]['source'] = found
+        return devices
+
     def incus_cmd(self, cmd, args=[], build=False, ignore_error=False):
         if self.use_all:
             for name, fullname in self.host_iter(build):
@@ -392,13 +408,17 @@ class IncusAuto(CUI):
             self.logger.info(f'network: "{netname}" created')
         # create profiles
         for profname in self.conf('/config/profile').keys():
-            self.incus(f'profile create {profname}')
+            fullname = self.project_prefix + profname
+            self.incus(f'profile create {fullname}')
             d = self.conf(['config', 'profile', profname])
+            devices = d.get('devices', None)
+            if devices is not None:
+                d['devices'] = self.convert_disk_source(devices)
             ystr = yaml.dump(d)
             self.logger.debug(ystr)
             strio = StringIO(ystr)
-            self.incus(f'profile edit {profname}', stdin=strio)
-            self.logger.info(f'profile: "{profname}" created')
+            self.incus(f'profile edit {fullname}', stdin=strio)
+            self.logger.info(f'profile: "{fullname}" created')
         # create buildimages
         self.use_all = True
         self.build()
@@ -410,18 +430,21 @@ class IncusAuto(CUI):
         self.incus_cmd('delete', ['-f'], build=True, ignore_error=True)
         # delete profiles
         for profname in self.conf('/config/profile').keys():
+            fullname = self.project_prefix + profname
             try:
-                self.incus(f'profile delete {profname}')
-                self.logger.info(f'profile: "{profname}" deleted')
+                self.incus(f'profile delete {fullname}')
+                self.logger.info(f'profile: "{fullname}" deleted')
             except Exception as e:
-                self.logger.info('Ignored: %s', str(e))
+                self.logger.info(
+                    f'Ignored: profile delete "{fullname}": {str(e)}')
         # delete networks
         for netname in self.conf('/config/network').keys():
             try:
                 self.incus(f'network delete {netname}')
                 self.logger.info(f'network: "{netname}" deleted')
             except Exception as e:
-                self.logger.info('Ignored: %s', str(e))
+                self.logger.info(
+                    f'Ignored: network delete "{netname}": {str(e)}')
 
     def stop(self):
         self.incus_cmd('stop', ['--timeout', str(self.stop_timeout)],
@@ -475,30 +498,35 @@ class IncusAuto(CUI):
         for host, state in state_dict.items():
             print(f'{host:<{host_max}}  {state:<{state_max}}')
 
-    def build(self):
-        # build buildimages and publish to remote
-        for name, fullname in self.host_iter(build=True):
-            # TODO self.incus_launch()
-            info = self.conf(['buildimage', name])
-            image = info['image']
-            args = ['launch', image, fullname]
-            for p in info.get('profile', {}):
-                args += ['-p', p]
-            for devname, params in info.get('devices', {}).items():
-                kvlist = []
-                for key, val in params.items():
-                    kvlist.append(key + '=' + str(val))
-                val = devname + ',' + ','.join(kvlist)
-                args += ['-d', val]
-            for key, val in info.get('config', {}).items():
-                args += ['-c', key + '=' + str(val)]
-            if self.tobool(info.get('vm', False)):  # default: container
-                args += ['--vm']
-            else:  # container
-                args += ['-c', 'security.nesting=true']
-            self.incus(args)
-        for name, fullname in self.host_iter(build=True):
-            info = self.conf(['buildimage', name])
+    def incus_launch1(self, info, name, fullname):
+        image = info['image']
+        args = ['launch', image, fullname]
+        for p in info.get('profile', {}):
+            args += ['-p', self.project_prefix + p]
+        for devname, params in info.get('devices', {}).items():
+            kvlist = []
+            for key, val in params.items():
+                kvlist.append(key + '=' + str(val))
+            val = devname + ',' + ','.join(kvlist)
+            args += ['-d', val]
+        for key, val in info.get('config', {}).items():
+            args += ['-c', key + '=' + str(val)]
+        if self.tobool(info.get('vm', False)):  # default: container
+            args += ['--vm']
+        else:  # container
+            args += ['-c', 'security.nesting=true']
+        self.incus(args)
+
+    def launch_common(self, build=False):
+        if build:
+            target = 'buildimage'
+        else:
+            target = 'host'
+        for name, fullname in self.host_iter(build):
+            info = self.conf([target, name])
+            self.incus_launch1(info, name, fullname)
+        for name, fullname in self.host_iter(build):
+            info = self.conf([target, name])
             if self.tobool(info.get('vm', False)):
                 net_if = 'enp5s0'
             else:
@@ -509,16 +537,20 @@ class IncusAuto(CUI):
         # TODO stop hosts
         # TODO configure static IP address for eth0 when dhcp == True
         # TODO configure raw.idmap : /config/idpmap
+        #    echo -e "uid 1000 0" | lxc config set NAME raw.idmap -
         # TODO incus_mount : /host|buildimage/NAME/mount : SRC:DST
         # TODO start hosts
         # TODO setup sshd
         # TODO run /host|buildimage/NAME/setup
-        # TODO stop hosts
-        # TODO publish buildimage
+        if build:
+            # TODO stop hosts
+            pass # TODO publish buildimage
+
+    def build(self):
+        self.launch_common(build=True)
 
     def launch(self):
-        # TODO
-        pass
+        self.launch_common(build=False)
 
 if __name__ == '__main__':
     IncusAuto(program_name).main()
