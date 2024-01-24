@@ -222,8 +222,7 @@ class CUI():
     def tobool(cls, s):
         if isinstance(s, bool):
             return s
-        t = ['true', 'yes', 'on', '1']
-        return s.lower() in t
+        return s.lower() in ['true', 'yes', 'on', 'enable']
 
 class IncusAuto(CUI):
     def __init__(self, program_name):
@@ -286,16 +285,20 @@ class IncusAuto(CUI):
         self.logger.debug(self.pformat(self.opt))
         with open(self.conf_file) as f:
             self.conf_dict = yaml.safe_load(f)
+        self.logger.debug(self.conf_file + ' (original): '
+                          + self.pformat(self.conf_dict))
         if os.path.exists(self.override_file):
             with open(self.override_file) as f:
                 override_dict = yaml.safe_load(f)
                 self.deep_update(self.conf_dict, override_dict, override=True)
-        self.logger.debug(self.pformat(self.conf_dict))
+            self.logger.debug(self.override_file + ' (override): '
+                              + self.pformat(self.conf_dict))
 
         # TODO set defaults
         config_defaults = {
             'config': {
                 'incus_command': 'incus',
+                'idmap': False,
             },
             'buildimage': {
                 '__ANY__': {
@@ -319,7 +322,8 @@ class IncusAuto(CUI):
             },
         }
         self.deep_update(self.conf_dict, config_defaults)
-        self.logger.debug(self.pformat(self.conf_dict))
+        self.logger.debug('self.conf_dict (set defaults): '
+                          + self.pformat(self.conf_dict))
 
         for name in self.conf('/buildimage').keys():
             if self.is_defined(name, '/host'):
@@ -554,6 +558,16 @@ class IncusAuto(CUI):
             args += ['-d', val]
         for key, val in info.get('config', {}).items():
             args += ['-c', key + '=' + str(val)]
+        idmap = self.conf('/config/idmap')
+        idmap_uid = None
+        self.logger.debug(f'idmap={idmap}')
+        if str(idmap).isdigit():
+            idmap_uid = str(idmap)
+        elif self.tobool(idmap):
+            idmap_uid = str(os.getuid())
+        if idmap_uid is not None:
+            args += ['-c', f'raw.idmap=both {idmap_uid} 0']
+
         if self.tobool(info['vm']):
             args += ['--vm']
         else:  # container

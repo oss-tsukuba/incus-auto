@@ -1,7 +1,7 @@
 config:
-  #incus_command: incus  # default
+  #incus_command: incus  # NOTE: default
   project: gfarm-lustre
-  idmap: true  # bool or uid
+  idmap: true   # true(your UID) or false or any UID
   ssh_authorized_keys: ssh_authorized_keys
   network:
     gflnet1:
@@ -24,6 +24,11 @@ config:
       config:
         limits.memory: 2GB
         limits.cpu: 4
+        # NOTE: same as "idmap: true"
+        # raw.idmap: both 1000 0
+        # raw.idmap: |
+        #   gid 1000 0
+        #   uid 1000 0
       devices:
         root:
           type: disk
@@ -32,7 +37,7 @@ config:
           size: 5GB
         SCRIPT:
           type: disk
-          source: ./SCRIPT  # cd $(dirname $(realpath incus-auto.yaml)); $(realpath ./SCRIPT)
+          source: ./SCRIPT  # NOTE: cd $(dirname $(realpath incus-auto.yaml)); $(realpath ./SCRIPT)
           path: /SCRIPT
     prof2net:
       description: "gfarm lustre profile2"
@@ -52,31 +57,33 @@ buildimage:
     devices:
       root:
         size: 8GB
+      eth0:
+        ipv4.address: 10.123.123.191
     config:
       limits.memory: 4GB
       limits.cpu: 6
     profile:
       - prof1
       - prof2net
-    volume:
+    volume:  # TODO
       - ./SCRIPT:/SCRIPT
     setup:
       - /SCRIPT/install-lustre-server.sh
     publish-remote:
       - incus1
-  img-lclient:
-    image: images:rockylinux/8
-    series: rhel
-    vm: true
-    profile:
-      - prof1
-      - prof2net
-    volume:
-      - ./SCRIPT:/SCRIPT
-    setup:
-      - /SCRIPT/install-lustre-client.sh
-    publish-remote:
-      - incus1
+  # img-lclient:
+  #   image: images:rockylinux/8
+  #   series: rhel
+  #   vm: true
+  #   profile:
+  #     - prof1
+  #     - prof2net
+  #   volume:
+  #     - ./SCRIPT:/SCRIPT
+  #   setup:
+  #     - /SCRIPT/install-lustre-client.sh
+  #   publish-remote:
+  #     - incus1
   img-gfarm:
     image: images:ubuntu/22.04
     series: debian
@@ -99,7 +106,7 @@ host:
     profile:
       - prof1
       - prof2net
-    #remote: NOT DEFINED  # use default server
+    #remote: NOT DEFINED  # NOTE: use default server
     remote: incus1
     devices:
       eth0:
@@ -120,18 +127,18 @@ host:
         ipv4.address: 10.123.123.102
     setup:
       - "/SCRIPT/setup-lustre-oss.sh 0 10.123.123.101"
-  lclient1:
-    image: incus1:img-lclient
-    series: rhel
-    vm: true
-    profile:
-      - prof1
-      - prof2net
-    devices:
-      eth0:
-        ipv4.address: 10.123.123.103
-    setup:
-      - "/SCRIPT/setup-lustre-client.sh 0 10.123.123.101"
+  # lclient1:
+  #   image: incus1:img-lclient
+  #   series: rhel
+  #   vm: true
+  #   profile:
+  #     - prof1
+  #     - prof2net
+  #   devices:
+  #     eth0:
+  #       ipv4.address: 10.123.123.103
+  #   setup:
+  #     - "/SCRIPT/setup-lustre-client.sh 0 10.123.123.101"
   gfmd1:
     image: incus1:img-gfarm
     series: debian
