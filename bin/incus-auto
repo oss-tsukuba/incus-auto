@@ -19,10 +19,9 @@ import os
 import logging
 import subprocess
 import json
-from pprint import pprint, pformat
+from pprint import pformat
 from io import StringIO
 import time
-import copy
 import inspect
 
 from docopt import docopt
@@ -31,7 +30,7 @@ import yaml
 
 program_name = os.path.basename(__file__)
 
-#TODO   {f} exec <name> <args>... [options]
+# TODO   {f} exec <name> <args>... [options]
 
 __doc__ = """
 Automating deployment system by Incus or LXD.
@@ -90,16 +89,11 @@ opt_schema = Schema({
     '<name>': [str],
 })
 
-#TODO
-conf_schema = Schema({
-    
-})
 
 class CUI():
     def cui_init(self, program_name):
         self.program_name = program_name
         self._docopt = docopt(self.get_doc())
-        # pprint(self._docopt)  # for debug
         self.opt = self.get_opt_schema().validate(self._docopt)
         self.loglevel_str = self.opt['--loglevel']
 
@@ -224,6 +218,7 @@ class CUI():
             return s
         return s.lower() in ['true', 'yes', 'on', 'enable']
 
+
 class IncusAuto(CUI):
     def __init__(self, program_name):
         self.cui_init(program_name)
@@ -332,8 +327,7 @@ class IncusAuto(CUI):
         for name in self.conf('/buildimage').keys():
             if self.is_defined(name, '/host'):
                 raise Exception(
-                    'Error: buildimage and host cannot be duplicated: '
-                    + f'{dname}')
+                    'Error: buildimage and host cannot be duplicated: ' + name)
         self.project_prefix = self.conf('/config/project') + '-'
         self.stop_timeout = 60
 
@@ -518,11 +512,11 @@ class IncusAuto(CUI):
 
     def cmd_stop(self):
         self.incus_each('stop', ['--timeout', str(self.stop_timeout)],
-                       build=self.control_buildimage, ignore_error=True)
+                        build=self.control_buildimage, ignore_error=True)
 
     def cmd_delete(self):
         self.incus_each('delete',
-                       build=self.control_buildimage, ignore_error=True)
+                        build=self.control_buildimage, ignore_error=True)
 
     def cmd_ls(self):
         if self.use_all or len(self.names) == 0:
@@ -613,9 +607,9 @@ class IncusAuto(CUI):
             prefix = device.rstrip('0123456789')
             suffix = device[len(prefix):]
             self.incus_exec(fullname, f'growpart {prefix} {suffix}',
-                       ignore_error=True)
+                            ignore_error=True)
             self.incus_exec(fullname, f'resize2fs {device}',
-                       ignore_error=True)
+                            ignore_error=True)
             self.incus_exec(fullname, 'df -h')
 
     def setup_user_and_ssh(self, info, fullname):
@@ -641,15 +635,15 @@ class IncusAuto(CUI):
             self.incus_exec(
                 fullname,
                 ['sed', '-i',
-                 '-e', '/%wheel[ \t]\+ALL=(ALL)[ \t]\+ALL/s/^/# /',
-                 '-e', '/%wheel[ \t]\+ALL=(ALL)[ \t]\+NOPASSWD:/s/^# //',
+                 '-e', '/%wheel[ \t]\\+ALL=(ALL)[ \t]\\+ALL/s/^/# /',
+                 '-e', '/%wheel[ \t]\\+ALL=(ALL)[ \t]\\+NOPASSWD:/s/^# //',
                  '/etc/sudoers'])
             self.incus_exec(fullname, 'yum install -y openssh-server')
             self.incus_exec(fullname, 'systemctl restart sshd')
         elif info['series'] == 'debian':
             self.incus_exec(fullname, f'usermod -a -G sudo {user}')
             str_input = StringIO('%sudo   ALL=(ALL:ALL)  NOPASSWD: ALL')
-            self.incus_exec(fullname, f'tee /etc/sudoers.d/group-sudo',
+            self.incus_exec(fullname, 'tee /etc/sudoers.d/group-sudo',
                             input=str_input)
             self.incus_exec(fullname, 'chmod 600 /etc/sudoers.d/group-sudo')
             self.incus_exec(fullname, 'apt-get update')
@@ -676,20 +670,21 @@ class IncusAuto(CUI):
                 # growpart for rhel VM
                 self.growpart(fullname)
             self.setup_user_and_ssh(info, fullname)
-            # TODO configure static IP address for eth0,eth1 when ipv4.dhcp=false
+            # TODO configure static IP address
+            # for eth0,eth1 when ipv4.dhcp=false
 
         # TODO stop hosts
         # TODO start hosts
         # TODO run /host|buildimage/NAME/setup
         if build:
             # TODO stop hosts
-            pass # TODO publish buildimage
+            pass  # TODO publish buildimage
 
     def cmd_build(self):
         self.launch_common(build=True)
 
     def cmd_launch(self):
-        #TODO self.launch_common(build=False)
+        # TODO self.launch_common(build=False)
         pass
 
 
