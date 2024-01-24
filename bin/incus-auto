@@ -40,14 +40,17 @@ Usage:
   {f} destroy [options]
   {f} ls [options]
   {f} ps [options]
+  {f} config [options]
   {f} <command> <name>... [options]
   {f} <command> --all [options]
 
 Options:
   -a, --all                 all buildimages or all hosts
   -b, --buildimage          control buildimages
-  -f, --file=FILE           configuration YAML file
+  -f, --file=FILE           configuration file (YAML)
                             [default: incus-auto.yaml]
+  -o, --override=FILE       override configuration file (if it exists)
+                            [default: incus-auto.override.yaml]
   -l, --loglevel=LEVEL      log level (debug, info, warning, error)
                             [default: debug]
   --encoding=CODEC          codec for filename encoding
@@ -62,6 +65,7 @@ Command:
   launch     launch hosts
   ps         list status of hosts
   ls         list hosts by `incus list` command
+  config     check and show configuration parameters
   stop       stop hosts
   start      start hosts
   restart    restart hosts
@@ -72,6 +76,7 @@ opt_schema = Schema({
     '--all': bool,
     '--buildimage': bool,
     '--file': str,
+    '--override': str,
     '--loglevel': str,
     '--encoding': str,
     '--help': bool,
@@ -80,6 +85,7 @@ opt_schema = Schema({
     'destroy': bool,
     'ls': bool,
     'ps': bool,
+    'config': bool,
     '<name>': [str],
 })
 
@@ -213,53 +219,66 @@ class IncusAuto(CUI):
         self.use_all = self.opt['--all']
         self.control_buildimage = self.opt['--buildimage']
         self.conf_file = self.opt['--file']
-        # TODO self.override_file = self.opt['--override']
+        self.override_file = self.opt['--override']
         self.encoding = self.opt['--encoding']
 
     def change_dir(self):
         self.basedir = os.path.dirname(os.path.realpath(self.conf_file))
         os.chdir(self.basedir)
 
-    def set_default(self, base_dict, defaults):
-        def common(base, key, val):
-            base_val = base.get(key, None)
+    @classmethod
+    def deep_update(cls, dst, src, override=False):
+        def update_common(target, key, val):
+            target_val = target.get(key, None)
             if isinstance(val, dict):
-                if base_val is None:
-                    base[key] = {}
-                self.set_default(base[key], val)
-            elif base_val is None:
-                base[key] = val
+                if target_val is None:
+                    target[key] = {}
+                cls.deep_update(target[key], val, override)
+            elif override or target_val is None:
+                target[key] = val
 
-        for k, v in defaults.items():
+        for k, v in src.items():
             if k == '__ANY__':
-                for k2 in list(base_dict.keys()):
-                    common(base_dict, k2, v)
+                for k2 in list(dst.keys()):
+                    update_common(dst, k2, v)
             else:
-                common(base_dict, k, v)
+                update_common(dst, k, v)
 
     def load_conf(self):
         with open(self.conf_file) as f:
             self.conf_dict = yaml.safe_load(f)
+        if os.path.exists(self.override_file):
+            with open(self.override_file) as f:
+                override_dict = yaml.safe_load(f)
+                self.deep_update(self.conf_dict, override_dict, override=True)
         self.logger.debug(pformat(self.opt))
         self.logger.debug(pformat(self.conf_dict))
 
-        # TODO
+        # TODO default
         config_defaults = {
             'config': {
                 'incus_command': 'incus',
             },
             'buildimage': {
                 '__ANY__': {
-                    'disk': '5GB',
-                }
+                    'devices': {
+                        'root': {
+                            'size': '8GB',
+                        },
+                    },
+                },
             },
             'host': {
                 '__ANY__': {
-                    'disk': '5GB',
-                }
+                    'devices': {
+                        'root': {
+                            'size': '8GB',
+                        },
+                    },
+                },
             },
         }
-        self.set_default(self.conf_dict, config_defaults)
+        self.deep_update(self.conf_dict, config_defaults)
         self.logger.debug(pformat(self.conf_dict))
 
         for name in self.conf('/buildimage').keys():
@@ -375,28 +394,31 @@ class IncusAuto(CUI):
 
     def main(self):
         commands = {
-            'init': self.init,
-            'destroy': self.destroy,
-            'ls': self.ls,
-            'ps': self.ps,
-            'build': self.build,
-            'launch': self.launch,
-            'stop': self.stop,
-            'delete': self.delete,
+            'init': self.cmd_init,
+            'destroy': self.cmd_destroy,
+            'ls': self.cmd_ls,
+            'ps': self.cmd_ps,
+            'config': self.cmd_config,
+            'build': self.cmd_build,
+            'launch': self.cmd_launch,
+            'stop': self.cmd_stop,
+            'delete': self.cmd_delete,
         }
+        simple_commands = ['init', 'destroy', 'ls', 'ps', 'config']
+        cmd_name = None
+        for n in simple_commands:
+            if self.opt[n]:
+                cmd_name = n
+                break
+        if cmd_name is None:
+            cmd_name = self.opt['<command>']
         # execute method
-        if self.opt['init']:
-            commands['init']()
-        elif self.opt['destroy']:
-            commands['destroy']()
-        elif self.opt['ls']:
-            commands['ls']()
-        elif self.opt['ps']:
-            commands['ps']()
-        else:
-            commands[self.opt['<command>']]()
+        commands[cmd_name]()
 
-    def init(self):
+    def cmd_config(self):
+        print(yaml.dump(self.conf_dict))
+
+    def cmd_init(self):
         # create networks
         for netname in self.conf('/config/network').keys():
             self.incus(f'network create {netname}')
@@ -423,7 +445,7 @@ class IncusAuto(CUI):
         self.use_all = True
         self.build()
 
-    def destroy(self):
+    def cmd_destroy(self):
         # delete buildimages
         self.use_all = True
         self.incus_cmd('stop', ['-f'], build=True, ignore_error=True)
@@ -446,15 +468,15 @@ class IncusAuto(CUI):
                 self.logger.info(
                     f'Ignored: network delete "{netname}": {str(e)}')
 
-    def stop(self):
+    def cmd_stop(self):
         self.incus_cmd('stop', ['--timeout', str(self.stop_timeout)],
                        build=self.control_buildimage, ignore_error=True)
 
-    def delete(self):
+    def cmd_delete(self):
         self.incus_cmd('delete',
                        build=self.control_buildimage, ignore_error=True)
 
-    def ls(self):
+    def cmd_ls(self):
         if self.use_all or len(self.names) == 0:
             print(self.incus(f'ls -c ns4t {self.project_prefix}'))
         else:
@@ -463,7 +485,7 @@ class IncusAuto(CUI):
             for name in self.names:
                 print(self.incus(f'ls -c ns4t {self.project_prefix}{name}$'))
 
-    def ps(self):
+    def cmd_ps(self):
         state_dict = {}
         host_max = 0
         state_max = 0
@@ -546,10 +568,10 @@ class IncusAuto(CUI):
             # TODO stop hosts
             pass # TODO publish buildimage
 
-    def build(self):
+    def cmd_build(self):
         self.launch_common(build=True)
 
-    def launch(self):
+    def cmd_launch(self):
         self.launch_common(build=False)
 
 if __name__ == '__main__':
