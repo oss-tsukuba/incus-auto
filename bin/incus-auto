@@ -23,6 +23,7 @@ from pprint import pprint, pformat
 from io import StringIO
 import time
 import copy
+import inspect
 
 from docopt import docopt
 from schema import Schema, Or
@@ -52,7 +53,7 @@ Options:
   -o, --override=FILE       override configuration file (if it exists)
                             [default: incus-auto.override.yaml]
   -l, --loglevel=LEVEL      log level (debug, info, warning, error)
-                            [default: debug]
+                            [default: info]
   --encoding=CODEC          codec for filename encoding
           (https://docs.python.org/3/library/codecs.html#standard-encodings)
                             [default: utf-8]
@@ -121,7 +122,7 @@ class CUI():
                 '%(asctime)s: %(message)s'
             fmt = fmt.format(self.program_name)
         elif self.loglevel == logging.INFO:
-            fmt = '{}:%(levelname)s: %(message)s'.format(self.program_name)
+            fmt = '{}: %(message)s'.format(self.program_name)
         else:
             fmt = '%(message)s'
         formatter_stream = logging.Formatter(fmt=fmt, datefmt='%Y%m%d%H%M%S')
@@ -139,9 +140,11 @@ class CUI():
     def run(self):
         raise NotImplementedError
 
-    def execv(self, args, stdin=None, stdout=False,
-              timeout=None, textmode=False):
-        out, err, ret = self.execv_raw(args, stdin, timeout, textmode)
+    def execv(self, args, input=None, output=None,
+              timeout=None, textmode=False, ignore_error=False):
+        if isinstance(args, str):
+            args = args.split()
+        out, err, ret = self.execv_raw(args, input, output, timeout, textmode)
         if textmode:
             err = err.rstrip()
         else:
@@ -150,34 +153,55 @@ class CUI():
             except Exception:
                 self.logger.debug('cannot decode: err=%s', err)
         if ret != 0:
-            msg = '{}: {}'.format(str(args), err)
-            if err:
-                self.logger.debug(msg)
-                raise Exception(msg)
+            msg = f'{str(args)}: {str(err)}'
+            if ignore_error:
+                self.logger.info('Error ignored: ' + msg)
+                return
+            else:
+                raise Exception('Error: ' + msg)
         if err:
             self.logger.info(err)
+        self.logger.debug(f'Success: {str(args)}')
         return out
 
-    def execv_raw(self, args, stdin=None,
+    def execv_raw(self, args, input=None, output=None,
                   timeout=None, textmode=False):
-        self.logger.debug('Popen(args=%s)', str(args))
+        # input: read()able stream or None
+        # output:
+        #   True: use PIPE (return out, err)
+        #   False: disable
+        #   None: write to stdout and stderr directly
         if textmode:
             encoding = self.encoding
         else:
             encoding = None
+        if input is not None:
+            stdin = subprocess.PIPE
+        else:
+            stdin = subprocess.DEVNULL
+        if output is None:
+            stdout = None
+        elif output:
+            stdout = subprocess.PIPE
+        else:
+            stdout = subprocess.DEVNULL
+        # self.logger.debug('Popen(args=%s)', str(args))
         proc = subprocess.Popen(
             args, shell=False, encoding=encoding, close_fds=True,
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE)
+            stdin=stdin, stdout=stdout, stderr=stdout)
         try:
-            if stdin is not None:
-                out, err = proc.communicate(stdin.read(), timeout=timeout)
+            if input is not None:
+                out, err = proc.communicate(input.read(), timeout=timeout)
             else:
                 out, err = proc.communicate(timeout=timeout)
         except subprocess.TimeoutExpired:
             proc.kill()
             out, err = proc.communicate()
         ret = proc.wait()
+        if out is None:
+            out = ''
+        if err is None:
+            err = ''
         return out, err, ret
 
     @classmethod
@@ -244,42 +268,58 @@ class IncusAuto(CUI):
             else:
                 update_common(dst, k, v)
 
+    def pformat(self, obj):
+        if not hasattr(self, '_pformat_has_sort_dicts'):
+            pformat_kwargs = inspect.getfullargspec(pformat).kwonlyargs
+            self.logger.debug(f'pformat_kwargs={str(pformat_kwargs)}')
+            # NOTE: Changed in Python 3.8: Added the sort_dicts parameter.
+            if 'sort_dicts' in pformat_kwargs:
+                self._pformat_has_sort_dicts = True
+            else:
+                self._pformat_has_sort_dicts = False
+        if self._pformat_has_sort_dicts:
+            return pformat(obj, sort_dicts=False)
+        else:
+            return pformat(obj)
+
     def load_conf(self):
+        self.logger.debug(self.pformat(self.opt))
         with open(self.conf_file) as f:
             self.conf_dict = yaml.safe_load(f)
         if os.path.exists(self.override_file):
             with open(self.override_file) as f:
                 override_dict = yaml.safe_load(f)
                 self.deep_update(self.conf_dict, override_dict, override=True)
-        self.logger.debug(pformat(self.opt))
-        self.logger.debug(pformat(self.conf_dict))
+        self.logger.debug(self.pformat(self.conf_dict))
 
-        # TODO default
+        # TODO set defaults
         config_defaults = {
             'config': {
                 'incus_command': 'incus',
             },
             'buildimage': {
                 '__ANY__': {
+                    'vm': False,
                     'devices': {
                         'root': {
-                            'size': '8GB',
+                            'size': '5GB',
                         },
                     },
                 },
             },
             'host': {
                 '__ANY__': {
+                    'vm': False,
                     'devices': {
                         'root': {
-                            'size': '8GB',
+                            'size': '5GB',
                         },
                     },
                 },
             },
         }
         self.deep_update(self.conf_dict, config_defaults)
-        self.logger.debug(pformat(self.conf_dict))
+        self.logger.debug(self.pformat(self.conf_dict))
 
         for name in self.conf('/buildimage').keys():
             if self.is_defined(name, '/host'):
@@ -311,14 +351,15 @@ class IncusAuto(CUI):
         if not self.is_defined(buildname, '/buildimage'):
             raise Exception(f'Undefined buildimage: {buildname}')
 
-    def incus(self, args, stdin=None):
+    def incus(self, args, input=None, output=None, ignore_error=False):
         if isinstance(args, str):
             args = args.split()
         args = [self.conf('/config/incus_command')] + args
-        return self.execv(args, textmode=True, stdin=stdin)
+        return self.execv(args, textmode=True, input=input, output=output,
+                          ignore_error=ignore_error)
 
     def incus_ls_json(self):
-        j_str = self.incus('ls -f json')
+        j_str = self.incus('ls -f json', output=True)
         return json.loads(j_str)
 
     def incus_is_running(self, name):
@@ -363,18 +404,11 @@ class IncusAuto(CUI):
                     devices[device]['source'] = found
         return devices
 
-    def incus_cmd(self, cmd, args=[], build=False, ignore_error=False):
+    def incus_each(self, cmd, args=[], build=False, ignore_error=False):
         if self.use_all:
             for name, fullname in self.host_iter(build):
-                try:
-                    self.incus([cmd, fullname] + args)
-                    self.logger.info(f'Success: {cmd} "{name}"')
-                except Exception as e:
-                    if ignore_error:
-                        self.logger.info(
-                            f'Ignored: {cmd} "{name}": {str(e)}')
-                    else:
-                        raise
+                self.incus([cmd, fullname] + args,
+                           ignore_error=ignore_error, output=True)
         else:  # specified hosts
             for hostname in self.names:
                 if build:
@@ -382,15 +416,8 @@ class IncusAuto(CUI):
                 else:
                     self.check_defined_host(hostname)
             for hostname in self.names:
-                try:
-                    self.incus([cmd, self.project_prefix + hostname] + args)
-                    self.logger.info(f'Success: {cmd} "{hostname}"')
-                except Exception as e:
-                    if ignore_error:
-                        self.logger.info(
-                            f'Ignored: {cmd} "{hostname}": {str(e)}')
-                    else:
-                        raise
+                self.incus([cmd, self.project_prefix + hostname] + args,
+                           ignore_error=ignore_error, output=True)
 
     def main(self):
         commands = {
@@ -416,18 +443,19 @@ class IncusAuto(CUI):
         commands[cmd_name]()
 
     def cmd_config(self):
-        print(yaml.dump(self.conf_dict))
+        print(yaml.dump(self.conf_dict, sort_keys=False))
 
     def cmd_init(self):
         # create networks
         for netname in self.conf('/config/network').keys():
             self.incus(f'network create {netname}')
             d = self.conf(['config', 'network', netname])
-            ystr = yaml.dump(d)
+            ystr = yaml.dump(d, sort_keys=False)
             self.logger.debug(ystr)
-            strio = StringIO(ystr)
-            self.incus(f'network edit {netname}', stdin=strio)
+            str_input = StringIO(ystr)
+            self.incus(f'network edit {netname}', input=str_input)
             self.logger.info(f'network: "{netname}" created')
+            self.incus(f'network show {netname}')
         # create profiles
         for profname in self.conf('/config/profile').keys():
             fullname = self.project_prefix + profname
@@ -436,11 +464,12 @@ class IncusAuto(CUI):
             devices = d.get('devices', None)
             if devices is not None:
                 d['devices'] = self.convert_disk_source(devices)
-            ystr = yaml.dump(d)
+            ystr = yaml.dump(d, sort_keys=False)
             self.logger.debug(ystr)
-            strio = StringIO(ystr)
-            self.incus(f'profile edit {fullname}', stdin=strio)
+            str_input = StringIO(ystr)
+            self.incus(f'profile edit {fullname}', input=str_input)
             self.logger.info(f'profile: "{fullname}" created')
+            self.incus(f'profile show {fullname}')
         # create buildimages
         self.use_all = True
         self.cmd_build()
@@ -448,32 +477,24 @@ class IncusAuto(CUI):
     def cmd_destroy(self):
         # delete buildimages
         self.use_all = True
-        self.incus_cmd('stop', ['-f'], build=True, ignore_error=True)
-        self.incus_cmd('delete', ['-f'], build=True, ignore_error=True)
+        # self.incus_each('stop', ['-f'], build=True, ignore_error=True)
+        self.incus_each('delete', ['-f'], build=True, ignore_error=True)
         # delete profiles
         for profname in self.conf('/config/profile').keys():
             fullname = self.project_prefix + profname
-            try:
-                self.incus(f'profile delete {fullname}')
-                self.logger.info(f'profile: "{fullname}" deleted')
-            except Exception as e:
-                self.logger.info(
-                    f'Ignored: profile delete "{fullname}": {str(e)}')
+            self.incus(f'profile delete {fullname}', ignore_error=True,
+                       output=True)
         # delete networks
         for netname in self.conf('/config/network').keys():
-            try:
-                self.incus(f'network delete {netname}')
-                self.logger.info(f'network: "{netname}" deleted')
-            except Exception as e:
-                self.logger.info(
-                    f'Ignored: network delete "{netname}": {str(e)}')
+            self.incus(f'network delete {netname}', ignore_error=True,
+                       output=True)
 
     def cmd_stop(self):
-        self.incus_cmd('stop', ['--timeout', str(self.stop_timeout)],
+        self.incus_each('stop', ['--timeout', str(self.stop_timeout)],
                        build=self.control_buildimage, ignore_error=True)
 
     def cmd_delete(self):
-        self.incus_cmd('delete',
+        self.incus_each('delete',
                        build=self.control_buildimage, ignore_error=True)
 
     def cmd_ls(self):
@@ -487,7 +508,7 @@ class IncusAuto(CUI):
 
     def cmd_ps(self):
         state_dict = {}
-        host_max = 0
+        fullname_max = 0
         state_max = 0
         if self.use_all or len(self.names) == 0:
             names = [n for n, full in
@@ -504,21 +525,21 @@ class IncusAuto(CUI):
         for hostinfo in self.incus_ls_json():
             host_dict[hostinfo['name']] = hostinfo
         for name in names:
-            host = self.project_prefix + name
-            hostinfo = host_dict.get(host, None)
+            fullname = self.project_prefix + name
+            hostinfo = host_dict.get(fullname, None)
             if hostinfo is None:
                 state = "NOTCREATED"
             else:
                 state = hostinfo['config']['volatile.last_state.power']
-            state_dict[host] = state
-            host_len = len(host)
-            if host_len > host_max:
-                host_max = host_len
+            state_dict[fullname] = state
+            fullname_len = len(fullname)
+            if fullname_len > fullname_max:
+                fullname_max = fullname_len
             state_len = len(state)
             if state_len > state_max:
                 state_max = state_len
-        for host, state in state_dict.items():
-            print(f'{host:<{host_max}}  {state:<{state_max}}')
+        for fullname, state in state_dict.items():
+            print(f'{fullname:<{fullname_max}}  {state:<{fullname_max}}')
 
     def incus_launch1(self, info, name, fullname):
         image = info['image']
@@ -533,11 +554,30 @@ class IncusAuto(CUI):
             args += ['-d', val]
         for key, val in info.get('config', {}).items():
             args += ['-c', key + '=' + str(val)]
-        if self.tobool(info.get('vm', False)):  # default: container
+        if self.tobool(info['vm']):
             args += ['--vm']
         else:  # container
             args += ['-c', 'security.nesting=true']
         self.incus(args)
+
+    def growpart(self, fullname):
+        self.incus(f'exec {fullname} -- '
+                   + 'yum install -y e2fsprogs cloud-utils-growpart gdisk')
+        mount = self.incus(f'exec {fullname} -- mount', output=True)
+        device = None
+        for line in mount.splitlines():
+            fields = line.strip().split()
+            if len(fields) >= 3 and fields[2] == "/":
+                device = fields[0]
+                break
+        if device is not None:
+            prefix = device.rstrip('0123456789')
+            suffix = device[len(prefix):]
+            self.incus(f'exec {fullname} -- growpart {prefix} {suffix}',
+                       ignore_error=True)
+            self.incus(f'exec {fullname} -- resize2fs {device}',
+                       ignore_error=True)
+            self.incus(f'exec {fullname} -- df -h')
 
     def launch_common(self, build=False):
         if build:
@@ -549,12 +589,15 @@ class IncusAuto(CUI):
             self.incus_launch1(info, name, fullname)
         for name, fullname in self.host_iter(build):
             info = self.conf([target, name])
-            if self.tobool(info.get('vm', False)):
+            if self.tobool(info['vm']):
                 net_if = 'enp5s0'
             else:
                 net_if = 'eth0'
             self.incus_wait_for_wakeup(fullname, net_if)
-            # TODO growpart for rhel VM
+            if self.tobool(info['vm']) and info['series'] == 'rhel':
+                # growpart for rhel VM
+                self.growpart(fullname)
+
             # TODO configure eth1
         # TODO stop hosts
         # TODO configure static IP address for eth0 when dhcp == True
@@ -572,7 +615,9 @@ class IncusAuto(CUI):
         self.launch_common(build=True)
 
     def cmd_launch(self):
-        self.launch_common(build=False)
+        #TODO self.launch_common(build=False)
+        pass
+
 
 if __name__ == '__main__':
     IncusAuto(program_name).main()

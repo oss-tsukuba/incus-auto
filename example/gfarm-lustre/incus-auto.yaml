@@ -79,7 +79,7 @@ buildimage:
       - incus1
   img-gfarm:
     image: images:ubuntu/22.04
-    series: rhel
+    series: debian
     vm: false
     profile:
       - prof1
@@ -94,6 +94,7 @@ buildimage:
 host:
   mgs:
     image: incus1:img-lserver
+    series: rhel
     vm: true
     profile:
       - prof1
@@ -107,6 +108,7 @@ host:
       - /SCRIPT/setup-lustre-mgs.sh
   oss0:
     image: incus1:img-lserver
+    series: rhel
     vm: true
     profile:
       - prof1
@@ -120,6 +122,7 @@ host:
       - "/SCRIPT/setup-lustre-oss.sh 0 10.123.123.101"
   lclient1:
     image: incus1:img-lclient
+    series: rhel
     vm: true
     profile:
       - prof1
@@ -131,6 +134,7 @@ host:
       - "/SCRIPT/setup-lustre-client.sh 0 10.123.123.101"
   gfmd1:
     image: incus1:img-gfarm
+    series: debian
     vm: false
     profile:
       - prof1
