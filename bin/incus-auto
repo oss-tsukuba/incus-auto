@@ -443,7 +443,7 @@ class IncusAuto(CUI):
             self.logger.info(f'profile: "{fullname}" created')
         # create buildimages
         self.use_all = True
-        self.build()
+        self.cmd_build()
 
     def cmd_destroy(self):
         # delete buildimages
