@@ -230,6 +230,7 @@ class IncusAuto(CUI):
         self.parse_opt()
         self.change_dir()
         self.load_conf()
+        self.check_required()
 
     def get_doc(self):
         return __doc__
@@ -299,6 +300,9 @@ class IncusAuto(CUI):
             'config': {
                 'incus_command': 'incus',
                 'idmap': False,
+                'user': 'incus',  # main guest user
+                'uid': 2000,
+                'ssh_authorized_keys': 'ssh_authorized_keys',
             },
             'buildimage': {
                 '__ANY__': {
@@ -333,6 +337,12 @@ class IncusAuto(CUI):
         self.project_prefix = self.conf('/config/project') + '-'
         self.stop_timeout = 60
 
+    def check_required(self):
+        self.authorized_keys = self.convert_fullpath(
+            self.conf('/config/ssh_authorized_keys'))
+        if not os.access(self.authorized_keys, os.R_OK):
+            raise Exception(f'Error: cannot read: {self.authorized_keys}')
+
     def conf(self, confpath):
         return self.dictpath(self.conf_dict, confpath)
 
@@ -362,6 +372,14 @@ class IncusAuto(CUI):
         return self.execv(args, textmode=True, input=input, output=output,
                           ignore_error=ignore_error)
 
+    def incus_exec(self, fullname, args,
+                   input=None, output=None, ignore_error=False):
+        if isinstance(args, str):
+            args = args.split()
+        return self.incus(['exec', fullname, '--'] + args,
+                          input=input, output=output,
+                          ignore_error=ignore_error)
+
     def incus_ls_json(self):
         j_str = self.incus('ls -f json', output=True)
         return json.loads(j_str)
@@ -375,7 +393,7 @@ class IncusAuto(CUI):
 
     def incus_wait_for_wakeup(self, name, net_if):
         while not self.incus_is_running(name):
-            self.logger.info(f'Waiting for wake up: {name}')
+            self.logger.info(f'Waiting for startup: {name}')
             time.sleep(1)
         while self.incus_get_ipv4(name, net_if) is None:
             self.logger.info(f'Waiting until seeing IP address: {name}')
@@ -396,16 +414,21 @@ class IncusAuto(CUI):
             break
         return None
 
+    def convert_fullpath(self, path):
+        if path is None:
+            return None
+        if path.startswith('/'):
+            return path
+        return os.path.realpath(os.path.join(self.basedir, path))
+
     def convert_disk_source(self, devices):
         for device, params in devices.items():
             if params.get('type') == 'disk':
                 source = params.get('source', None)
-                if source is not None \
-                   and not source.startswith('/'):
-                    found = os.path.realpath(
-                        os.path.join(self.basedir, source))
-                    self.logger.debug("source found=" + str(found))
-                    devices[device]['source'] = found
+                fullpath = self.convert_fullpath(source)
+                if fullpath is not None:
+                    self.logger.debug("source: fullpath=" + str(fullpath))
+                    devices[device]['source'] = fullpath
         return devices
 
     def incus_each(self, cmd, args=[], build=False, ignore_error=False):
@@ -556,6 +579,8 @@ class IncusAuto(CUI):
                 kvlist.append(key + '=' + str(val))
             val = devname + ',' + ','.join(kvlist)
             args += ['-d', val]
+        # TODO /host|buildimage/NAME/volume : SRC:DST -> -d
+        # TODO use self.convert_disk_source()
         for key, val in info.get('config', {}).items():
             args += ['-c', key + '=' + str(val)]
         idmap = self.conf('/config/idmap')
@@ -575,9 +600,9 @@ class IncusAuto(CUI):
         self.incus(args)
 
     def growpart(self, fullname):
-        self.incus(f'exec {fullname} -- '
-                   + 'yum install -y e2fsprogs cloud-utils-growpart gdisk')
-        mount = self.incus(f'exec {fullname} -- mount', output=True)
+        self.incus_exec(fullname,
+                        'yum install -y e2fsprogs cloud-utils-growpart gdisk')
+        mount = self.incus_exec(fullname, 'mount', output=True)
         device = None
         for line in mount.splitlines():
             fields = line.strip().split()
@@ -587,11 +612,50 @@ class IncusAuto(CUI):
         if device is not None:
             prefix = device.rstrip('0123456789')
             suffix = device[len(prefix):]
-            self.incus(f'exec {fullname} -- growpart {prefix} {suffix}',
+            self.incus_exec(fullname, f'growpart {prefix} {suffix}',
                        ignore_error=True)
-            self.incus(f'exec {fullname} -- resize2fs {device}',
+            self.incus_exec(fullname, f'resize2fs {device}',
                        ignore_error=True)
-            self.incus(f'exec {fullname} -- df -h')
+            self.incus_exec(fullname, 'df -h')
+
+    def setup_user_and_ssh(self, info, fullname):
+        user = self.conf('/config/user')
+        uid = self.conf('/config/uid')
+        self.incus_exec(fullname, 'useradd --create-home --shell /bin/bash'
+                        + f' --uid {uid} {user}')
+        homedir = self.incus_exec(fullname,
+                                  ['su', user, 'sh', '-c',
+                                   'echo $HOME'],
+                                  output=True).strip()
+        # sshdir=f'/home/{user}/.ssh'
+        sshdir = homedir + '/.ssh'
+        self.incus_exec(fullname, f'mkdir -p {sshdir}')
+        self.incus(['file', 'push', self.authorized_keys,
+                    fullname + sshdir + '/authorized_keys'])
+        self.incus_exec(fullname, f'chown -R {user}:{user} {sshdir}')
+        self.incus_exec(fullname, f'chmod 700 {sshdir}')
+        self.incus_exec(fullname, f'chmod 600 {sshdir}/authorized_keys')
+
+        if info['series'] == 'rhel':
+            self.incus_exec(fullname, f'usermod -a -G wheel {user}')
+            self.incus_exec(
+                fullname,
+                ['sed', '-i',
+                 '-e', '/%wheel[ \t]\+ALL=(ALL)[ \t]\+ALL/s/^/# /',
+                 '-e', '/%wheel[ \t]\+ALL=(ALL)[ \t]\+NOPASSWD:/s/^# //',
+                 '/etc/sudoers'])
+            self.incus_exec(fullname, 'yum install -y openssh-server')
+            self.incus_exec(fullname, 'systemctl restart sshd')
+        elif info['series'] == 'debian':
+            self.incus_exec(fullname, f'usermod -a -G sudo {user}')
+            str_input = StringIO('%sudo   ALL=(ALL:ALL)  NOPASSWD: ALL')
+            self.incus_exec(fullname, f'tee /etc/sudoers.d/group-sudo',
+                            input=str_input)
+            self.incus_exec(fullname, 'chmod 600 /etc/sudoers.d/group-sudo')
+            self.incus_exec(fullname, 'apt-get update')
+            self.incus_exec(fullname, 'apt-get install -y openssh-server')
+            self.incus_exec(fullname, 'systemctl enable ssh')
+            self.incus_exec(fullname, 'systemctl restart ssh')
 
     def launch_common(self, build=False):
         if build:
@@ -611,15 +675,11 @@ class IncusAuto(CUI):
             if self.tobool(info['vm']) and info['series'] == 'rhel':
                 # growpart for rhel VM
                 self.growpart(fullname)
+            self.setup_user_and_ssh(info, fullname)
+            # TODO configure static IP address for eth0,eth1 when ipv4.dhcp=false
 
-            # TODO configure eth1
         # TODO stop hosts
-        # TODO configure static IP address for eth0 when dhcp == True
-        # TODO configure raw.idmap : /config/idpmap
-        #    echo -e "uid 1000 0" | lxc config set NAME raw.idmap -
-        # TODO incus_mount : /host|buildimage/NAME/mount : SRC:DST
         # TODO start hosts
-        # TODO setup sshd
         # TODO run /host|buildimage/NAME/setup
         if build:
             # TODO stop hosts

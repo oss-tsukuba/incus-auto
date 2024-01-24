@@ -1,8 +1,10 @@
 config:
   #incus_command: incus  # NOTE: default
   project: gfarm-lustre
-  idmap: true   # true(your UID) or false or any UID
-  ssh_authorized_keys: ssh_authorized_keys
+  idmap: true  # false or true(your host UID) or any UID to root(UID=0)
+  #user: incus  # NOTE: default
+  #uid: 1000  # NOTE: default
+  #ssh_authorized_keys: ssh_authorized_keys  # NOTE: default
   network:
     gflnet1:
       description: "gfarm lustre net1"
@@ -58,7 +60,7 @@ buildimage:
       root:
         size: 8GB
       eth0:
-        ipv4.address: 10.123.123.191
+        ipv4.address: 10.123.123.191  # NOTE: for ipv4.dhcp=true
     config:
       limits.memory: 4GB
       limits.cpu: 6
@@ -88,6 +90,7 @@ buildimage:
     image: images:ubuntu/22.04
     series: debian
     vm: false
+    devices:
     profile:
       - prof1
       - prof2net
