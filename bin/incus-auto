@@ -23,6 +23,7 @@ from pprint import pformat
 from io import StringIO
 import time
 import inspect
+import shlex
 
 from docopt import docopt
 from schema import Schema, Or
@@ -137,7 +138,9 @@ class CUI():
     def execv(self, args, input=None, output=None,
               timeout=None, textmode=False, ignore_error=False):
         if isinstance(args, str):
-            args = args.split()
+            # ex. shlex.split('a b "c d" \\"e')
+            #     -> ['a', 'b', 'c d', '"e']
+            args = shlex.split(args)
         out, err, ret = self.execv_raw(args, input, output, timeout, textmode)
         if textmode:
             err = err.rstrip()
@@ -361,7 +364,7 @@ class IncusAuto(CUI):
 
     def incus(self, args, input=None, output=None, ignore_error=False):
         if isinstance(args, str):
-            args = args.split()
+            args = shlex.split(args)
         args = [self.conf('/config/incus_command')] + args
         return self.execv(args, textmode=True, input=input, output=output,
                           ignore_error=ignore_error)
@@ -369,7 +372,7 @@ class IncusAuto(CUI):
     def incus_exec(self, fullname, args,
                    input=None, output=None, ignore_error=False):
         if isinstance(args, str):
-            args = args.split()
+            args = shlex.split(args)
         return self.incus(['exec', fullname, '--'] + args,
                           input=input, output=output,
                           ignore_error=ignore_error)
@@ -385,7 +388,11 @@ class IncusAuto(CUI):
         except Exception:
             return False
 
-    def incus_wait_for_wakeup(self, name, net_if):
+    def incus_wait_for_wakeup(self, name, info):
+        if self.tobool(info['vm']):
+            net_if = 'enp5s0'
+        else:
+            net_if = 'eth0'
         while not self.incus_is_running(name):
             self.logger.info(f'Waiting for startup: {name}')
             time.sleep(1)
@@ -661,21 +668,27 @@ class IncusAuto(CUI):
             self.incus_launch1(info, name, fullname)
         for name, fullname in self.host_iter(build):
             info = self.conf([target, name])
-            if self.tobool(info['vm']):
-                net_if = 'enp5s0'
-            else:
-                net_if = 'eth0'
-            self.incus_wait_for_wakeup(fullname, net_if)
+            self.incus_wait_for_wakeup(fullname, info)
             if self.tobool(info['vm']) and info['series'] == 'rhel':
                 # growpart for rhel VM
                 self.growpart(fullname)
             self.setup_user_and_ssh(info, fullname)
             # TODO configure static IP address
             # for eth0,eth1 when ipv4.dhcp=false
-
-        # TODO stop hosts
-        # TODO start hosts
-        # TODO run /host|buildimage/NAME/setup
+            # TODO stop hosts
+            # TODO start hosts
+        for name, fullname in self.host_iter(build):
+            info = self.conf([target, name])
+            self.incus_wait_for_wakeup(fullname, info)
+        for name, fullname in self.host_iter(build):
+            # run /host|buildimage/NAME/setup
+            info = self.conf([target, name])
+            for cmd in info['setup']:
+                if cmd == '__RESTART__':
+                    self.incus(f'restart {fullname}')
+                    self.incus_wait_for_wakeup(fullname, info)
+                else:
+                    self.incus_exec(fullname, cmd)
         if build:
             # TODO stop hosts
             pass  # TODO publish buildimage

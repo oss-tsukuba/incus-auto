@@ -71,9 +71,9 @@ buildimage:
       - prof1
       - prof2net
     volume:  # TODO
-      - ./SCRIPT:/SCRIPT
+      - ./CONF:/CONF
     setup:
-      - /SCRIPT/install-lustre-server.sh
+      - bash -x /SCRIPT/install-lustre-server.sh "a b c" "\\d ef"
     publish-remote:
       - incus1
     publish-alias:
@@ -103,7 +103,8 @@ buildimage:
     volume:
       - ./SCRIPT:/SCRIPT
     setup:
-      - /SCRIPT/install-gfarm.sh
+      - bash -x /SCRIPT/install-gfarm.sh "OK"
+      - __RESTART__
     publish-remote:
       - incus1
     publish-alias:
