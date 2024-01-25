@@ -38,28 +38,25 @@ $ incus storage create mypool dir source=/mnt/disk2/incus-mypool
 
 ## Add remote Incus server
 
-```
-### server
-incus config set core.https_address "[::]"
-incus config trust add client1 | tail -n +2 > token-client1.txt
-##### (for LXD)
-##### incus config trust add --name client1 | tail -n +2 > token-client1.txt
-
-### client
-incus remote add server1 `cat token-client1.txt`
-
-### server
-$ incus remote ls
-+-----------------+------------------------------------------+---------------+-------------+--------+--------+--------+
-|      NAME       |                   URL                    |   PROTOCOL    |  AUTH TYPE  | PUBLIC | STATIC | GLOBAL |
-+-----------------+------------------------------------------+---------------+-------------+--------+--------+--------+
-| images          | https://images.linuxcontainers.org       | simplestreams | none        | YES    | NO     | NO     |
-+-----------------+------------------------------------------+---------------+-------------+--------+--------+--------+
-| server1         | https://10.0.0.123:8443                  | incus         | tls         | NO     | NO     | NO     |
-+-----------------+------------------------------------------+---------------+-------------+--------+--------+--------+
-| local (current) | unix://                                  | incus         | file access | NO     | YES    | NO     |
-+-----------------+------------------------------------------+---------------+-------------+--------+--------+--------+
-```
+- client certificate
+  - Incus
+    - ~/.config/incus/client.crt
+  - LXD
+    - ~/snap/lxd/common/config/client.crt
+- @server (for example)
+  - Incus
+    - incus config set core.https_address "[::]:8443"
+    - incus config trust add-certificate client1-client.crt --name client1
+  - LXD
+    - lxc config set core.https_address "[::]:18443"
+    - lxc config trust add client2-client.crt --name client2
+- @client (for example)
+  - Incus
+    - incus remote add incus1 https://SERVERNAME:8443
+    - incus ls incus1:
+  - LXD
+    - lxc remote add lxd1 https://SERVERNAME:18443
+    - lxc ls lxd1:
 
 ## Commands
 
