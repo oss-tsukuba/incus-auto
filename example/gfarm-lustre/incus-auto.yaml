@@ -5,6 +5,9 @@ config:
   #user: incus  # NOTE: default
   #uid: 1000  # NOTE: default
   #ssh_authorized_keys: ssh_authorized_keys  # NOTE: default
+  remote:
+    local: false  # NOTE: default=local:true
+    incus1: true
   network:
     gflnet1:
       description: "gfarm lustre net1"
@@ -39,7 +42,7 @@ config:
           size: 5GB
         SCRIPT:
           type: disk
-          source: ./SCRIPT  # NOTE: cd $(dirname $(realpath incus-auto.yaml)); $(realpath ./SCRIPT)
+          source: ./SCRIPT  # NOTE: cd $(dirname $(realpath incus-auto.yaml)); $(realpath ./SCRIPT) when not an absolute path
           path: /SCRIPT
     prof2net:
       description: "gfarm lustre profile2"
@@ -73,6 +76,9 @@ buildimage:
       - /SCRIPT/install-lustre-server.sh
     publish-remote:
       - incus1
+    publish-alias:
+      - lserver
+      - lustre-server
   # img-lclient:
   #   image: images:rockylinux/8
   #   series: rhel
@@ -100,6 +106,8 @@ buildimage:
       - /SCRIPT/install-gfarm.sh
     publish-remote:
       - incus1
+    publish-alias:
+      - gfarm
 
 host:
   mgs:
@@ -111,9 +119,15 @@ host:
       - prof2net
     #remote: NOT DEFINED  # NOTE: use default server
     remote: incus1
+    # network-static:  # TODO
+    #   eth0:
+    #     ipv4.addresss: 10.123.123.101/24   # convert: NETMASK=255.255.255.0
+    #     ipv4.gateway: 10.123.123.1
+    #     dns:
+    #     - 8.8.8.8
     devices:
       eth0:
-        ipv4.address: 10.123.123.101
+        ipv4.address: 10.123.123.101  # in DHCP range
     setup:
       - /SCRIPT/setup-lustre-mgs.sh
   oss0:
