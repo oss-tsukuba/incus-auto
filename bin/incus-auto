@@ -16,6 +16,7 @@
 # flake8 ./incus-auto
 
 import os
+import sys
 import logging
 import subprocess
 import json
@@ -32,6 +33,7 @@ import yaml
 program_name = os.path.basename(__file__)
 
 # TODO   {f} exec <name> <args>... [options]
+# TODO   {f} shell <name> [options]
 
 __doc__ = """
 Automating deployment system by Incus or LXD.
@@ -343,24 +345,26 @@ class IncusAuto(CUI):
     def conf(self, confpath):
         return self.dictpath(self.conf_dict, confpath)
 
-    def host_iter(self, build=False):
-        if build:
-            for name in self.dictpath(self.conf_dict, '/buildimage').keys():
-                yield (name, self.project_prefix + name)
+    def name_iter(self):
+        if self.control_buildimage:
+            target_path = '/buildimage'
         else:
-            for name in self.dictpath(self.conf_dict, '/host').keys():
-                yield (name, self.project_prefix + name)
+            target_path = '/host'
+        d = self.conf(target_path)
+        if self.use_all:
+            for name in d.keys():
+                yield (name, self.project_prefix + name, d[name])
+        else:  # specified hosts
+            for name in self.names:
+                self.check_defined(name, target_path)
+                yield (name, self.project_prefix + name, d[name])
 
-    def is_defined(self, hostname, dpath):
-        return hostname in self.conf(dpath).keys()
+    def is_defined(self, name, dpath):
+        return name in self.conf(dpath).keys()
 
-    def check_defined_host(self, hostname):
-        if not self.is_defined(hostname, '/host'):
-            raise Exception(f'Undefined host: {hostname}')
-
-    def check_defined_buildimage(self, buildname):
-        if not self.is_defined(buildname, '/buildimage'):
-            raise Exception(f'Undefined buildimage: {buildname}')
+    def check_defined(self, name, dpath):
+        if not self.is_defined(name, dpath):
+            raise Exception(f'Undefined {dpath}: {name}')
 
     def incus(self, args, input=None, output=None, ignore_error=False):
         if isinstance(args, str):
@@ -433,19 +437,12 @@ class IncusAuto(CUI):
         return devices
 
     def incus_each(self, cmd, args=[], build=False, ignore_error=False):
-        if self.use_all:
-            for name, fullname in self.host_iter(build):
-                self.incus([cmd, fullname] + args,
-                           ignore_error=ignore_error, output=True)
-        else:  # specified hosts
-            for hostname in self.names:
-                if build:
-                    self.check_defined_buildimage(hostname)
-                else:
-                    self.check_defined_host(hostname)
-            for hostname in self.names:
-                self.incus([cmd, self.project_prefix + hostname] + args,
-                           ignore_error=ignore_error, output=True)
+        if build:
+            self.control_buildimage = build
+        for name, fullname, info in self.name_iter():
+            self.incus([cmd, fullname] + args,
+                       ignore_error=ignore_error,
+                       output=True)  # err in Exception
 
     def main(self):
         commands = {
@@ -456,6 +453,8 @@ class IncusAuto(CUI):
             'config': self.cmd_config,
             'build': self.cmd_build,
             'launch': self.cmd_launch,
+            'start': self.cmd_start,
+            'restart': self.cmd_restart,
             'stop': self.cmd_stop,
             'delete': self.cmd_delete,
         }
@@ -517,6 +516,13 @@ class IncusAuto(CUI):
             self.incus(f'network delete {netname}', ignore_error=True,
                        output=True)
 
+    def cmd_start(self):
+        self.incus_each('start',
+                        build=self.control_buildimage, ignore_error=True)
+
+    def cmd_restart(self):
+        self.incus_each('restart', ['--timeout', str(self.stop_timeout)],
+                        build=self.control_buildimage, ignore_error=True)
     def cmd_stop(self):
         self.incus_each('stop', ['--timeout', str(self.stop_timeout)],
                         build=self.control_buildimage, ignore_error=True)
@@ -529,31 +535,21 @@ class IncusAuto(CUI):
         if self.use_all or len(self.names) == 0:
             print(self.incus(f'ls -c ns4t {self.project_prefix}'))
         else:
-            for name in self.names:
-                self.check_defined_host(name)
-            for name in self.names:
+            for name in self.name_iter():
                 print(self.incus(f'ls -c ns4t {self.project_prefix}{name}$'))
 
     def cmd_ps(self):
+        if len(self.names) == 0:
+            self.use_all = True
+        names = self.name_iter()
+
         state_dict = {}
         fullname_max = 0
         state_max = 0
-        if self.use_all or len(self.names) == 0:
-            names = [n for n, full in
-                     self.host_iter(build=self.control_buildimage)]
-        else:
-            names = self.names
-            for name in names:
-                if self.control_buildimage:
-                    self.check_defined_buildimage(name)
-                else:
-                    self.check_defined_host(name)
-
         host_dict = {}
         for hostinfo in self.incus_ls_json():
             host_dict[hostinfo['name']] = hostinfo
-        for name in names:
-            fullname = self.project_prefix + name
+        for name, fullname, info in names:
             hostinfo = host_dict.get(fullname, None)
             if hostinfo is None:
                 state = "NOTCREATED"
@@ -622,8 +618,9 @@ class IncusAuto(CUI):
     def setup_user_and_ssh(self, info, fullname):
         user = self.conf('/config/user')
         uid = self.conf('/config/uid')
+        # ignore: useradd: user 'incus' already exists
         self.incus_exec(fullname, 'useradd --create-home --shell /bin/bash'
-                        + f' --uid {uid} {user}')
+                        + f' --uid {uid} {user}', ignore_error=True)
         homedir = self.incus_exec(fullname,
                                   ['su', user, 'sh', '-c',
                                    'echo $HOME'],
@@ -658,47 +655,63 @@ class IncusAuto(CUI):
             self.incus_exec(fullname, 'systemctl enable ssh')
             self.incus_exec(fullname, 'systemctl restart ssh')
 
-    def launch_common(self, build=False):
-        if build:
-            target = 'buildimage'
-        else:
-            target = 'host'
-        for name, fullname in self.host_iter(build):
-            info = self.conf([target, name])
+    def launch_common(self):
+        for name, fullname, info in self.name_iter():
             self.incus_launch1(info, name, fullname)
-        for name, fullname in self.host_iter(build):
-            info = self.conf([target, name])
+        for name, fullname, info in self.name_iter():
             self.incus_wait_for_wakeup(fullname, info)
             if self.tobool(info['vm']) and info['series'] == 'rhel':
                 # growpart for rhel VM
                 self.growpart(fullname)
-            self.setup_user_and_ssh(info, fullname)
+            if not self.control_buildimage:
+                self.setup_user_and_ssh(info, fullname)
             # TODO configure static IP address
             # for eth0,eth1 when ipv4.dhcp=false
             # TODO stop hosts
             # TODO start hosts
-        for name, fullname in self.host_iter(build):
-            info = self.conf([target, name])
+        for name, fullname, info in self.name_iter():
             self.incus_wait_for_wakeup(fullname, info)
-        for name, fullname in self.host_iter(build):
+        for name, fullname, info in self.name_iter():
             # run /host|buildimage/NAME/setup
-            info = self.conf([target, name])
             for cmd in info['setup']:
                 if cmd == '__RESTART__':
                     self.incus(f'restart {fullname}')
                     self.incus_wait_for_wakeup(fullname, info)
                 else:
                     self.incus_exec(fullname, cmd)
-        if build:
-            # TODO stop hosts
-            pass  # TODO publish buildimage
+        if self.control_buildimage:
+            # publish buildimage
+            for name, fullname, info in self.name_iter():
+                remotes = info.get('publish-remote', None)
+                aliases = info['publish-alias']
+                self.incus(f'stop {fullname}')
+
+                def publish(remote):
+                    args = ['publish', fullname]
+                    if remote is not None:
+                        args.append(remote + ':')
+                    for alias in aliases:
+                        full_alias = self.project_prefix + alias
+                        self.incus(['image', 'delete', full_alias],
+                                   ignore_error=True)
+                        args.extend(['--alias', full_alias])
+                    self.incus(args)
+
+                if remotes is None:
+                    publish(None)
+                else:
+                    for remote in remotes:
+                        publish(remote)
 
     def cmd_build(self):
-        self.launch_common(build=True)
+        self.control_buildimage = True
+        self.cmd_stop()
+        self.cmd_delete()
+        self.launch_common()
 
     def cmd_launch(self):
-        # TODO self.launch_common(build=False)
-        pass
+        self.control_buildimage = False
+        self.launch_common()
 
 
 if __name__ == '__main__':

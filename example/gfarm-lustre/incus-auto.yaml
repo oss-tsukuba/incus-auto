@@ -1,6 +1,6 @@
 config:
   #incus_command: incus  # NOTE: default
-  project: gfarm-lustre
+  project: gfarm-lustre  # namespace
   idmap: true  # false or true(your host UID) or any UID to root(UID=0)
   #user: incus  # NOTE: default
   #uid: 1000  # NOTE: default
@@ -56,6 +56,7 @@ config:
 
 buildimage:
   img-lserver:
+    remote: incus1  #TODO # default: not defined
     image: images:rockylinux/8
     series: rhel
     vm: true
@@ -74,10 +75,10 @@ buildimage:
       - ./CONF:/CONF
     setup:
       - bash -x /SCRIPT/install-lustre-server.sh "a b c" "\\d ef"
-    publish-remote:
-      - incus1
+    # publish-remote:  # default: local
+    #   - incus1
     publish-alias:
-      - lserver
+      - lserver  # short name (without project_name prefix)
       - lustre-server
   # img-lclient:
   #   image: images:rockylinux/8
@@ -105,14 +106,14 @@ buildimage:
     setup:
       - bash -x /SCRIPT/install-gfarm.sh "OK"
       - __RESTART__
-    publish-remote:
-      - incus1
+    # publish-remote:
+    #   - incus1
     publish-alias:
-      - gfarm
+      - gfarm  # shot name
 
 host:
   mgs:
-    image: incus1:img-lserver
+    image: incus1:gfarm-lustre-lserver  # image alias (fullname)
     series: rhel
     vm: true
     profile:
@@ -127,24 +128,26 @@ host:
     #     dns:
     #     - 8.8.8.8
     devices:
-      eth0:
-        ipv4.address: 10.123.123.101  # in DHCP range
-    setup:
-      - /SCRIPT/setup-lustre-mgs.sh
-  oss0:
-    image: incus1:img-lserver
-    series: rhel
-    vm: true
-    profile:
-      - prof1
-      - prof2net
-    devices:
       root:
         size: 8GB
       eth0:
-        ipv4.address: 10.123.123.102
+        ipv4.address: 10.123.123.101  # in DHCP range
     setup:
-      - "/SCRIPT/setup-lustre-oss.sh 0 10.123.123.101"
+      - bash -x /SCRIPT/setup-lustre-mgs.sh
+  # oss0:
+  #   image: incus1:img-lserver
+  #   series: rhel
+  #   vm: true
+  #   profile:
+  #     - prof1
+  #     - prof2net
+  #   devices:
+  #     root:
+  #       size: 8GB
+  #     eth0:
+  #       ipv4.address: 10.123.123.102
+  #   setup:
+  #     - "/SCRIPT/setup-lustre-oss.sh 0 10.123.123.101"
   # lclient1:
   #   image: incus1:img-lclient
   #   series: rhel
@@ -158,7 +161,7 @@ host:
   #   setup:
   #     - "/SCRIPT/setup-lustre-client.sh 0 10.123.123.101"
   gfmd1:
-    image: incus1:img-gfarm
+    image: incus1:gfarm-lustre-gfarm
     series: debian
     vm: false
     profile:
@@ -168,7 +171,7 @@ host:
       eth0:
         ipv4.address: 10.123.123.104
     setup:
-      - /SCRIPT/setup-install-gfmd.sh
+      - bash -x /SCRIPT/setup-gfmd.sh
   # gfsd1:
   # gclient1:
   # keycloak:
