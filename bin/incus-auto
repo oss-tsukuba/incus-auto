@@ -16,7 +16,6 @@
 # flake8 ./incus-auto
 
 import os
-import sys
 import logging
 import subprocess
 import json
@@ -392,11 +391,17 @@ class IncusAuto(CUI):
         except Exception:
             return False
 
+    def convert_net_if(self, net_if, info):
+        if not self.tobool(info['vm']):
+            return net_if
+        table = {
+            'eth0': 'enp5s0',
+            'eth1': 'enp6s0',
+        }
+        return table[net_if]
+
     def incus_wait_for_wakeup(self, name, info):
-        if self.tobool(info['vm']):
-            net_if = 'enp5s0'
-        else:
-            net_if = 'eth0'
+        net_if = self.convert_net_if('eth0', info)
         while not self.incus_is_running(name):
             self.logger.info(f'Waiting for startup: {name}')
             time.sleep(1)
@@ -523,6 +528,7 @@ class IncusAuto(CUI):
     def cmd_restart(self):
         self.incus_each('restart', ['--timeout', str(self.stop_timeout)],
                         build=self.control_buildimage, ignore_error=True)
+
     def cmd_stop(self):
         self.incus_each('stop', ['--timeout', str(self.stop_timeout)],
                         build=self.control_buildimage, ignore_error=True)
@@ -655,6 +661,110 @@ class IncusAuto(CUI):
             self.incus_exec(fullname, 'systemctl enable ssh')
             self.incus_exec(fullname, 'systemctl restart ssh')
 
+    def netconf_rhel(self, fullname, ifname, param, info):
+        ipv4_address = param.get('ipv4.address')
+        if ipv4_address is None:
+            self.logger.debug(f'{ifname}: no static ipv4.address')
+            return  # disabled ... not configure
+        ipv4_gateway = param.get('ipv4.gateway')
+        dns_list = param.get('dns')
+        if dns_list is not None:
+            dns = ','.join(dns_list)
+        else:
+            dns = None
+        real_ifname = self.convert_net_if(ifname, info)
+
+        lines = self.incus_exec(fullname,
+                                'nmcli --fields UUID,DEVICE connection show',
+                                output=True)
+        uuid = None
+        for line in lines.splitlines():
+            self.logger.debug(f'nmcli outpuit: {line}')
+            fields = line.strip().split()
+            if fields[1] == real_ifname:
+                uuid = fields[0]
+        if uuid is None:
+            self.logger.warning('cannot set static IP address')
+            return
+
+        # DO NOT add new connection
+        # self.incus_exec(fullname, 'nmcli connection add type ethernet con-name'
+        #           + f' {ifname} ifname {real_ifname}')
+        self.incus_exec(fullname, 'nmcli connection modify'
+                   f' {uuid} ipv4.method manual ipv4.addr {ipv4_address}')
+        if ipv4_gateway is not None:
+            self.incus_exec(fullname, 'nmcli connection modify '
+                            + f'{uuid} ipv4.gateway {ipv4_gateway}')
+        if dns is not None:
+            self.incus_exec(fullname, 'nmcli connection modify'
+                            + f' {uuid} ipv4.dns "{dns}"')
+
+    def netconf_debian(self, fullname, ifname, param, info, netplan_dict):
+        ipv4_address = param.get('ipv4.address')
+        ipv4_gateway = param.get('ipv4.gateway')
+        dns_list = param.get('dns')
+        real_ifname = self.convert_net_if(ifname, info)
+
+        if ipv4_address is not None:
+            new_yaml = f'''network:
+  version: 2
+  ethernets:
+    {real_ifname}:
+      addresses:
+        - {ipv4_address}
+      dhcp4: false
+      dhcp6: false
+      accept-ra: false
+      link-local: []
+'''
+            new_dict = yaml.safe_load(new_yaml)
+            d2 = new_dict['network']['ethernets'][real_ifname]
+            if ipv4_gateway is not None:
+                d2['routes'] = [{'to': 'default', 'via': ipv4_gateway}]
+            if dns_list is not None:
+                d2['nameservers'] = {'addresses': dns_list}
+        else:
+            new_yaml = f'''network:
+  version: 2
+  ethernets:
+    {real_ifname}:
+      dhcp4: true
+      dhcp6: true
+'''
+            new_dict = yaml.safe_load(new_yaml)
+        self.deep_update(netplan_dict, new_dict, override=True)
+
+    def setup_network_static(self, info, fullname):
+        # configure static IP address
+        netstatic = info.get('network-static', None)
+        if netstatic is None:
+            return
+
+        if info['series'] == 'rhel':
+            self.incus_exec(fullname, 'yum install -y NetworkManager')
+            self.incus_exec(fullname, 'systemctl enable NetworkManager')
+            self.incus_exec(fullname, 'systemctl restart NetworkManager')
+            for ifname, param in netstatic.items():
+                self.netconf_rhel(fullname, ifname, param, info)
+            self.incus_exec(fullname, 'systemctl restart NetworkManager')
+        elif info['series'] == 'debian':
+            netplan_dict = {
+                # 'network': {
+                #     'version': 2,
+                #     'ethernets': {},
+                # }
+            }
+            for ifname, param in netstatic.items():
+                self.logger.debug(f'{fullname} {ifname} {str(param)}')
+                self.netconf_debian(fullname, ifname, param,
+                                    info, netplan_dict)
+            netplan_path = '/etc/netplan/50-incus.yaml'
+            self.incus_exec(fullname, f'touch {netplan_path}')
+            self.incus_exec(fullname, f'chmod 600 {netplan_path}')
+            str_input = StringIO(yaml.dump(netplan_dict, sort_keys=False))
+            self.incus_exec(fullname, f'tee {netplan_path}', input=str_input)
+            self.incus_exec(fullname, f'netplan apply')
+
     def launch_common(self):
         for name, fullname, info in self.name_iter():
             self.incus_launch1(info, name, fullname)
@@ -665,15 +775,14 @@ class IncusAuto(CUI):
                 self.growpart(fullname)
             if not self.control_buildimage:
                 self.setup_user_and_ssh(info, fullname)
-            # TODO configure static IP address
-            # for eth0,eth1 when ipv4.dhcp=false
-            # TODO stop hosts
-            # TODO start hosts
+            self.setup_network_static(info, fullname)
+            self.incus(f'stop {fullname}')
+            self.incus(f'start {fullname}')
         for name, fullname, info in self.name_iter():
             self.incus_wait_for_wakeup(fullname, info)
         for name, fullname, info in self.name_iter():
             # run /host|buildimage/NAME/setup
-            for cmd in info['setup']:
+            for cmd in info.get('setup', []):
                 if cmd == '__RESTART__':
                     self.incus(f'restart {fullname}')
                     self.incus_wait_for_wakeup(fullname, info)

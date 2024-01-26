@@ -42,7 +42,7 @@ config:
           size: 5GB
         SCRIPT:
           type: disk
-          source: ./SCRIPT  # NOTE: cd $(dirname $(realpath incus-auto.yaml)); $(realpath ./SCRIPT) when not an absolute path
+          source: ./SCRIPT  # NOTE: convert to absolute path
           path: /SCRIPT
     prof2net:
       description: "gfarm lustre profile2"
@@ -74,7 +74,7 @@ buildimage:
     volume:  # TODO
       - ./CONF:/CONF
     setup:
-      - bash -x /SCRIPT/install-lustre-server.sh "a b c" "\\d ef"
+      - bash -x /SCRIPT/install-lustre-server.sh "TODO" "a b c" "\\d ef"
     # publish-remote:  # default: local
     #   - incus1
     publish-alias:
@@ -104,12 +104,12 @@ buildimage:
     volume:
       - ./SCRIPT:/SCRIPT
     setup:
-      - bash -x /SCRIPT/install-gfarm.sh "OK"
+      - bash -x /SCRIPT/install-gfarm.sh "TODO"
       - __RESTART__
     # publish-remote:
     #   - incus1
     publish-alias:
-      - gfarm  # shot name
+      - gfarm  # short name
 
 host:
   mgs:
@@ -119,21 +119,24 @@ host:
     profile:
       - prof1
       - prof2net
-    #remote: NOT DEFINED  # NOTE: use default server
+    #remote: <NOT DEFINED>  # NOTE: use default server
     remote: incus1
-    # network-static:  # TODO
-    #   eth0:
-    #     ipv4.addresss: 10.123.123.101/24   # convert: NETMASK=255.255.255.0
-    #     ipv4.gateway: 10.123.123.1
-    #     dns:
-    #     - 8.8.8.8
+    network-static:  # TODO
+      eth0:
+        ipv4.address: 10.123.123.201/24   # convert: NETMASK=255.255.255.0
+        ipv4.gateway: 10.123.123.1
+        dns:
+        - 8.8.8.8
+        - 8.8.4.4
+      eth1:
+        ipv4.address: 10.210.210.201/24
     devices:
       root:
         size: 8GB
-      eth0:
-        ipv4.address: 10.123.123.101  # in DHCP range
+      # eth0:
+      #   ipv4.address: 10.123.123.101  # in DHCP range
     setup:
-      - bash -x /SCRIPT/setup-lustre-mgs.sh
+      - bash -x /SCRIPT/setup-lustre-mgs.sh "TODO"
   # oss0:
   #   image: incus1:img-lserver
   #   series: rhel
@@ -167,14 +170,53 @@ host:
     profile:
       - prof1
       - prof2net
-    devices:
+    network-static:  # TODO
+      eth0:
+        ipv4.address: 10.123.123.204/24
+        ipv4.gateway: 10.123.123.1
+        dns:
+        - 8.8.8.8
+      eth1:
+        ipv4.address: 10.210.210.204/24
+    devices:  # ignored when networ-static.*.ipv4.address is defined
       eth0:
         ipv4.address: 10.123.123.104
     setup:
-      - bash -x /SCRIPT/setup-gfmd.sh
+      - bash -x /SCRIPT/setup-gfmd.sh "TODO"
   # gfsd1:
   # gclient1:
   # keycloak:
+  ub22vm:
+    image: images:ubuntu/22.04
+    series: debian
+    vm: true
+    profile:
+      - prof1
+      - prof2net
+    network-static:
+      eth0:
+        ipv4.address: 10.123.123.231/24
+        ipv4.gateway: 10.123.123.1
+        dns:
+        - 8.8.8.8
+      eth1:
+        ipv4.address: 10.210.210.231/24
+  alma9cont:
+    image: images:almalinux/9
+    series: rhel
+    vm: false
+    profile:
+      - prof1
+      - prof2net
+    network-static:
+      eth0:
+        ipv4.address: 10.123.123.232/24
+        ipv4.gateway: 10.123.123.1
+        dns:
+        - 8.8.8.8
+        - 8.8.4.4
+      eth1:
+        ipv4.address: 10.210.210.232/24
 
 script:
   - generate-etchosts.sh
