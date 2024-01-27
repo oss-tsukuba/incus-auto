@@ -218,7 +218,7 @@ host:
       eth1:
         ipv4.address: 10.210.210.232/24
 
-script:
+post-setup:
   - generate-etchosts.sh
   - update-etchosts.h
   - test1.sh
