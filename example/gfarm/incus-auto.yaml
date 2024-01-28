@@ -1,6 +1,6 @@
 config:
   #incus_command: incus  # NOTE: default
-  project: gfarm-lustre  # namespace
+  project: gfarm  # namespace
   idmap: true  # false or true(your host UID) or any UID to root(UID=0)
   #user: incus  # NOTE: default
   #uid: 1000  # NOTE: default
@@ -9,14 +9,14 @@ config:
     local: false  # NOTE: default=local:true
     incus1: true
   network:
-    gflnet1:
-      description: "gfarm lustre net1"
+    gfarm1: # witout project name
+      description: "gfarm net1"
       config:
         ipv4.address: 10.123.123.1/24
         ipv4.dhcp.ranges: 10.123.123.101-10.123.123.200
         ipv4.nat: true
-    gflnet2:
-      description: "gfarm lustre net2"
+    gfarm2:
+      description: "gfarm net2"
       config:
         ipv4.address: 10.210.210.1/24
         ipv4.dhcp: false
@@ -24,8 +24,8 @@ config:
         ipv6.nat: false
         ipv6.address: none
   profile:
-    prof1:
-      description: "gfarm lustre profile1"
+    prof1: # with project name
+      description: "gfarm profile1"
       config:
         limits.memory: 2GB
         limits.cpu: 4
@@ -45,13 +45,13 @@ config:
           source: ./SCRIPT  # NOTE: convert to absolute path
           path: /SCRIPT
     prof2net:
-      description: "gfarm lustre profile2"
+      description: "gfarm profile2"
       devices:
         eth0:
-          network: gflnet1
+          network: gfarm1
           type: nic
         eth1:
-          network: gflnet2
+          network: gfarm2
           type: nic
 
 buildimage:
@@ -78,8 +78,8 @@ buildimage:
     # publish-remote:  # default: local
     #   - incus1
     publish-alias:
-      - lserver  # short name (without project_name prefix)
-      - lustre-server
+      - img-lserver  # short name (without project_name prefix)
+      - img-lustre-server
   # img-lclient:
   #   image: images:rockylinux/8
   #   series: rhel
@@ -109,11 +109,11 @@ buildimage:
     # publish-remote:
     #   - incus1
     publish-alias:
-      - gfarm  # short name
+      - img-gfarm  # short name
 
 host:
   mgs:
-    image: incus1:gfarm-lustre-lserver  # image alias (fullname)
+    image: incus1:gfarm-img-lserver  # image alias (fullname)
     series: rhel
     vm: true
     profile:
@@ -164,7 +164,7 @@ host:
   #   setup:
   #     - "/SCRIPT/setup-lustre-client.sh 0 10.123.123.101"
   gfmd1:
-    image: incus1:gfarm-lustre-gfarm
+    image: incus1:gfarm-img-gfarm
     series: debian
     vm: false
     profile:
