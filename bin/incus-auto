@@ -571,19 +571,35 @@ class IncusAuto(CUI):
         for fullname, state in state_dict.items():
             print(f'{fullname:<{fullname_max}}  {state:<{fullname_max}}')
 
-    def incus_launch1(self, info, name, fullname):
+    def incus_launch(self, info, name, fullname):
         image = info['image']
         args = ['launch', image, fullname]
         for p in info.get('profile', {}):
             args += ['-p', self.project_prefix + p]
         for devname, params in info.get('devices', {}).items():
-            kvlist = []
+            kvlist = [devname]
             for key, val in params.items():
                 kvlist.append(key + '=' + str(val))
-            val = devname + ',' + ','.join(kvlist)
+            val = ','.join(kvlist)
             args += ['-d', val]
-        # TODO /host|buildimage/NAME/volume : SRC:DST -> -d
-        # TODO use self.convert_disk_source()
+
+        ### NOT WORK: Error: Cannot override config for device "VOLUME_0":
+        ### Device not found in profile devices
+        # volume_list = info.get('volume', None)
+        # if volume_list is not None:
+        #     # /host|buildimage/NAME/volume : SRC:DST
+        #     #   -> -d DEVNAME,type=disk,source=SRC,path=DST
+        #     count = 0
+        #     for volume_map in volume_list:
+        #         device_name = f'VOLUME_{count}'
+        #         kvlist = [device_name]
+        #         v = volume_map.split(':')  # TODO support "SRC":"DST" ?
+        #         src = self.convert_fullpath(v[0])
+        #         dst = v[1]
+        #         val = f'{device_name},type=disk,source={src},path={dst}'
+        #         args += ['-d', val]
+        #         count += 1
+
         for key, val in info.get('config', {}).items():
             args += ['-c', key + '=' + str(val)]
         idmap = self.conf('/config/idmap')
@@ -601,6 +617,23 @@ class IncusAuto(CUI):
         else:  # container
             args += ['-c', 'security.nesting=true']
         self.incus(args)
+
+    def mount_volume(self, fullname, info):
+        volume_list = info.get('volume', None)
+        if volume_list is None:
+            return
+        # /host|buildimage/NAME/volume : SRC:DST
+        #   -> -d DEVNAME,type=disk,source=SRC,path=DST
+        count = 0
+        for volume_map in volume_list:
+            device_name = f'VOLUME_{count}'
+            kvlist = [device_name]
+            v = volume_map.split(':')  # TODO support "SRC":"DST" ?
+            src = self.convert_fullpath(v[0])
+            dst = v[1]
+            self.incus(['config', 'device', 'add', fullname,
+                        device_name, 'disk', f'source={src}', f'path={dst}'])
+            count += 1
 
     def growpart(self, fullname):
         self.incus_exec(fullname,
@@ -767,7 +800,7 @@ class IncusAuto(CUI):
 
     def launch_common(self):
         for name, fullname, info in self.name_iter():
-            self.incus_launch1(info, name, fullname)
+            self.incus_launch(info, name, fullname)
         for name, fullname, info in self.name_iter():
             self.incus_wait_for_wakeup(fullname, info)
             if self.tobool(info['vm']) and info['series'] == 'rhel':
@@ -777,6 +810,7 @@ class IncusAuto(CUI):
                 self.setup_user_and_ssh(info, fullname)
             self.setup_network_static(info, fullname)
             self.incus(f'stop {fullname}')
+            self.mount_volume(fullname, info)
             self.incus(f'start {fullname}')
         for name, fullname, info in self.name_iter():
             self.incus_wait_for_wakeup(fullname, info)

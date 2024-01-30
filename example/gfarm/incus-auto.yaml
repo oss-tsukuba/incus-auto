@@ -71,8 +71,6 @@ buildimage:
     profile:
       - prof1
       - prof2net
-    volume:  # TODO
-      - ./CONF:/CONF
     setup:
       - bash -x /SCRIPT/install-lustre-server.sh "TODO" "a b c" "\\d ef"
     # publish-remote:  # default: local
@@ -186,28 +184,33 @@ host:
   # gfsd1:
   # gclient1:
   # keycloak:
-  ub22vm:
+  manage-ub22:
     image: images:ubuntu/22.04
     series: debian
     vm: true
     profile:
       - prof1
       - prof2net
+    volume:  # TODO
+      - ./CONF:/CONF
     network-static:
       eth0:
         ipv4.address: 10.123.123.231/24
         ipv4.gateway: 10.123.123.1
         dns:
         - 8.8.8.8
+        - 8.8.4.4
       eth1:
         ipv4.address: 10.210.210.231/24
-  alma9cont:
+  manage-alma9:
     image: images:almalinux/9
     series: rhel
-    vm: false
+    vm: False
     profile:
       - prof1
       - prof2net
+    volume:  # TODO
+      - ./CONF:/CONF
     network-static:
       eth0:
         ipv4.address: 10.123.123.232/24
