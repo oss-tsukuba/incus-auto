@@ -359,8 +359,11 @@ class IncusAuto(CUI):
         if not os.access(self.authorized_keys, os.R_OK):
             raise Exception(f'Error: cannot read: {self.authorized_keys}')
 
-    def conf(self, confpath):
-        return self.dictpath(self.conf_dict, confpath)
+    def conf(self, confpath, default=None):
+        result = self.dictpath(self.conf_dict, confpath)
+        if result is None:
+            return default
+        return result
 
     def name_iter(self):
         if self.control_buildimage:
@@ -386,6 +389,8 @@ class IncusAuto(CUI):
     def incus(self, args, input=None, output=None, ignore_error=False):
         if isinstance(args, str):
             args = shlex.split(args)
+        if isinstance(input, str):
+            input = StringIO(input)
         args = [self.incus_command] + args
         return self.execv(args, textmode=True, input=input, output=output,
                           ignore_error=ignore_error)
@@ -533,8 +538,8 @@ class IncusAuto(CUI):
         inv[self.conf('/config/project')] = {'hosts': hosts}
         print(yaml.dump(inv, sort_keys=False))
 
-    def cmd_etchosts(self):
-        hosts = {}
+    def gen_etchosts(self):
+        hosts = []
         self.use_all = True
         for name, fullname, info in self.name_iter():
             ip = self.conf_get_ipv4(name)
@@ -544,7 +549,12 @@ class IncusAuto(CUI):
             alt_str = ''
             if alt is not None:
                 alt_str = ' ' + ' '.join(alt)
-            print(f'{ip}    {fullname} {name}{alt_str}')
+            hosts.append(f'{ip}    {fullname} {name}{alt_str}')
+        return hosts
+
+    def cmd_etchosts(self):
+        for host in self.gen_etchosts():
+            print(host)
 
     def cmd_init(self):
         # create networks
@@ -881,6 +891,16 @@ class IncusAuto(CUI):
             self.incus_exec(fullname, f'tee {netplan_path}', input=str_input)
             self.incus_exec(fullname, f'netplan apply')
 
+    def update_etchosts(self, info, fullname):
+        if not self.tobool(self.conf('/config/etchosts', default=True)):
+            return  # disabled
+        # backup and restore
+        self.incus_exec(fullname, f'cp -n /etc/hosts /etc/hosts.orig')
+        self.incus_exec(fullname, f'cp -f /etc/hosts.orig /etc/hosts')
+        etchosts = self.gen_etchosts()
+        etchosts_str = '\n' + '\n'.join(etchosts) + '\n'
+        self.incus_exec(fullname, f'tee -a /etc/hosts', input=etchosts_str)
+
     def launch_common(self):
         for name, fullname, info in self.name_iter():
             self.incus_launch(info, name, fullname)
@@ -891,6 +911,7 @@ class IncusAuto(CUI):
                 self.growpart(fullname)
             if not self.control_buildimage:
                 self.setup_user_and_ssh(info, fullname)
+                self.update_etchosts(info, fullname)
             self.setup_network_static(info, fullname)
             self.incus(f'stop {fullname}')
             self.mount_volume(fullname, info)
