@@ -31,8 +31,6 @@ import yaml
 
 program_name = os.path.basename(__file__)
 
-# TODO   {f} exec <name> <args>... [options]
-
 __doc__ = """
 Automating deployment system by Incus or LXD.
 
@@ -44,6 +42,7 @@ Usage:
   {f} shell <name> [options]
   {f} exec <name> [options] [--] <args>...
   {f} config [options]
+  {f} ansible-inventory [options]
   {f} <command> <name>... [options]
   {f} <command> --all [options]
 
@@ -68,7 +67,10 @@ Command:
   launch     launch hosts
   ps         list status of hosts
   ls         list hosts by `incus list` command
+  shell      open shell
+  exec       execute command
   config     check and show configuration parameters
+  ansible-inventory   for ansible-inventory -i -
   stop       stop hosts
   start      start hosts
   restart    restart hosts
@@ -91,6 +93,7 @@ opt_schema = Schema({
     'shell': bool,
     'exec': bool,
     'config': bool,
+    'ansible-inventory': bool,
     '<name>': [str],
     '<args>': [str],
     '--': bool,
@@ -170,19 +173,24 @@ class CUI():
 
     def execv_raw(self, args, input=None, output=None,
                   timeout=None, textmode=False):
-        # input: read()able stream or None
+        # input:
+        #   read()able stream object
+        #   False: disable(/dev/null)
+        #   None: read from stdin
         # output:
         #   True: use PIPE (return out, err)
-        #   False: disable
+        #   False: disable(/dev/null)
         #   None: write to stdout and stderr directly
         if textmode:
             encoding = self.encoding
         else:
             encoding = None
-        if input is not None:
-            stdin = subprocess.PIPE
-        else:
+        if input is None:
+            stdin = None
+        elif input is False:
             stdin = subprocess.DEVNULL
+        else:  # stream
+            stdin = subprocess.PIPE
         if output is None:
             stdout = None
         elif output:
@@ -466,6 +474,7 @@ class IncusAuto(CUI):
             'shell': self.cmd_shell,
             'exec': self.cmd_exec,
             'config': self.cmd_config,
+            'ansible-inventory': self.cmd_ansible_inventory,
             'build': self.cmd_build,
             'launch': self.cmd_launch,
             'start': self.cmd_start,
@@ -473,7 +482,15 @@ class IncusAuto(CUI):
             'stop': self.cmd_stop,
             'delete': self.cmd_delete,
         }
-        simple_commands = ['init', 'destroy', 'ls', 'ps', 'shell', 'exec', 'config']
+        simple_commands = ['init',
+                           'destroy',
+                           'ls',
+                           'ps',
+                           'shell',
+                           'exec',
+                           'config',
+                           'ansible-inventory',
+                           ]
         cmd_name = None
         for n in simple_commands:
             if self.opt[n]:
@@ -486,6 +503,27 @@ class IncusAuto(CUI):
 
     def cmd_config(self):
         print(yaml.dump(self.conf_dict, sort_keys=False))
+
+    def conf_get_ipv4(self, name):
+        ip = self.conf(f'/host/{name}/network-static/eth0/ipv4.address')
+        if ip is None:
+            ip = self.conf(f'/host/{name}/devices/eth0/ipv4.address')
+        if ip is None:
+            return name
+        return ip.split('/')[0]
+
+    def cmd_ansible_inventory(self):
+        hosts = {}
+        user = self.conf('/config/user')
+        self.use_all = True
+        for name, fullname, info in self.name_iter():
+            hosts[name] = {
+                'ansible_host': self.conf_get_ipv4(name),
+                'ansible_user': user,
+            }
+        inv = {}
+        inv[self.conf('/config/project')] = {'hosts': hosts}
+        print(yaml.dump(inv, sort_keys=False))
 
     def cmd_init(self):
         # create networks
@@ -551,13 +589,12 @@ class IncusAuto(CUI):
         if self.use_all or len(self.names) == 0:
             print(self.incus(f'ls -c ns4t {self.project_prefix}'))
         else:
-            for name in self.name_iter():
+            for name, _, _ in self.name_iter():
                 print(self.incus(f'ls -c ns4t {self.project_prefix}{name}$'))
 
     def cmd_ps(self):
         if len(self.names) == 0:
             self.use_all = True
-        names = self.name_iter()
 
         state_dict = {}
         fullname_max = 0
@@ -565,7 +602,7 @@ class IncusAuto(CUI):
         host_dict = {}
         for hostinfo in self.incus_ls_json():
             host_dict[hostinfo['name']] = hostinfo
-        for name, fullname, info in names:
+        for name, fullname, info in self.name_iter():
             hostinfo = host_dict.get(fullname, None)
             if hostinfo is None:
                 state = "NOTCREATED"

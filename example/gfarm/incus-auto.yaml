@@ -113,6 +113,7 @@ buildimage:
 
 host:
   mgs:
+    group: lustre  #TODO?
     image: incus1:gfarm-img-lserver  # image alias (fullname)
     series: rhel
     vm: true
@@ -123,7 +124,7 @@ host:
     remote: incus1
     network-static:  # TODO
       eth0:
-        ipv4.address: 10.123.123.201/24   # convert: NETMASK=255.255.255.0
+        #ipv4.address: 10.123.123.201/24   # convert: NETMASK=255.255.255.0
         ipv4.gateway: 10.123.123.1
         dns:
         - 8.8.8.8
@@ -164,6 +165,7 @@ host:
   #   setup:
   #     - "/SCRIPT/setup-lustre-client.sh 0 10.123.123.101"
   gfmd1:
+    group: gfarm:gfmd  #TODO?
     image: incus1:gfarm-img-gfarm
     series: debian
     vm: false
@@ -183,10 +185,17 @@ host:
         ipv4.address: 10.123.123.104
     setup:
       - bash -x /SCRIPT/setup-gfmd.sh "TODO"
+  # gfmd2:
+  # gfmd3:
   # gfsd1:
-  # gclient1:
+  #  group: gfarm:gfsd  #TODO?
+  # gfsd2:
+  # gfsd3:
+  # gfsd4:
+  # gfclient1:
   # keycloak:
-  manage-ub22:
+  # jwt-server:
+  manage:
     image: images:ubuntu/22.04
     series: debian
     vm: false
