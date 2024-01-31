@@ -43,6 +43,7 @@ Usage:
   {f} exec <name> [options] [--] <args>...
   {f} config [options]
   {f} ansible-inventory [options]
+  {f} etchosts [options]
   {f} <command> <name>... [options]
   {f} <command> --all [options]
 
@@ -71,6 +72,7 @@ Command:
   exec       execute command
   config     check and show configuration parameters
   ansible-inventory   for ansible-inventory -i -
+  etchosts   generate list for /etc/hosts
   stop       stop hosts
   start      start hosts
   restart    restart hosts
@@ -94,6 +96,7 @@ opt_schema = Schema({
     'exec': bool,
     'config': bool,
     'ansible-inventory': bool,
+    'etchosts': bool,
     '<name>': [str],
     '<args>': [str],
     '--': bool,
@@ -475,6 +478,7 @@ class IncusAuto(CUI):
             'exec': self.cmd_exec,
             'config': self.cmd_config,
             'ansible-inventory': self.cmd_ansible_inventory,
+            'etchosts': self.cmd_etchosts,
             'build': self.cmd_build,
             'launch': self.cmd_launch,
             'start': self.cmd_start,
@@ -490,6 +494,7 @@ class IncusAuto(CUI):
                            'exec',
                            'config',
                            'ansible-inventory',
+                           'etchosts',
                            ]
         cmd_name = None
         for n in simple_commands:
@@ -509,7 +514,7 @@ class IncusAuto(CUI):
         if ip is None:
             ip = self.conf(f'/host/{name}/devices/eth0/ipv4.address')
         if ip is None:
-            return name
+            return None
         return ip.split('/')[0]
 
     def cmd_ansible_inventory(self):
@@ -517,13 +522,29 @@ class IncusAuto(CUI):
         user = self.conf('/config/user')
         self.use_all = True
         for name, fullname, info in self.name_iter():
+            ip = self.conf_get_ipv4(name)
+            if ip is None:
+                ip = name
             hosts[name] = {
-                'ansible_host': self.conf_get_ipv4(name),
+                'ansible_host': ip,
                 'ansible_user': user,
             }
         inv = {}
         inv[self.conf('/config/project')] = {'hosts': hosts}
         print(yaml.dump(inv, sort_keys=False))
+
+    def cmd_etchosts(self):
+        hosts = {}
+        self.use_all = True
+        for name, fullname, info in self.name_iter():
+            ip = self.conf_get_ipv4(name)
+            if ip is None:
+                continue  # skip
+            alt = self.conf(f'/host/{name}/alternative')
+            alt_str = ''
+            if alt is not None:
+                alt_str = ' ' + ' '.join(alt)
+            print(f'{ip}    {fullname} {name}{alt_str}')
 
     def cmd_init(self):
         # create networks

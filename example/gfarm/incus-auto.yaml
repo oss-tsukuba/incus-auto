@@ -114,6 +114,9 @@ buildimage:
 host:
   mgs:
     group: lustre  #TODO?
+    alternative:
+      - mgs.test
+      - mgs.example.org
     image: incus1:gfarm-img-lserver  # image alias (fullname)
     series: rhel
     vm: true
@@ -124,7 +127,7 @@ host:
     remote: incus1
     network-static:  # TODO
       eth0:
-        #ipv4.address: 10.123.123.201/24   # convert: NETMASK=255.255.255.0
+        ipv4.address: 10.123.123.201/24   # convert: NETMASK=255.255.255.0
         ipv4.gateway: 10.123.123.1
         dns:
         - 8.8.8.8
