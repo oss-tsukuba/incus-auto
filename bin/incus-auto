@@ -42,6 +42,7 @@ Usage:
   {f} ls [options]
   {f} ps [options]
   {f} shell <name> [options]
+  {f} exec <name> [options] [--] <args>...
   {f} config [options]
   {f} <command> <name>... [options]
   {f} <command> --all [options]
@@ -88,8 +89,11 @@ opt_schema = Schema({
     'ls': bool,
     'ps': bool,
     'shell': bool,
+    'exec': bool,
     'config': bool,
     '<name>': [str],
+    '<args>': [str],
+    '--': bool,
 })
 
 
@@ -460,6 +464,7 @@ class IncusAuto(CUI):
             'ls': self.cmd_ls,
             'ps': self.cmd_ps,
             'shell': self.cmd_shell,
+            'exec': self.cmd_exec,
             'config': self.cmd_config,
             'build': self.cmd_build,
             'launch': self.cmd_launch,
@@ -468,7 +473,7 @@ class IncusAuto(CUI):
             'stop': self.cmd_stop,
             'delete': self.cmd_delete,
         }
-        simple_commands = ['init', 'destroy', 'ls', 'ps', 'shell', 'config']
+        simple_commands = ['init', 'destroy', 'ls', 'ps', 'shell', 'exec', 'config']
         cmd_name = None
         for n in simple_commands:
             if self.opt[n]:
@@ -583,6 +588,11 @@ class IncusAuto(CUI):
                 args, shell=False, close_fds=True,
                 stdin=None, stdout=None, stderr=None)
             proc.wait()
+            break
+
+    def cmd_exec(self):
+        for name, fullname, info in self.name_iter():
+            self.incus_exec(fullname, self.opt['<args>'])
             break
 
     def incus_launch(self, info, name, fullname):
