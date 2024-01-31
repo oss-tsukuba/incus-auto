@@ -246,7 +246,7 @@ class IncusAuto(CUI):
         self.encoding = self.opt['--encoding']
 
     def change_dir(self):
-        self.basedir = os.path.dirname(os.path.realpath(self.conf_file))
+        self.basedir = os.path.realpath(os.path.dirname(self.conf_file))
         os.chdir(self.basedir)
 
     @classmethod
@@ -333,6 +333,7 @@ class IncusAuto(CUI):
                 raise Exception(
                     'Error: buildimage and host cannot be duplicated: ' + name)
         self.project_prefix = self.conf('/config/project') + '-'
+        self.incus_command = self.conf('/config/incus_command')
         self.stop_timeout = 60
 
     def check_required(self):
@@ -368,7 +369,7 @@ class IncusAuto(CUI):
     def incus(self, args, input=None, output=None, ignore_error=False):
         if isinstance(args, str):
             args = shlex.split(args)
-        args = [self.conf('/config/incus_command')] + args
+        args = [self.incus_command] + args
         return self.execv(args, textmode=True, input=input, output=output,
                           ignore_error=ignore_error)
 
@@ -429,7 +430,7 @@ class IncusAuto(CUI):
             return None
         if path.startswith('/'):
             return path
-        return os.path.realpath(os.path.join(self.basedir, path))
+        return os.path.join(self.basedir, path)
 
     def convert_disk_source(self, devices):
         for device, params in devices.items():
@@ -445,6 +446,7 @@ class IncusAuto(CUI):
         if build:
             self.control_buildimage = build
         for name, fullname, info in self.name_iter():
+            print(f'{self.incus_command} {cmd} {fullname}')
             self.incus([cmd, fullname] + args,
                        ignore_error=ignore_error,
                        output=True)  # err in Exception
@@ -522,19 +524,19 @@ class IncusAuto(CUI):
                        output=True)
 
     def cmd_start(self):
-        self.incus_each('start',
+        self.incus_each('start', ['--verbose'],
                         build=self.control_buildimage, ignore_error=True)
 
     def cmd_restart(self):
-        self.incus_each('restart', ['--timeout', str(self.stop_timeout)],
+        self.incus_each('restart', ['--verbose', '--timeout', str(self.stop_timeout)],
                         build=self.control_buildimage, ignore_error=True)
 
     def cmd_stop(self):
-        self.incus_each('stop', ['--timeout', str(self.stop_timeout)],
+        self.incus_each('stop', ['--verbose', '--timeout', str(self.stop_timeout)],
                         build=self.control_buildimage, ignore_error=True)
 
     def cmd_delete(self):
-        self.incus_each('delete',
+        self.incus_each('delete', ['--verbose'],
                         build=self.control_buildimage, ignore_error=True)
 
     def cmd_ls(self):
@@ -667,6 +669,7 @@ class IncusAuto(CUI):
         # sshdir=f'/home/{user}/.ssh'
         sshdir = homedir + '/.ssh'
         self.incus_exec(fullname, f'mkdir -p {sshdir}')
+        # file copy
         self.incus(['file', 'push', self.authorized_keys,
                     fullname + sshdir + '/authorized_keys'])
         self.incus_exec(fullname, f'chown -R {user}:{user} {sshdir}')

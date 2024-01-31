@@ -1,0 +1,20 @@
+gfarm:
+  ### for example
+  # hosts:
+  #   gfadm@10.123.123.204:
+  # children:
+  #   group1:
+  #     hosts:
+  #       gfmd1
+  #   group2:
+  #     hosts:
+  #       gfmd2:
+  #         ansible_host: 10.123.123.204
+  #         ansible_user: gfadm
+  hosts:  # override hosts:
+    mgs:
+      ansible_host: 10.123.123.201
+      ansible_user: gfadm
+    gfmd1:
+      ansible_host: 10.123.123.204
+      ansible_user: gfadm

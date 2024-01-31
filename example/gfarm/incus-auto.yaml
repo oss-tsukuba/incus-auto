@@ -3,8 +3,10 @@ config:
   project: gfarm  # namespace
   idmap: true  # false or true(your host UID) or any UID to root(UID=0)
   #user: incus  # NOTE: default
+  user: gfadm
   #uid: 1000  # NOTE: default
   #ssh_authorized_keys: ssh_authorized_keys  # NOTE: default
+  ssh_authorized_keys: sample-id_ecdsa.pub
   remote:
     local: false  # NOTE: default=local:true
     incus1: true
@@ -63,8 +65,8 @@ buildimage:
     devices:
       root:
         size: 8GB
-      eth0:
-        ipv4.address: 10.123.123.191  # NOTE: for ipv4.dhcp=true
+      # eth0:
+      #  ipv4.address: 10.123.123.191  # NOTE: for ipv4.dhcp=true
     config:
       limits.memory: 4GB
       limits.cpu: 6
@@ -187,12 +189,13 @@ host:
   manage-ub22:
     image: images:ubuntu/22.04
     series: debian
-    vm: true
+    vm: false
     profile:
       - prof1
       - prof2net
     volume:  # TODO
       - ./CONF:/CONF
+      - ./:/INCUS-AUTO
     network-static:
       eth0:
         ipv4.address: 10.123.123.231/24
@@ -202,6 +205,9 @@ host:
         - 8.8.4.4
       eth1:
         ipv4.address: 10.210.210.231/24
+    setup:
+      - bash -x /SCRIPT/base-for-ubuntu.sh
+      - bash -x /SCRIPT/install-ansible-for-ubuntu.sh
   manage-alma9:
     image: images:almalinux/9
     series: rhel
@@ -221,7 +227,7 @@ host:
       eth1:
         ipv4.address: 10.210.210.232/24
 
-post-setup:
-  - generate-etchosts.sh
-  - update-etchosts.h
-  - test1.sh
+post-setup:  # TODO
+  - manage-ub22:/SCRIPT/setup-ansible.sh
+  - __ALL__:/SCRIPT/generate-etchosts.sh
+  - __LOCAL__:./SCRIPT/update-etchosts.h
