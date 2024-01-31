@@ -32,7 +32,6 @@ import yaml
 program_name = os.path.basename(__file__)
 
 # TODO   {f} exec <name> <args>... [options]
-# TODO   {f} shell <name> [options]
 
 __doc__ = """
 Automating deployment system by Incus or LXD.
@@ -42,6 +41,7 @@ Usage:
   {f} destroy [options]
   {f} ls [options]
   {f} ps [options]
+  {f} shell <name> [options]
   {f} config [options]
   {f} <command> <name>... [options]
   {f} <command> --all [options]
@@ -87,6 +87,7 @@ opt_schema = Schema({
     'destroy': bool,
     'ls': bool,
     'ps': bool,
+    'shell': bool,
     'config': bool,
     '<name>': [str],
 })
@@ -142,7 +143,8 @@ class CUI():
             # ex. shlex.split('a b "c d" \\"e')
             #     -> ['a', 'b', 'c d', '"e']
             args = shlex.split(args)
-        out, err, ret = self.execv_raw(args, input, output, timeout, textmode)
+        out, err, ret = self.execv_raw(args, input=input, output=output,
+                                       timeout=timeout, textmode=textmode)
         if textmode:
             err = err.rstrip()
         else:
@@ -457,6 +459,7 @@ class IncusAuto(CUI):
             'destroy': self.cmd_destroy,
             'ls': self.cmd_ls,
             'ps': self.cmd_ps,
+            'shell': self.cmd_shell,
             'config': self.cmd_config,
             'build': self.cmd_build,
             'launch': self.cmd_launch,
@@ -465,7 +468,7 @@ class IncusAuto(CUI):
             'stop': self.cmd_stop,
             'delete': self.cmd_delete,
         }
-        simple_commands = ['init', 'destroy', 'ls', 'ps', 'config']
+        simple_commands = ['init', 'destroy', 'ls', 'ps', 'shell', 'config']
         cmd_name = None
         for n in simple_commands:
             if self.opt[n]:
@@ -572,6 +575,15 @@ class IncusAuto(CUI):
                 state_max = state_len
         for fullname, state in state_dict.items():
             print(f'{fullname:<{fullname_max}}  {state:<{fullname_max}}')
+
+    def cmd_shell(self):
+        for name, fullname, info in self.name_iter():
+            args = f'{self.incus_command} shell {fullname}'.split()
+            proc = subprocess.Popen(
+                args, shell=False, close_fds=True,
+                stdin=None, stdout=None, stderr=None)
+            proc.wait()
+            break
 
     def incus_launch(self, info, name, fullname):
         image = info['image']

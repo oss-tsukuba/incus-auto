@@ -208,24 +208,24 @@ host:
     setup:
       - bash -x /SCRIPT/base-for-ubuntu.sh
       - bash -x /SCRIPT/install-ansible-for-ubuntu.sh
-  manage-alma9:
-    image: images:almalinux/9
-    series: rhel
-    vm: False
-    profile:
-      - prof1
-      - prof2net
-    volume:  # TODO
-      - ./CONF:/CONF
-    network-static:
-      eth0:
-        ipv4.address: 10.123.123.232/24
-        ipv4.gateway: 10.123.123.1
-        dns:
-        - 8.8.8.8
-        - 8.8.4.4
-      eth1:
-        ipv4.address: 10.210.210.232/24
+  # manage-alma9:
+  #   image: images:almalinux/9
+  #   series: rhel
+  #   vm: False
+  #   profile:
+  #     - prof1
+  #     - prof2net
+  #   volume:  # TODO
+  #     - ./CONF:/CONF
+  #   network-static:
+  #     eth0:
+  #       ipv4.address: 10.123.123.232/24
+  #       ipv4.gateway: 10.123.123.1
+  #       dns:
+  #       - 8.8.8.8
+  #       - 8.8.4.4
+  #     eth1:
+  #       ipv4.address: 10.210.210.232/24
 
 post-setup:  # TODO
   - manage-ub22:/SCRIPT/setup-ansible.sh
