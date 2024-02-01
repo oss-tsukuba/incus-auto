@@ -58,30 +58,30 @@ config:
           type: nic
 
 buildimage:
-  img-lserver:
-    remote: incus1  #TODO # default: not defined
-    image: images:rockylinux/8
-    series: rhel
-    vm: true
-    devices:
-      root:
-        size: 8GB
-      # eth0:
-      #  ipv4.address: 10.123.123.191  # NOTE: for ipv4.dhcp=true
-    config:
-      limits.memory: 4GB
-      limits.cpu: 6
-    profile:
-      - prof1
-      - prof2net
-    setup:
-      - ./CONF:/CONF
-      - bash -x /SCRIPT/install-lustre-server.sh "TODO" "a b c" "\\d ef"
-    # publish-remote:  # default: local
-    #   - incus1
-    publish-alias:
-      - img-lserver  # short name (without project_name prefix)
-      - img-lustre-server
+  # img-lserver:
+  #   remote: incus1  #TODO # default: not defined
+  #   image: images:rockylinux/8
+  #   series: rhel
+  #   vm: true
+  #   devices:
+  #     root:
+  #       size: 8GB
+  #     # eth0:
+  #     #  ipv4.address: 10.123.123.191  # NOTE: for ipv4.dhcp=true
+  #   config:
+  #     limits.memory: 4GB
+  #     limits.cpu: 6
+  #   profile:
+  #     - prof1
+  #     - prof2net
+  #   setup:
+  #     - ./CONF:/CONF
+  #     - bash -x /SCRIPT/install-lustre-server.sh "TODO" "a b c" "\\d ef"
+  #   # publish-remote:  # default: local
+  #   #   - incus1
+  #   publish-alias:
+  #     - img-lserver  # short name (without project_name prefix)
+  #     - img-lustre-server
   # img-lclient:
   #   image: images:rockylinux/8
   #   series: rhel
@@ -109,44 +109,44 @@ buildimage:
     setup:
       - bash -x /SCRIPT/install-gfarm.sh "TODO"
       - __RESTART__
-    # publish-remote:
+    # publish-remote:  #TODO
     #   - incus1
     publish-alias:
       - img-gfarm  # short name
 
 host:
-  mgs:
-    group: lustre  #TODO?
-    alternative:
-      - mgs.test
-      - mgs.example.org
-    image: incus1:gfarm-img-lserver  # image alias (fullname)
-    series: rhel
-    vm: true
-    profile:
-      - prof1
-      - prof2net
-    #remote: <NOT DEFINED>  # NOTE: use default server
-    remote: incus1
-    network-static:  # TODO
-      eth0:
-        ipv4.address: 10.123.123.201/24   # convert: NETMASK=255.255.255.0
-        ipv4.gateway: 10.123.123.1
-        dns:
-        - 8.8.8.8
-        - 8.8.4.4
-      eth1:
-        ipv4.address: 10.210.210.201/24
-    devices:
-      root:
-        size: 8GB
-      # eth0:
-      #   ipv4.address: 10.123.123.101  # in DHCP range
-    volume:
-      - ./CONF:/CONF
-      - ./SRC:/SRC
-    setup:
-      - bash -x /SCRIPT/setup-lustre-mgs.sh "TODO"
+  # mgs:
+  #   group: lustre  #TODO?
+  #   alternative:
+  #     - mgs.test
+  #     - mgs.example.org
+  #   image: incus1:gfarm-img-lserver  # image alias (fullname)
+  #   series: rhel
+  #   vm: true
+  #   profile:
+  #     - prof1
+  #     - prof2net
+  #   #remote: <NOT DEFINED>  # NOTE: use default server
+  #   remote: incus1
+  #   network-static:  # TODO
+  #     eth0:
+  #       ipv4.address: 10.123.123.201/24   # convert: NETMASK=255.255.255.0
+  #       ipv4.gateway: 10.123.123.1
+  #       dns:
+  #       - 8.8.8.8
+  #       - 8.8.4.4
+  #     eth1:
+  #       ipv4.address: 10.210.210.201/24
+  #   devices:
+  #     root:
+  #       size: 8GB
+  #     # eth0:
+  #     #   ipv4.address: 10.123.123.101  # in DHCP range
+  #   volume:
+  #     - ./CONF:/CONF
+  #     - ./SRC:/SRC
+  #   setup:
+  #     - bash -x /SCRIPT/setup-lustre-mgs.sh "TODO"
   # oss0:
   #   image: incus1:img-lserver
   #   series: rhel
@@ -175,7 +175,7 @@ host:
   #     - "/SCRIPT/setup-lustre-client.sh 0 10.123.123.101"
   gfmd1:
     group: gfarm:gfmd  #TODO?
-    image: incus1:gfarm-img-gfarm
+    image: gfarm-img-gfarm
     series: debian
     vm: false
     profile:
@@ -183,30 +183,67 @@ host:
       - prof2net
     network-static:  # TODO
       eth0:
-        ipv4.address: 10.123.123.204/24
+        ipv4.address: 10.123.123.211/24
         ipv4.gateway: 10.123.123.1
         dns:
         - 8.8.8.8
       eth1:
-        ipv4.address: 10.210.210.204/24
+        ipv4.address: 10.210.210.211/24
     devices:  # ignored when networ-static.*.ipv4.address is defined
       eth0:
-        ipv4.address: 10.123.123.104
+        ipv4.address: 10.123.123.211
     volume:
       - ./CONF:/CONF
       - ./SRC:/SRC
     setup:
       - bash -x /SCRIPT/setup-gfmd.sh "TODO"
-  # gfmd2:
+  gfmd2:
+    group: gfarm:gfmd  #TODO?
+    image: gfarm-img-gfarm
+    series: debian
+    profile:
+      - prof1
+      - prof2net
+    network-static:  # TODO
+      eth0:
+        ipv4.address: 10.123.123.212/24
+        ipv4.gateway: 10.123.123.1
+        dns:
+        - 8.8.8.8
+      eth1:
+        ipv4.address: 10.210.210.212/24
+    volume:
+      - ./CONF:/CONF
+      - ./SRC:/SRC
+    # setup:
+    #   - bash -x /SCRIPT/setup-gfmd.sh "TODO"
   # gfmd3:
-  # gfsd1:
-  #  group: gfarm:gfsd  #TODO?
-  # gfsd2:
+  gfsd1:
+    group: gfarm:gfsd  #TODO?
+    image: gfarm-img-gfarm
+    series: debian
+    profile:
+      - prof1
+      - prof2net
+    network-static:  # TODO
+      eth0:
+        ipv4.address: 10.123.123.221/24
+        ipv4.gateway: 10.123.123.1
+        dns:
+        - 8.8.8.8
+      eth1:
+        ipv4.address: 10.210.210.221/24
+    volume:
+      - ./CONF:/CONF
+      - ./SRC:/SRC
+    # setup:
+    #   - bash -x /SCRIPT/setup-gfmd.sh "TODO"
+# gfsd2:
   # gfsd3:
   # gfsd4:
   # gfclient1:
-  # keycloak:
-  # jwt-server:
+  # keycloak:  # 241
+  # jwt-server: # 242
   manage:
     image: images:ubuntu/22.04
     series: debian
@@ -219,13 +256,13 @@ host:
       - ./:/INCUS-AUTO
     network-static:
       eth0:
-        ipv4.address: 10.123.123.231/24
+        ipv4.address: 10.123.123.251/24
         ipv4.gateway: 10.123.123.1
         dns:
         - 8.8.8.8
         - 8.8.4.4
       eth1:
-        ipv4.address: 10.210.210.231/24
+        ipv4.address: 10.210.210.251/24
     setup:
       - bash -x /SCRIPT/base-for-ubuntu.sh
       - bash -x /SCRIPT/install-ansible-for-ubuntu.sh

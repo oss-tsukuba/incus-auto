@@ -26,6 +26,7 @@ install_package_debian() {
     # for developer
     apt-get update
     apt-get install -y \
+	    less \
 	    emacs-nox \
 	    vim \
 	    gdb \

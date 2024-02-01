@@ -62,21 +62,22 @@ Options:
   -?, -h, --help            show this help and exit
 
 Command:
-  init       initialize networks, profiles and buildimages
-  destroy    destroy buildimages, profiles and networks
-  build      (re)build images
-  launch     launch hosts
-  ps         list status of hosts
-  ls         list hosts by `incus list` command
-  shell      open shell
-  exec       execute command
-  config     check and show configuration parameters
-  ansible-inventory   for ansible-inventory -i -
-  etchosts   generate list for /etc/hosts
-  stop       stop hosts
-  start      start hosts
-  restart    restart hosts
-  delete     delete stopped hosts, profile and network
+  init               initialize networks, profiles and buildimages
+  destroy            destroy buildimages, profiles and networks
+  build              (re)build images
+  launch             launch hosts
+  ps                 list status of hosts
+  ls                 list hosts by `incus list` command
+  shell              open shell
+  exec               execute command
+  config             check and show configuration parameters
+  ansible-inventory  for ansible-inventory -i -
+  etchosts           print list for /etc/hosts
+  update-etchosts    update /etc/hosts for hosts
+  stop               stop hosts
+  start              start hosts
+  restart            restart hosts
+  delete             delete stopped hosts, profile and network
 """.format(f=program_name)
 
 opt_schema = Schema({
@@ -484,6 +485,7 @@ class IncusAuto(CUI):
             'config': self.cmd_config,
             'ansible-inventory': self.cmd_ansible_inventory,
             'etchosts': self.cmd_etchosts,
+            'update-etchosts': self.cmd_update_etchosts,
             'build': self.cmd_build,
             'launch': self.cmd_launch,
             'start': self.cmd_start,
@@ -605,16 +607,23 @@ class IncusAuto(CUI):
                         build=self.control_buildimage, ignore_error=True)
 
     def cmd_restart(self):
-        self.incus_each('restart', ['--verbose', '--timeout', str(self.stop_timeout)],
+        self.incus_each('restart', ['--verbose',
+                                    '--timeout', str(self.stop_timeout)],
                         build=self.control_buildimage, ignore_error=True)
 
     def cmd_stop(self):
-        self.incus_each('stop', ['--verbose', '--timeout', str(self.stop_timeout)],
+        self.incus_each('stop', ['--verbose',
+                                 '--timeout', str(self.stop_timeout)],
                         build=self.control_buildimage, ignore_error=True)
 
     def cmd_delete(self):
         self.incus_each('delete', ['--verbose'],
                         build=self.control_buildimage, ignore_error=True)
+
+    def cmd_update_etchosts(self):
+        for name, fullname, info in self.name_iter():
+            print(f'update /etc/hosts: {name}')
+            self.update_etchosts(info, fullname)
 
     def cmd_ls(self):
         if self.use_all or len(self.names) == 0:
@@ -675,8 +684,9 @@ class IncusAuto(CUI):
             val = ','.join(kvlist)
             args += ['-d', val]
 
-        ### NOT WORK: Error: Cannot override config for device "VOLUME_0":
-        ### Device not found in profile devices
+        # NOT WORK: Error: Cannot override config for device "VOLUME_0":
+        # Device not found in profile devices
+        #
         # volume_list = info.get('volume', None)
         # if volume_list is not None:
         #     # /host|buildimage/NAME/volume : SRC:DST
@@ -719,7 +729,6 @@ class IncusAuto(CUI):
         count = 0
         for volume_map in volume_list:
             device_name = f'VOLUME_{count}'
-            kvlist = [device_name]
             v = volume_map.split(':')  # TODO support "SRC":"DST" ?
             src = self.convert_fullpath(v[0])
             dst = v[1]
@@ -780,7 +789,7 @@ class IncusAuto(CUI):
             self.incus_exec(fullname, f'usermod -a -G sudo {user}')
             str_input = StringIO('%sudo   ALL=(ALL:ALL)  NOPASSWD: ALL')
             self.incus_exec(fullname, 'tee /etc/sudoers.d/group-sudo',
-                            input=str_input)
+                            input=str_input, output=False)
             self.incus_exec(fullname, 'chmod 600 /etc/sudoers.d/group-sudo')
             self.incus_exec(fullname, 'apt-get update')
             self.incus_exec(fullname, 'apt-get install -y openssh-server')
@@ -814,10 +823,12 @@ class IncusAuto(CUI):
             return
 
         # DO NOT add new connection
-        # self.incus_exec(fullname, 'nmcli connection add type ethernet con-name'
-        #           + f' {ifname} ifname {real_ifname}')
-        self.incus_exec(fullname, 'nmcli connection modify'
-                   f' {uuid} ipv4.method manual ipv4.addr {ipv4_address}')
+        # self.incus_exec(fullname,
+        #                 'nmcli connection add type ethernet con-name'
+        #         + f' {ifname} ifname {real_ifname}')
+        self.incus_exec(fullname,
+                        f'nmcli connection modify {uuid}'
+                        + f' ipv4.method manual ipv4.addr {ipv4_address}')
         if ipv4_gateway is not None:
             self.incus_exec(fullname, 'nmcli connection modify '
                             + f'{uuid} ipv4.gateway {ipv4_gateway}')
@@ -889,17 +900,18 @@ class IncusAuto(CUI):
             self.incus_exec(fullname, f'chmod 600 {netplan_path}')
             str_input = StringIO(yaml.dump(netplan_dict, sort_keys=False))
             self.incus_exec(fullname, f'tee {netplan_path}', input=str_input)
-            self.incus_exec(fullname, f'netplan apply')
+            self.incus_exec(fullname, 'netplan apply')
 
     def update_etchosts(self, info, fullname):
         if not self.tobool(self.conf('/config/etchosts', default=True)):
             return  # disabled
         # backup and restore
-        self.incus_exec(fullname, f'cp -n /etc/hosts /etc/hosts.orig')
-        self.incus_exec(fullname, f'cp -f /etc/hosts.orig /etc/hosts')
+        self.incus_exec(fullname, 'cp -n /etc/hosts /etc/hosts.orig')
+        self.incus_exec(fullname, 'cp -f /etc/hosts.orig /etc/hosts')
         etchosts = self.gen_etchosts()
         etchosts_str = '\n' + '\n'.join(etchosts) + '\n'
-        self.incus_exec(fullname, f'tee -a /etc/hosts', input=etchosts_str)
+        self.incus_exec(fullname, 'tee -a /etc/hosts',
+                        input=etchosts_str, output=False)
 
     def launch_common(self):
         for name, fullname, info in self.name_iter():

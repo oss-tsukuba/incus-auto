@@ -13,7 +13,13 @@ gfarm:
   #         ansible_user: gfadm
   hosts:  # override hosts:
     gfmd1:
-      #ansible_host: 10.123.123.204
+      #ansible_host: 10.123.123.211
+      ansible_user: gfadm
+    gfmd2:
+      #ansible_host: 10.123.123.212
+      ansible_user: gfadm
+    gfsd1:
+      #ansible_host: 10.123.123.221
       ansible_user: gfadm
 lustre:
   hosts:
