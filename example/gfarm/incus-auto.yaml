@@ -75,6 +75,7 @@ buildimage:
       - prof1
       - prof2net
     setup:
+      - ./CONF:/CONF
       - bash -x /SCRIPT/install-lustre-server.sh "TODO" "a b c" "\\d ef"
     # publish-remote:  # default: local
     #   - incus1
@@ -89,7 +90,7 @@ buildimage:
   #     - prof1
   #     - prof2net
   #   volume:
-  #     - ./SCRIPT:/SCRIPT
+  #     - ./SRC:/SRC
   #   setup:
   #     - /SCRIPT/install-lustre-client.sh
   #   publish-remote:
@@ -103,7 +104,8 @@ buildimage:
       - prof1
       - prof2net
     volume:
-      - ./SCRIPT:/SCRIPT
+      - ./CONF:/CONF
+      - ./SRC:/SRC
     setup:
       - bash -x /SCRIPT/install-gfarm.sh "TODO"
       - __RESTART__
@@ -140,6 +142,9 @@ host:
         size: 8GB
       # eth0:
       #   ipv4.address: 10.123.123.101  # in DHCP range
+    volume:
+      - ./CONF:/CONF
+      - ./SRC:/SRC
     setup:
       - bash -x /SCRIPT/setup-lustre-mgs.sh "TODO"
   # oss0:
@@ -187,6 +192,9 @@ host:
     devices:  # ignored when networ-static.*.ipv4.address is defined
       eth0:
         ipv4.address: 10.123.123.104
+    volume:
+      - ./CONF:/CONF
+      - ./SRC:/SRC
     setup:
       - bash -x /SCRIPT/setup-gfmd.sh "TODO"
   # gfmd2:

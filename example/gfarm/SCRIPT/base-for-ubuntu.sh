@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# for manage host to use ansible
+
 source /SCRIPT/lib.sh
 
 apt-get update
