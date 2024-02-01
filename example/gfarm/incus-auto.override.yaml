@@ -1,5 +1,0 @@
-host:
-  gfmd1:
-    devices:
-      root:
-        size: 7GB

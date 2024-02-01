@@ -7,10 +7,10 @@ config:
   #uid: 1000  # NOTE: default
   #ssh_authorized_keys: ssh_authorized_keys  # NOTE: default
   ssh_authorized_keys: sample-id_ecdsa.pub
-  etchosts: true
+  # etchosts: true  # NOTE: default
   # envvar:
-  #   http_proxy: https://...
-  #   https_proxy: https://...
+  #   http_proxy: http://...
+  #   https_proxy: http://...
   remote:
     local: false  # NOTE: default=local:true
     incus1: true
@@ -85,6 +85,7 @@ buildimage:
   #   publish-alias:
   #     - img-lserver  # short name (without project_name prefix)
   #     - img-lustre-server
+  #
   # img-lclient:
   #   image: images:rockylinux/8
   #   series: rhel
@@ -109,7 +110,7 @@ buildimage:
     volume:
       - ./CONF:/CONF
       - ./SRC:/SRC
-    # envvar:  #TODO
+    # envvar:
     setup:
       - bash -x /SCRIPT/install-gfarm.sh
       - __RESTART__
@@ -151,6 +152,7 @@ host:
   #     - ./SRC:/SRC
   #   setup:
   #     - bash -x /SCRIPT/setup-lustre-mgs.sh "TODO"
+  #
   # oss0:
   #   image: incus1:img-lserver
   #   series: rhel
@@ -199,7 +201,7 @@ host:
     volume:
       - ./CONF:/CONF
       - ./SRC:/SRC
-    # envvar:  #TODO
+    # envvar:
     setup:
       - bash -x /SCRIPT/setup-gfmd.sh "TODO"
   gfmd2:
@@ -243,7 +245,7 @@ host:
       - ./SRC:/SRC
     # setup:
     #   - bash -x /SCRIPT/setup-gfmd.sh "TODO"
-# gfsd2:
+  # gfsd2:
   # gfsd3:
   # gfsd4:
   # gfclient1:
@@ -289,7 +291,8 @@ host:
         - 8.8.4.4
       eth1:
         ipv4.address: 10.210.210.252/24
-
+    envvar:
+      TESTENV: abcdefg
 post-setup:  # TODO
   - manage-ub22:/SCRIPT/setup-ansible.sh
   - __ALL__:/SCRIPT/generate-etchosts.sh

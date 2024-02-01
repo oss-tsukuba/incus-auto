@@ -317,9 +317,10 @@ class IncusAuto(CUI):
             'config': {
                 'incus_command': 'incus',
                 'idmap': False,
-                'user': 'incus',  # main guest user
+                'user': 'admin',  # main guest user
                 'uid': 2000,
                 'ssh_authorized_keys': 'ssh_authorized_keys',
+                'etchosts': True,
             },
             'buildimage': {
                 '__ANY__': {
@@ -360,9 +361,11 @@ class IncusAuto(CUI):
         if not os.access(self.authorized_keys, os.R_OK):
             raise Exception(f'Error: cannot read: {self.authorized_keys}')
 
-    def conf(self, confpath, default=None):
+    def conf(self, confpath, default=None, notfound=False):
         result = self.dictpath(self.conf_dict, confpath)
         if result is None:
+            if notfound:
+                raise Exception(f'incus-auto.yaml: {confpath}: not defined')
             return default
         return result
 
@@ -396,12 +399,38 @@ class IncusAuto(CUI):
         return self.execv(args, textmode=True, input=input, output=output,
                           ignore_error=ignore_error)
 
+    def fullname_to_shortname(self, fullname):
+        return fullname[len(self.project_prefix):]
+
+    def get_env(self, fullname):
+        name = self.fullname_to_shortname(fullname)
+        envvar1 = self.conf('/config/envvar')
+        if self.control_buildimage:
+            envvar2 = self.conf(f'/buildimage/{name}/envvar')
+        else:
+            envvar2 = self.conf(f'/host/{name}/envvar')
+        if envvar1 is not None:  # dict
+            if envvar2 is not None:
+                self.deep_update(envvar1, envvar2, override=True)
+                return envvar1
+            else:
+                return envvar1
+        else:
+            return envvar2
+
     def incus_exec(self, fullname, args,
                    input=None, output=None, ignore_error=False):
+        fullargs = ['exec', fullname]
+        env = self.get_env(fullname)
+        self.logger.debug('envvar: \n' + pformat(env))
+        if env is not None:
+            for k, v in env.items():
+                env_str = f'{k}={v}'
+                fullargs += ['--env', env_str]
         if isinstance(args, str):
             args = shlex.split(args)
-        return self.incus(['exec', fullname, '--'] + args,
-                          input=input, output=output,
+        fullargs += ['--'] + args
+        return self.incus(fullargs, input=input, output=output,
                           ignore_error=ignore_error)
 
     def incus_ls_json(self):
@@ -785,6 +814,9 @@ class IncusAuto(CUI):
         self.incus_exec(fullname, f'chown -R {user}:{user} {sshdir}')
         self.incus_exec(fullname, f'chmod 700 {sshdir}')
         self.incus_exec(fullname, f'chmod 600 {sshdir}/authorized_keys')
+
+        self.incus_exec(fullname, f'hostnamectl set-hostname {fullname}')
+        self.incus_exec(fullname, 'systemctl restart systemd-hostnamed')
 
         # if info['series'] == 'rhel':
         #     self.incus_exec(fullname, f'usermod -a -G wheel {user}')
