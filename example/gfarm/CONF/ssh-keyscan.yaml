@@ -1,6 +1,6 @@
 ---
 - name: Run ssh-keyscan on inventory hosts
-  hosts: gfarm
+  hosts: all
   gather_facts: false
 
   tasks:
