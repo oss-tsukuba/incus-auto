@@ -8,6 +8,9 @@ config:
   #ssh_authorized_keys: ssh_authorized_keys  # NOTE: default
   ssh_authorized_keys: sample-id_ecdsa.pub
   etchosts: true
+  # envvar:
+  #   http_proxy: https://...
+  #   https_proxy: https://...
   remote:
     local: false  # NOTE: default=local:true
     incus1: true
@@ -106,8 +109,9 @@ buildimage:
     volume:
       - ./CONF:/CONF
       - ./SRC:/SRC
+    # envvar:  #TODO
     setup:
-      - bash -x /SCRIPT/install-gfarm.sh "TODO"
+      - bash -x /SCRIPT/install-gfarm.sh
       - __RESTART__
     # publish-remote:  #TODO
     #   - incus1
@@ -195,6 +199,7 @@ host:
     volume:
       - ./CONF:/CONF
       - ./SRC:/SRC
+    # envvar:  #TODO
     setup:
       - bash -x /SCRIPT/setup-gfmd.sh "TODO"
   gfmd2:
@@ -266,24 +271,24 @@ host:
     setup:
       - bash -x /SCRIPT/base-for-ubuntu.sh
       - bash -x /SCRIPT/install-ansible-for-ubuntu.sh
-  # manage-alma9:
-  #   image: images:almalinux/9
-  #   series: rhel
-  #   vm: False
-  #   profile:
-  #     - prof1
-  #     - prof2net
-  #   volume:  # TODO
-  #     - ./CONF:/CONF
-  #   network-static:
-  #     eth0:
-  #       ipv4.address: 10.123.123.232/24
-  #       ipv4.gateway: 10.123.123.1
-  #       dns:
-  #       - 8.8.8.8
-  #       - 8.8.4.4
-  #     eth1:
-  #       ipv4.address: 10.210.210.232/24
+  alma9:
+    image: images:almalinux/9
+    series: rhel
+    vm: False
+    profile:
+      - prof1
+      - prof2net
+    volume:  # TODO
+      - ./CONF:/CONF
+    network-static:
+      eth0:
+        ipv4.address: 10.123.123.252/24
+        ipv4.gateway: 10.123.123.1
+        dns:
+        - 8.8.8.8
+        - 8.8.4.4
+      eth1:
+        ipv4.address: 10.210.210.252/24
 
 post-setup:  # TODO
   - manage-ub22:/SCRIPT/setup-ansible.sh

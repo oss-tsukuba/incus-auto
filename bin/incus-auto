@@ -257,7 +257,7 @@ class IncusAuto(CUI):
 
     def parse_opt(self):
         self.names = self.opt['<name>']
-        self.use_all = self.opt['--all']
+        self.use_all = self.opt['--all']  # CANNOT be changed outside of cmd_*
         self.control_buildimage = self.opt['--buildimage']
         self.conf_file = self.opt['--file']
         self.override_file = self.opt['--override']
@@ -542,7 +542,6 @@ class IncusAuto(CUI):
 
     def gen_etchosts(self):
         hosts = []
-        self.use_all = True
         for name, fullname, info in self.name_iter():
             ip = self.conf_get_ipv4(name)
             if ip is None:
@@ -555,6 +554,7 @@ class IncusAuto(CUI):
         return hosts
 
     def cmd_etchosts(self):
+        self.use_all = True
         for host in self.gen_etchosts():
             print(host)
 
@@ -755,6 +755,17 @@ class IncusAuto(CUI):
                             ignore_error=True)
             self.incus_exec(fullname, 'df -h')
 
+    def install_ssh(self, info, fullname):
+        if info['series'] == 'rhel':
+            self.incus_exec(fullname, 'yum install -y openssh-server')
+            self.incus_exec(fullname, 'systemctl enable sshd')
+            self.incus_exec(fullname, 'systemctl restart sshd')
+        elif info['series'] == 'debian':
+            self.incus_exec(fullname, 'apt-get update')
+            self.incus_exec(fullname, 'apt-get install -y openssh-server')
+            self.incus_exec(fullname, 'systemctl enable ssh')
+            self.incus_exec(fullname, 'systemctl restart ssh')
+
     def setup_user_and_ssh(self, info, fullname):
         user = self.conf('/config/user')
         uid = self.conf('/config/uid')
@@ -775,26 +786,25 @@ class IncusAuto(CUI):
         self.incus_exec(fullname, f'chmod 700 {sshdir}')
         self.incus_exec(fullname, f'chmod 600 {sshdir}/authorized_keys')
 
-        if info['series'] == 'rhel':
-            self.incus_exec(fullname, f'usermod -a -G wheel {user}')
-            self.incus_exec(
-                fullname,
-                ['sed', '-i',
-                 '-e', '/%wheel[ \t]\\+ALL=(ALL)[ \t]\\+ALL/s/^/# /',
-                 '-e', '/%wheel[ \t]\\+ALL=(ALL)[ \t]\\+NOPASSWD:/s/^# //',
-                 '/etc/sudoers'])
-            self.incus_exec(fullname, 'yum install -y openssh-server')
-            self.incus_exec(fullname, 'systemctl restart sshd')
-        elif info['series'] == 'debian':
-            self.incus_exec(fullname, f'usermod -a -G sudo {user}')
-            str_input = StringIO('%sudo   ALL=(ALL:ALL)  NOPASSWD: ALL')
-            self.incus_exec(fullname, 'tee /etc/sudoers.d/group-sudo',
-                            input=str_input, output=False)
-            self.incus_exec(fullname, 'chmod 600 /etc/sudoers.d/group-sudo')
-            self.incus_exec(fullname, 'apt-get update')
-            self.incus_exec(fullname, 'apt-get install -y openssh-server')
-            self.incus_exec(fullname, 'systemctl enable ssh')
-            self.incus_exec(fullname, 'systemctl restart ssh')
+        # if info['series'] == 'rhel':
+        #     self.incus_exec(fullname, f'usermod -a -G wheel {user}')
+        #     self.incus_exec(
+        #         fullname,
+        #         ['sed', '-i',
+        #          '-e', '/%wheel[ \t]\\+ALL=(ALL)[ \t]\\+ALL/s/^/# /',
+        #          '-e', '/%wheel[ \t]\\+ALL=(ALL)[ \t]\\+NOPASSWD:/s/^# //',
+        #          '/etc/sudoers'])
+        # elif info['series'] == 'debian':
+        #     self.incus_exec(fullname, f'usermod -a -G sudo {user}')
+        #     str_input = StringIO('%sudo   ALL=(ALL:ALL)  NOPASSWD: ALL')
+        #     self.incus_exec(fullname, 'tee /etc/sudoers.d/group-sudo',
+        #                     input=str_input, output=False)
+        #     self.incus_exec(fullname, 'chmod 600 /etc/sudoers.d/group-sudo')
+        sudoers = f'/etc/sudoers.d/{user}'
+        str_input = StringIO(f'{user}   ALL=(ALL:ALL)  NOPASSWD: ALL')
+        self.incus_exec(fullname, f'tee {sudoers}',
+                        input=str_input, output=False)
+        self.incus_exec(fullname, f'chmod 600 {sudoers}')
 
     def netconf_rhel(self, fullname, ifname, param, info):
         ipv4_address = param.get('ipv4.address')
@@ -921,6 +931,7 @@ class IncusAuto(CUI):
             if self.tobool(info['vm']) and info['series'] == 'rhel':
                 # growpart for rhel VM
                 self.growpart(fullname)
+            self.install_ssh(info, fullname)
             if not self.control_buildimage:
                 self.setup_user_and_ssh(info, fullname)
                 self.update_etchosts(info, fullname)

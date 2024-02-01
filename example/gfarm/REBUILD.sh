@@ -1,4 +1,5 @@
 #!/bin/bash
+set -eux
 
 ARGS="$@"
 
@@ -11,7 +12,7 @@ if [ ${ARGS[0]} = ALL ]; then
 else
     $IA stop "${ARGS[@]}"
     $IA delete "${ARGS[@]}"
-    $IA launch "${ARGS[@]}"
+    $IA launch "${ARGS[@]}" -l debug
 fi
 
 $IA ls

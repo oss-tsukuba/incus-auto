@@ -94,6 +94,9 @@ $DISTCLEAN && ./configure $GFARM_OPT
 make -j $MAKE_NUM_JOBS
 make install
 
+useradd -m _gfarmfs || true
+useradd -m _gfarmmd || true
+
 ###################################################################
 # install gfarm2fs
 cd $GFARM_WORKDIR
