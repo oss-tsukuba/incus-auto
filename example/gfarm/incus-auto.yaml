@@ -1,9 +1,9 @@
 config:
   #incus_command: incus  # NOTE: default
   project: gfarm  # namespace
-  idmap: true  # false or true(your host UID) or any UID to root(UID=0)
-  #user: incus  # NOTE: default
-  user: gfadm
+  idmap: true  # false|true(your host UID)/any host UID| to container user
+  #user: admin  # NOTE: default
+  user: gfarmsys  # superuser in container
   #uid: 1000  # NOTE: default
   #ssh_authorized_keys: ssh_authorized_keys  # NOTE: default
   ssh_authorized_keys: sample-id_ecdsa.pub
@@ -260,7 +260,7 @@ host:
       - prof2net
     volume:  # TODO
       - ./CONF:/CONF
-      - ./:/INCUS-AUTO
+      - ./:/SECRET
     network-static:
       eth0:
         ipv4.address: 10.123.123.251/24
@@ -293,7 +293,3 @@ host:
         ipv4.address: 10.210.210.252/24
     envvar:
       TESTENV: abcdefg
-post-setup:  # TODO
-  - manage-ub22:/SCRIPT/setup-ansible.sh
-  - __ALL__:/SCRIPT/generate-etchosts.sh
-  - __LOCAL__:./SCRIPT/update-etchosts.h

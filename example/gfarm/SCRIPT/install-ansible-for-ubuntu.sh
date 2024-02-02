@@ -1,4 +1,6 @@
 #!/bin/sh
 
-apt-get update
-apt-get install -y ansible
+source /SCRIPT/lib.sh
+
+SUDO apt-get update
+SUDO apt-get install -y ansible

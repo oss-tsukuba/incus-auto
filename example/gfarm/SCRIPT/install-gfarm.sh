@@ -24,8 +24,8 @@ done
 
 install_package_debian() {
     # for developer
-    apt-get update
-    apt-get install -y \
+    SUDO apt-get update
+    SUDO apt-get install -y \
 	    less \
 	    emacs-nox \
 	    vim \
@@ -33,7 +33,7 @@ install_package_debian() {
 	    valgrind
 
 # for Gfarm (from INSTALL.en)
-    apt-get install -y \
+    SUDO apt-get install -y \
 	    libssl-dev \
 	    libpq-dev \
 	    libsasl2-dev \
@@ -53,11 +53,11 @@ install_package_debian() {
 	    golang
 
     # to build gfarm
-    apt-get install -y \
+    SUDO apt-get install -y \
 	    make
 
     # for scitokens-cpp
-    apt-get install -y \
+    SUDO apt-get install -y \
 	    cmake \
 	    libcurl4-openssl-dev \
 	    uuid-dev \
@@ -92,10 +92,10 @@ GFARM_OPT="--with-globus=/usr --enable-xmlattr ${WITH_OPENSSL_OPT}"
 $DISTCLEAN && (test -f Makefile && make distclean || true)
 $DISTCLEAN && ./configure $GFARM_OPT
 make -j $MAKE_NUM_JOBS
-make install
+SUDO make install
 
-useradd -m _gfarmfs || true
-useradd -m _gfarmmd || true
+SUDO useradd -m _gfarmfs || true
+SUDO useradd -m _gfarmmd || true
 
 ###################################################################
 # install gfarm2fs
@@ -104,22 +104,22 @@ cd gfarm2fs
 $DISTCLEAN && (test -f Makefile && make distclean || true)
 $DISTCLEAN && ./configure --with-gfarm=/usr/local
 make -j $MAKE_NUM_JOBS
-make install
+SUDO make install
 # for autofs
-cp -af $(which mount.gfarm2fs) /sbin/
+SUDO cp -af $(which mount.gfarm2fs) /sbin/
 
 ###################################################################
 # install jwt-logon
 cd $GFARM_WORKDIR
 cd jwt-logon
-make PREFIX=/usr/local install
+SUDO make PREFIX=/usr/local install
 
 ###################################################################
 # install jwt-agent
 cd $GFARM_WORKDIR
 cd jwt-agent
 make
-make PREFIX=/usr/local install
+SUDO make PREFIX=/usr/local install
 
 ###################################################################
 # install scitokens-cpp
@@ -131,7 +131,7 @@ cd build
 scitokens_prefix=/usr
 cmake -DCMAKE_INSTALL_PREFIX="$scitokens_prefix" ..
 make -j $MAKE_NUM_JOBS
-make install
+SUDO make install
 
 ###################################################################
 # install cyrus-sasl-xoauth2-idp
@@ -148,6 +148,6 @@ sasl_libdir=$(pkg-config --variable=libdir libsasl2)
 $DISTCLEAN && ./autogen.sh
 $DISTCLEAN && ./configure --libdir="${sasl_libdir}"
 make
-make install
+SUDO make install
 
 DONE "$0" "$@"

@@ -39,8 +39,8 @@ Usage:
   {f} destroy [options]
   {f} ls [options]
   {f} ps [options]
-  {f} shell <name> [options]
-  {f} exec <name> [options] [--] <args>...
+  {f} shell <name> [--root] [options]
+  {f} exec <name> [--root] [options] [--] <args>...
   {f} config [options]
   {f} ansible-inventory [options]
   {f} etchosts [options]
@@ -54,6 +54,7 @@ Options:
                             [default: incus-auto.yaml]
   -o, --override=FILE       override configuration file (if it exists)
                             [default: incus-auto.override.yaml]
+  --root                    execute by root
   -l, --loglevel=LEVEL      log level (debug, info, warning, error)
                             [default: info]
   --encoding=CODEC          codec for filename encoding
@@ -83,6 +84,7 @@ Command:
 opt_schema = Schema({
     '--all': bool,
     '--buildimage': bool,
+    '--root': bool,
     '--file': str,
     '--override': str,
     '--loglevel': str,
@@ -262,6 +264,7 @@ class IncusAuto(CUI):
         self.conf_file = self.opt['--file']
         self.override_file = self.opt['--override']
         self.encoding = self.opt['--encoding']
+        self.user_is_root = self.opt['--root']
 
     def change_dir(self):
         self.basedir = os.path.realpath(os.path.dirname(self.conf_file))
@@ -369,13 +372,13 @@ class IncusAuto(CUI):
             return default
         return result
 
-    def name_iter(self):
+    def name_iter(self, use_all):
         if self.control_buildimage:
             target_path = '/buildimage'
         else:
             target_path = '/host'
         d = self.conf(target_path)
-        if self.use_all:
+        if use_all:
             for name in d.keys():
                 yield (name, self.project_prefix + name, d[name])
         else:  # specified hosts
@@ -418,7 +421,7 @@ class IncusAuto(CUI):
         else:
             return envvar2
 
-    def incus_exec(self, fullname, args,
+    def incus_exec(self, fullname, args, user_is_root=True,
                    input=None, output=None, ignore_error=False):
         fullargs = ['exec', fullname]
         env = self.get_env(fullname)
@@ -427,9 +430,12 @@ class IncusAuto(CUI):
             for k, v in env.items():
                 env_str = f'{k}={v}'
                 fullargs += ['--env', env_str]
+        fullargs += ['--']
+        if not user_is_root:
+            fullargs += ['sudo', '-E', '-u', self.conf('/config/user')]
         if isinstance(args, str):
             args = shlex.split(args)
-        fullargs += ['--'] + args
+        fullargs += args
         return self.incus(fullargs, input=input, output=output,
                           ignore_error=ignore_error)
 
@@ -497,7 +503,7 @@ class IncusAuto(CUI):
     def incus_each(self, cmd, args=[], build=False, ignore_error=False):
         if build:
             self.control_buildimage = build
-        for name, fullname, info in self.name_iter():
+        for name, fullname, info in self.name_iter(self.use_all):
             print(f'{self.incus_command} {cmd} {fullname}')
             self.incus([cmd, fullname] + args,
                        ignore_error=ignore_error,
@@ -556,8 +562,7 @@ class IncusAuto(CUI):
     def cmd_ansible_inventory(self):
         hosts = {}
         user = self.conf('/config/user')
-        self.use_all = True
-        for name, fullname, info in self.name_iter():
+        for name, fullname, info in self.name_iter(True):
             ip = self.conf_get_ipv4(name)
             if ip is None:
                 ip = name
@@ -571,7 +576,7 @@ class IncusAuto(CUI):
 
     def gen_etchosts(self):
         hosts = []
-        for name, fullname, info in self.name_iter():
+        for name, fullname, info in self.name_iter(True):
             ip = self.conf_get_ipv4(name)
             if ip is None:
                 continue  # skip
@@ -650,7 +655,7 @@ class IncusAuto(CUI):
                         build=self.control_buildimage, ignore_error=True)
 
     def cmd_update_etchosts(self):
-        for name, fullname, info in self.name_iter():
+        for name, fullname, info in self.name_iter(self.use_all):
             print(f'update /etc/hosts: {name}')
             self.update_etchosts(info, fullname)
 
@@ -658,7 +663,7 @@ class IncusAuto(CUI):
         if self.use_all or len(self.names) == 0:
             print(self.incus(f'ls -c ns4t {self.project_prefix}'))
         else:
-            for name, _, _ in self.name_iter():
+            for name, _, _ in self.name_iter(False):
                 print(self.incus(f'ls -c ns4t {self.project_prefix}{name}$'))
 
     def cmd_ps(self):
@@ -671,7 +676,7 @@ class IncusAuto(CUI):
         host_dict = {}
         for hostinfo in self.incus_ls_json():
             host_dict[hostinfo['name']] = hostinfo
-        for name, fullname, info in self.name_iter():
+        for name, fullname, info in self.name_iter(self.use_all):
             hostinfo = host_dict.get(fullname, None)
             if hostinfo is None:
                 state = "NOTCREATED"
@@ -688,8 +693,23 @@ class IncusAuto(CUI):
             print(f'{fullname:<{fullname_max}}  {state:<{fullname_max}}')
 
     def cmd_shell(self):
-        for name, fullname, info in self.name_iter():
-            args = f'{self.incus_command} shell {fullname}'.split()
+        for name, fullname, info in self.name_iter(False):
+            args = [self.incus_command, 'exec', fullname]
+            env = self.get_env(fullname)
+            envkeys = []
+            if env is not None:
+                for k, v in env.items():
+                    env_str = f'{k}={v}'
+                    args += ['--env', env_str]
+                    envkeys += [k]
+            args += ['--']
+            if not self.user_is_root:
+                args += ['sudo', '-i', '-u', self.conf('/config/user')]
+                if len(envkeys) > 0:
+                    envkeys_str = ','.join(envkeys)
+                    args += [f'--preserve-env={envkeys_str}']
+            args += ['bash']
+            self.logger.debug(pformat(args))
             proc = subprocess.Popen(
                 args, shell=False, close_fds=True,
                 stdin=None, stdout=None, stderr=None)
@@ -697,8 +717,9 @@ class IncusAuto(CUI):
             break
 
     def cmd_exec(self):
-        for name, fullname, info in self.name_iter():
-            self.incus_exec(fullname, self.opt['<args>'])
+        for name, fullname, info in self.name_iter(False):
+            self.incus_exec(fullname, self.opt['<args>'],
+                            user_is_root=self.user_is_root)
             break
 
     def incus_launch(self, info, name, fullname):
@@ -740,8 +761,9 @@ class IncusAuto(CUI):
             idmap_uid = str(idmap)
         elif self.tobool(idmap):
             idmap_uid = str(os.getuid())
+        container_uid = self.conf('/config/uid')
         if idmap_uid is not None:
-            args += ['-c', f'raw.idmap=both {idmap_uid} 0']
+            args += ['-c', f'raw.idmap=both {idmap_uid} {container_uid}']
 
         if self.tobool(info['vm']):
             args += ['--vm']
@@ -785,6 +807,8 @@ class IncusAuto(CUI):
             self.incus_exec(fullname, 'df -h')
 
     def install_ssh(self, info, fullname):
+        self.incus_exec(fullname, f'hostnamectl set-hostname {fullname}')
+        self.incus_exec(fullname, 'systemctl restart systemd-hostnamed')
         if info['series'] == 'rhel':
             self.incus_exec(fullname, 'yum install -y openssh-server')
             self.incus_exec(fullname, 'systemctl enable sshd')
@@ -795,7 +819,7 @@ class IncusAuto(CUI):
             self.incus_exec(fullname, 'systemctl enable ssh')
             self.incus_exec(fullname, 'systemctl restart ssh')
 
-    def setup_user_and_ssh(self, info, fullname):
+    def setup_user(self, info, fullname):
         user = self.conf('/config/user')
         uid = self.conf('/config/uid')
         # ignore: useradd: user 'incus' already exists
@@ -814,9 +838,6 @@ class IncusAuto(CUI):
         self.incus_exec(fullname, f'chown -R {user}:{user} {sshdir}')
         self.incus_exec(fullname, f'chmod 700 {sshdir}')
         self.incus_exec(fullname, f'chmod 600 {sshdir}/authorized_keys')
-
-        self.incus_exec(fullname, f'hostnamectl set-hostname {fullname}')
-        self.incus_exec(fullname, 'systemctl restart systemd-hostnamed')
 
         # if info['series'] == 'rhel':
         #     self.incus_exec(fullname, f'usermod -a -G wheel {user}')
@@ -956,34 +977,34 @@ class IncusAuto(CUI):
                         input=etchosts_str, output=False)
 
     def launch_common(self):
-        for name, fullname, info in self.name_iter():
+        for name, fullname, info in self.name_iter(self.use_all):
             self.incus_launch(info, name, fullname)
-        for name, fullname, info in self.name_iter():
+        for name, fullname, info in self.name_iter(self.use_all):
             self.incus_wait_for_wakeup(fullname, info)
             if self.tobool(info['vm']) and info['series'] == 'rhel':
                 # growpart for rhel VM
                 self.growpart(fullname)
-            self.install_ssh(info, fullname)
+            self.setup_user(info, fullname)
             if not self.control_buildimage:
-                self.setup_user_and_ssh(info, fullname)
+                self.install_ssh(info, fullname)
                 self.update_etchosts(info, fullname)
             self.setup_network_static(info, fullname)
             self.incus(f'stop {fullname}')
             self.mount_volume(fullname, info)
             self.incus(f'start {fullname}')
-        for name, fullname, info in self.name_iter():
+        for name, fullname, info in self.name_iter(self.use_all):
             self.incus_wait_for_wakeup(fullname, info)
-        for name, fullname, info in self.name_iter():
+        for name, fullname, info in self.name_iter(self.use_all):
             # run /host|buildimage/NAME/setup
             for cmd in info.get('setup', []):
                 if cmd == '__RESTART__':
                     self.incus(f'restart {fullname}')
                     self.incus_wait_for_wakeup(fullname, info)
                 else:
-                    self.incus_exec(fullname, cmd)
+                    self.incus_exec(fullname, cmd, user_is_root=False)
         if self.control_buildimage:
             # publish buildimage
-            for name, fullname, info in self.name_iter():
+            for name, fullname, info in self.name_iter(self.use_all):
                 remotes = info.get('publish-remote', None)
                 aliases = info['publish-alias']
                 self.incus(f'stop {fullname}')

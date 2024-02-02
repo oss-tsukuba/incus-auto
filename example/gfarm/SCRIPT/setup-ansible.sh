@@ -8,7 +8,7 @@ source /SCRIPT/lib.sh
 
 # add ~/.ssh/known_hosts
 INV=/CONF/inventories.yaml
-SUDO_USER ansible-playbook -i $INV /CONF/ssh-keyscan.yaml
+ansible-playbook -i $INV /CONF/ssh-keyscan.yaml
 
-SUDO_USER ansible -i $INV all -m ping
-SUDO_USER ansible -i $INV all -a hostname
+ansible -i $INV all -m ping
+ansible -i $INV all -a hostname

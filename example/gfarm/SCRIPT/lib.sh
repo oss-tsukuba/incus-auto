@@ -4,9 +4,9 @@ source /etc/os-release
 
 CONF_DIR=/CONF
 SCRIPT_DIR=/SCRIPT
-SECRET_DIR=/INCUS-AUTO  # secret dir for management host
+SECRET_DIR=/SECRET  # secret dir for management host
 
-ANSIBLE_USER=gfadm  # incus-auto.yaml:/config/user
+ANSIBLE_USER=gfarmsys  # incus-auto.yaml:/config/user
 HOMEDIR="/home/${ANSIBLE_USER}"
 SSHDIR="${HOMEDIR}/.ssh"
 SSH_PRIVKEY_SRC="${SECRET_DIR}/sample-id_ecdsa"
@@ -21,8 +21,8 @@ if [ -f "$CONFIG_OVERRIDE" ]; then
     source "$CONFIG_OVERRIDE"
 fi
 
-SUDO_USER() {
-    sudo -u $ANSIBLE_USER "$@"
+SUDO() {
+    sudo --preserve-env=http_proxy,https_proxy "$@"
 }
 
 DONE() {
