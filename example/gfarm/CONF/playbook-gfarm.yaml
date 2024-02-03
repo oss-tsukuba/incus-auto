@@ -1,0 +1,75 @@
+---
+- name: Install gfarm
+  hosts: gfarm
+  gather_facts: false
+  tasks:
+    - name: install gfarm
+      #command: bash /SCRIPT/install-gfarm.sh
+      command: date  #TODO
+- name: Setup SASL for servers
+  hosts: group_gfmd, group_gfsd
+  gather_facts: false
+  tasks:
+    - name: Run pkg-config
+      shell: pkg-config --variable=libdir libsasl2
+      register: pkgconfig_out
+    - name: Display pkgconfig_out
+      debug:
+        var: pkgconfig_out
+    - name: Create sasl2/gfarm.conf for server
+      become: yes
+      become_user: root
+      copy:
+        content: |
+          log_level: 7
+          mech_list: XOAUTH2 ANONYMOUS
+          xoauth2_scope: hpci
+          xoauth2_aud: hpci
+          xoauth2_user_claim: hpci.id
+        dest: "{{ pkgconfig_out.stdout_lines[0] }}/sasl2/gfarm.conf"
+    #- name: cat
+    #  shell: cat "{{ pkgconfig_out.stdout_lines[0] }}/sasl2/gfarm.conf"
+- name: Setup SASL for all hosts
+  hosts: gfarm
+  gather_facts: false
+  tasks:
+    - name: Run pkg-config
+      shell: pkg-config --variable=libdir libsasl2
+      register: pkgconfig_out
+    - name: Display pkgconfig_out
+      debug:
+        var: pkgconfig_out
+    - name: Create sasl2/gfarm.conf for client
+      become: yes
+      become_user: root
+      copy:
+        content: |
+          xoauth2_user_claim: hpci.id
+        dest: "{{ pkgconfig_out.stdout_lines[0] }}/sasl2/gfarm-client.conf"
+    - name: create empty sasldb2 database
+      # because the gdbm backend of Cyrus SAL (e.g. on RHEL9) needs this
+      # although the berkeley DB backend does NOT
+      become: yes
+      become_user: root
+      shell: saslpasswd2 -d -u NOT-EXIST NOT-EXIST
+    - name: sasldb2 (1)
+      # XXX - SASL XOAUTH2 fails in gfsd on ubuntu due to the error
+      # "unable to open Berkeley db /etc/sasldb2: Permission denied"
+      become: yes
+      become_user: root
+      shell: chown _gfarmfs /etc/sasldb2
+      register: result1
+      ignore_errors: yes
+    - name: sasldb2 (2)
+      become: yes
+      become_user: root
+      shell: chown _gfarmfs /etc/sasl2/sasldb2
+      register: result2
+      ignore_errors: yes
+    - name: Check sasldb2
+      fail:
+        msg: "Failed to set permissions on both files of sasldb2"
+      when: result1.rc != 0 and result1.rc != 0
+
+    - name: DONE
+      shell: hostname

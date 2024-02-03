@@ -11,14 +11,23 @@ gfarm:
   #       gfsd1:
   #         ansible_host: 10.123.123.204
   #         ansible_user: gfadm
+  vars:
+    ansible_user: gfarmsys
   hosts:
-    vars:
-      ansible_user: gfarmsys
-    gfmd1:
-    gfmd2:
-    gfsd1:
+  children:
+    group_gfmd:
+      hosts:
+        gfmd1:
+        gfmd2:
+    group_gfsd:
+      hosts:
+        gfsd1:
+    group_gfclient:
+      hosts:
+        gfclient1:
 lustre:
+  vars:
+    ansible_user: gfarmsys
   hosts:
-    vars:
-      ansible_user: gfarmsys
-    mgs:
+    #mgs:
+    #oss1:

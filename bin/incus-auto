@@ -426,13 +426,17 @@ class IncusAuto(CUI):
         fullargs = ['exec', fullname]
         env = self.get_env(fullname)
         self.logger.debug('envvar: \n' + pformat(env))
+        envkeys = []
         if env is not None:
             for k, v in env.items():
                 env_str = f'{k}={v}'
                 fullargs += ['--env', env_str]
+                envkeys += [k]
         fullargs += ['--']
         if not user_is_root:
-            fullargs += ['sudo', '-E', '-u', self.conf('/config/user')]
+            envkeys_str = ','.join(envkeys)
+            fullargs += ['sudo', f'--preserve-env={envkeys_str}',
+                         '-u', self.conf('/config/user')]
         if isinstance(args, str):
             args = shlex.split(args)
         fullargs += args

@@ -15,4 +15,6 @@ else
     $IA launch "${ARGS[@]}" -l debug
 fi
 
+$IA update-etchosts -a
+$IA exec manage -- bash -x /SCRIPT/setup-ansible.sh
 $IA ls

@@ -119,7 +119,115 @@ buildimage:
     publish-alias:
       - img-gfarm  # short name
 
+x-gfarm: &x-gfarm
+  image: gfarm-img-gfarm
+  series: debian
+  vm: false
+  profile:
+    - prof1
+    - prof2net
+  network-static:  # TODO
+  volume:
+    - ./CONF:/CONF
+    - ./SRC:/SRC
+  # envvar:
+
 host:
+  gfmd1:
+    <<: [*x-gfarm]
+    group: gfarm/gfmd  #TODO?
+    network-static:  # TODO
+      eth0:
+        ipv4.address: 10.123.123.211/24
+        ipv4.gateway: 10.123.123.1
+        dns:
+        - 8.8.8.8
+      eth1:
+        ipv4.address: 10.210.210.211/24
+    devices:  # ignored when networ-static.*.ipv4.address is defined
+      eth0:
+        ipv4.address: 10.123.123.211
+    setup:
+      - bash -x /SCRIPT/setup-gfmd.sh "TODO"
+  gfmd2:
+    <<: [*x-gfarm]
+    group: gfarm/gfmd  #TODO?
+    network-static:  # TODO
+      eth0:
+        ipv4.address: 10.123.123.212/24
+        ipv4.gateway: 10.123.123.1
+        dns:
+        - 8.8.8.8
+      eth1:
+        ipv4.address: 10.210.210.212/24
+    # setup:
+    #   - bash -x /SCRIPT/setup-gfmd.sh "TODO"
+  # gfmd3:
+  gfsd1:
+    <<: [*x-gfarm]
+    group: gfarm/gfsd  #TODO?
+    network-static:  # TODO
+      eth0:
+        ipv4.address: 10.123.123.221/24
+        ipv4.gateway: 10.123.123.1
+        dns:
+        - 8.8.8.8
+  # gfsd2:
+  # gfsd3:
+  # gfsd4:
+  gfclient1:
+    <<: [*x-gfarm]
+    group: gfarm/client  #TODO?
+    network-static:  # TODO
+      eth0:
+        ipv4.address: 10.123.123.231/24
+        ipv4.gateway: 10.123.123.1
+        dns:
+        - 8.8.8.8
+  # keycloak:  # 241
+  # jwt-server: # 242
+  manage:
+    image: images:ubuntu/22.04
+    series: debian
+    vm: false
+    profile:
+      - prof1
+      - prof2net
+    volume:  # TODO
+      - ./CONF:/CONF
+      - ./:/SECRET
+    network-static:
+      eth0:
+        ipv4.address: 10.123.123.251/24
+        ipv4.gateway: 10.123.123.1
+        dns:
+        - 8.8.8.8
+        - 8.8.4.4
+      eth1:
+        ipv4.address: 10.210.210.251/24
+    setup:
+      - bash -x /SCRIPT/base-for-ubuntu.sh
+      - bash -x /SCRIPT/install-ansible-for-ubuntu.sh
+  alma9:
+    image: images:almalinux/9
+    series: rhel
+    vm: False
+    profile:
+      - prof1
+      - prof2net
+    volume:  # TODO
+      - ./CONF:/CONF
+    network-static:
+      eth0:
+        ipv4.address: 10.123.123.252/24
+        ipv4.gateway: 10.123.123.1
+        dns:
+        - 8.8.8.8
+        - 8.8.4.4
+      eth1:
+        ipv4.address: 10.210.210.252/24
+    envvar:
+      TESTENV: abcdefg
   # mgs:
   #   group: lustre  #TODO?
   #   alternative:
@@ -179,117 +287,3 @@ host:
   #       ipv4.address: 10.123.123.103
   #   setup:
   #     - "/SCRIPT/setup-lustre-client.sh 0 10.123.123.101"
-  gfmd1:
-    group: gfarm:gfmd  #TODO?
-    image: gfarm-img-gfarm
-    series: debian
-    vm: false
-    profile:
-      - prof1
-      - prof2net
-    network-static:  # TODO
-      eth0:
-        ipv4.address: 10.123.123.211/24
-        ipv4.gateway: 10.123.123.1
-        dns:
-        - 8.8.8.8
-      eth1:
-        ipv4.address: 10.210.210.211/24
-    devices:  # ignored when networ-static.*.ipv4.address is defined
-      eth0:
-        ipv4.address: 10.123.123.211
-    volume:
-      - ./CONF:/CONF
-      - ./SRC:/SRC
-    # envvar:
-    setup:
-      - bash -x /SCRIPT/setup-gfmd.sh "TODO"
-  gfmd2:
-    group: gfarm:gfmd  #TODO?
-    image: gfarm-img-gfarm
-    series: debian
-    profile:
-      - prof1
-      - prof2net
-    network-static:  # TODO
-      eth0:
-        ipv4.address: 10.123.123.212/24
-        ipv4.gateway: 10.123.123.1
-        dns:
-        - 8.8.8.8
-      eth1:
-        ipv4.address: 10.210.210.212/24
-    volume:
-      - ./CONF:/CONF
-      - ./SRC:/SRC
-    # setup:
-    #   - bash -x /SCRIPT/setup-gfmd.sh "TODO"
-  # gfmd3:
-  gfsd1:
-    group: gfarm:gfsd  #TODO?
-    image: gfarm-img-gfarm
-    series: debian
-    profile:
-      - prof1
-      - prof2net
-    network-static:  # TODO
-      eth0:
-        ipv4.address: 10.123.123.221/24
-        ipv4.gateway: 10.123.123.1
-        dns:
-        - 8.8.8.8
-      eth1:
-        ipv4.address: 10.210.210.221/24
-    volume:
-      - ./CONF:/CONF
-      - ./SRC:/SRC
-    # setup:
-    #   - bash -x /SCRIPT/setup-gfmd.sh "TODO"
-  # gfsd2:
-  # gfsd3:
-  # gfsd4:
-  # gfclient1:
-  # keycloak:  # 241
-  # jwt-server: # 242
-  manage:
-    image: images:ubuntu/22.04
-    series: debian
-    vm: false
-    profile:
-      - prof1
-      - prof2net
-    volume:  # TODO
-      - ./CONF:/CONF
-      - ./:/SECRET
-    network-static:
-      eth0:
-        ipv4.address: 10.123.123.251/24
-        ipv4.gateway: 10.123.123.1
-        dns:
-        - 8.8.8.8
-        - 8.8.4.4
-      eth1:
-        ipv4.address: 10.210.210.251/24
-    setup:
-      - bash -x /SCRIPT/base-for-ubuntu.sh
-      - bash -x /SCRIPT/install-ansible-for-ubuntu.sh
-  alma9:
-    image: images:almalinux/9
-    series: rhel
-    vm: False
-    profile:
-      - prof1
-      - prof2net
-    volume:  # TODO
-      - ./CONF:/CONF
-    network-static:
-      eth0:
-        ipv4.address: 10.123.123.252/24
-        ipv4.gateway: 10.123.123.1
-        dns:
-        - 8.8.8.8
-        - 8.8.4.4
-      eth1:
-        ipv4.address: 10.210.210.252/24
-    envvar:
-      TESTENV: abcdefg
