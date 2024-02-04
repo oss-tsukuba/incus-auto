@@ -7,7 +7,7 @@ manage:
 init:
 	./RECREATE.sh ALL
 setup-gfarm:
-	$(IA) exec manage -- ansible-playbook -i /CONF/inventories.yaml /CONF/playbook-gfarm.yaml -v
+	$(IA) exec manage -- ansible-playbook -i /CONF/inventories.yaml /CONF/playbook-gfarm.yaml -vvv
 down:
 	$(IA) stop -a
 	$(IA) delete -a

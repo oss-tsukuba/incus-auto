@@ -1,3 +1,6 @@
+control:
+  hosts:
+    manage:
 gfarm:
   ### for example
   # hosts:

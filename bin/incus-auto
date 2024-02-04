@@ -435,7 +435,7 @@ class IncusAuto(CUI):
         fullargs += ['--']
         if not user_is_root:
             envkeys_str = ','.join(envkeys)
-            fullargs += ['sudo', f'--preserve-env={envkeys_str}',
+            fullargs += ['sudo', '-i', f'--preserve-env={envkeys_str}',
                          '-u', self.conf('/config/user')]
         if isinstance(args, str):
             args = shlex.split(args)
