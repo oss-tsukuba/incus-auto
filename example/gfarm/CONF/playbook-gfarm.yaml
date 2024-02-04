@@ -7,12 +7,14 @@
   vars: &common_variables
     SHARED_KEY: .gfarm_shared_key
     GFARM_USER: "{{ ansible_user }}"
+    SETUP_TMP: "~/gfarm-setup-tmp"
   tasks:
-  - name: Install rsync
-    package:
-      name: rsync
-      state: present
+    - name: Install rsync
+      package:
+        name: rsync
+        state: present
 
+######################################################################
 - name: Install gfarm
   hosts: gfarm
   gather_facts: false
@@ -21,6 +23,7 @@
       #command: bash /SCRIPT/install-gfarm.sh
       command: date  #TODO
 
+######################################################################
 - name: Setup SASL for servers
   hosts: group_gfmd, group_gfsd
   gather_facts: false
@@ -87,6 +90,7 @@
         msg: "Failed to set permissions on both files of sasldb2"
       when: result1.rc != 0 and result1.rc != 0
 
+######################################################################
 - name: Create .gfarm_shared_key for servers
   hosts: gfmd1
   gather_facts: false
@@ -108,7 +112,7 @@
       become_user: root
       fetch:
         src: "/home/{{ item }}/{{ SHARED_KEY }}"
-        dest: "~/gfarm-setup-tmp/{{ SHARED_KEY }}-{{ item }}"
+        dest: "{{ SETUP_TMP }}/{{ SHARED_KEY }}-{{ item }}"
         flat: yes
       loop:
         - _gfarmmd
@@ -124,7 +128,7 @@
       become: yes
       become_user: root
       copy:
-        src: "~/gfarm-setup-tmp/{{ SHARED_KEY }}-{{ item }}"
+        src: "{{ SETUP_TMP }}/{{ SHARED_KEY }}-{{ item }}"
         dest: "/home/{{ item }}/{{ SHARED_KEY }}"
         owner: "{{ item }}"
         group: "{{ item }}"
@@ -143,7 +147,7 @@
       become: yes
       become_user: root
       copy:
-        src: "~/gfarm-setup-tmp/{{ SHARED_KEY }}-{{ item }}"
+        src: "{{ SETUP_TMP }}/{{ SHARED_KEY }}-{{ item }}"
         dest: "/home/{{ item }}/{{ SHARED_KEY }}"
         owner: "{{ item }}"
         group: "{{ item }}"
@@ -151,6 +155,20 @@
       loop:
         - "{{ GFARM_USER }}"
 
+######################################################################
+- name: Build CA environment for GSI
+  hosts: manage
+  gather_facts: false
+  vars: *common_variables
+  tasks:
+    - name: Install globus-simple-ca
+      become: yes
+      become_user: root
+      package:
+        name: globus-simple-ca
+        state: present
+    - name: Initialize CA
+      shell: bash -x /SCRIPT/setup-globus-simple-ca.sh
 
     - name: DONE
       shell: hostname

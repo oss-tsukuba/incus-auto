@@ -32,7 +32,7 @@ install_package_debian() {
 	    gdb \
 	    valgrind
 
-# for Gfarm (from INSTALL.en)
+    # for Gfarm (from INSTALL.en)
     SUDO apt-get install -y \
 	    libssl-dev \
 	    libpq-dev \
