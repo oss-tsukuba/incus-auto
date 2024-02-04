@@ -1,26 +1,16 @@
+all:
+  vars:
+    ansible_user: gfarmsys
 control:
   hosts:
     manage:
 gfarm:
-  ### for example
-  # hosts:
-  #   gfadm@10.123.123.204:
-  # children:
-  #   group1:
-  #     hosts:
-  #       gfmd1
-  #   group2:
-  #     hosts:
-  #       gfsd1:
-  #         ansible_host: 10.123.123.204
-  #         ansible_user: gfadm
-  vars:
-    ansible_user: gfarmsys
   hosts:
   children:
     group_gfmd:
       hosts:
         gfmd1:
+        #  ansible_host: 10.123.123.211
         gfmd2:
     group_gfsd:
       hosts:
@@ -29,8 +19,6 @@ gfarm:
       hosts:
         gfclient1:
 lustre:
-  vars:
-    ansible_user: gfarmsys
   hosts:
     #mgs:
     #oss1:

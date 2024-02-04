@@ -6,11 +6,13 @@
   become_user: root
   vars: &common_variables
     SHARED_KEY: .gfarm_shared_key
+    GFARM_USER: "{{ ansible_user }}"
   tasks:
   - name: Install rsync
     package:
       name: rsync
       state: present
+
 - name: Install gfarm
   hosts: gfarm
   gather_facts: false
@@ -18,6 +20,7 @@
     - name: install gfarm
       #command: bash /SCRIPT/install-gfarm.sh
       command: date  #TODO
+
 - name: Setup SASL for servers
   hosts: group_gfmd, group_gfsd
   gather_facts: false
@@ -41,6 +44,7 @@
         dest: "{{ pkgconfig_out.stdout_lines[0] }}/sasl2/gfarm.conf"
     #- name: cat
     #  shell: cat "{{ pkgconfig_out.stdout_lines[0] }}/sasl2/gfarm.conf"
+
 - name: Setup SASL for all hosts
   hosts: gfarm
   gather_facts: false
@@ -82,6 +86,7 @@
       fail:
         msg: "Failed to set permissions on both files of sasldb2"
       when: result1.rc != 0 and result1.rc != 0
+
 - name: Create .gfarm_shared_key for servers
   hosts: gfmd1
   gather_facts: false
@@ -97,9 +102,7 @@
       loop:
         - _gfarmmd
         - _gfarmfs
-    # - name: Set variables
-    #   set_fact:
-    #     SHARED_KEY: .gfarm_shared_key
+        - "{{ GFARM_USER }}"
     - name: Copy key to local
       become: yes
       become_user: root
@@ -110,6 +113,8 @@
       loop:
         - _gfarmmd
         - _gfarmfs
+        - "{{ GFARM_USER }}"
+
 - name: Copy .gfarm_shared_key to servers
   hosts: group_gfmd:group_gfsd:!gfmd1
   gather_facts: false
@@ -127,6 +132,25 @@
       loop:
         - _gfarmmd
         - _gfarmfs
+        - "{{ GFARM_USER }}"
+
+- name: Copy .gfarm_shared_key to clients
+  hosts: group_gfclient
+  gather_facts: false
+  vars: *common_variables
+  tasks:
+    - name: Copy keys
+      become: yes
+      become_user: root
+      copy:
+        src: "~/gfarm-setup-tmp/{{ SHARED_KEY }}-{{ item }}"
+        dest: "/home/{{ item }}/{{ SHARED_KEY }}"
+        owner: "{{ item }}"
+        group: "{{ item }}"
+        mode: "0600"
+      loop:
+        - "{{ GFARM_USER }}"
+
 
     - name: DONE
       shell: hostname
