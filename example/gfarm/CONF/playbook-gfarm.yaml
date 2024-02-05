@@ -481,11 +481,90 @@
           #   executable: /bin/bash
 
 ######################################################################
-# - name: Configure gfarm
-#   hosts: gfarm
-#   gather_facts: yes  # for ansible_os_family
-#   vars:
-#     <<: [*common_variables]
-#   tags: gfarm
-#   tasks:
-#     - name:
+- name: DN of gfarmsys user
+  hosts: gfclient1
+  gather_facts: yes  # for ansible_os_family
+  vars:
+    <<: [*common_variables]
+  tags: config
+  tasks:
+    - name: grid-proxy-init -q
+      command: grid-proxy-init -q
+    - name: grid-proxy-info -identity
+      command: grid-proxy-info -identity
+      register: proxyinfo
+      changed_when: false
+
+- name: Configure gfarm
+  hosts: gfmd1
+  gather_facts: yes  # for ansible_os_family
+  vars:
+    <<: [*common_variables]
+    DN: "{{ hostvars['gfclient1']['proxyinfo']['stdout_lines'][0] }}"
+    CONFIG_OPTION: "-A {{ SYS_USER }} -r -X -d sha1 -a gsi -D {{ DN }}"
+    GFMD_CONF: /usr/local/etc/gfmd.conf
+    GFARM2_CONF: /usr/local/etc/gfarm2.conf
+  tags: config
+  tasks:
+    - name: config-gfarm
+      become: yes
+      become_user: root
+      shell: |
+        set -e
+        if [ -f {{ GFMD_CONF }} ]; then
+          echo "EXIST"
+          exit 0
+        fi
+        config-gfarm -N {{ CONFIG_OPTION }} > /dev/null
+        echo "INIT"
+        exit 0
+      register: config_gfarm
+      changed_when: config_gfarm.stdout == "INIT"
+      failed_when: config_gfarm.rc != 0
+    - name: update gfmd.conf
+      become: yes
+      become_user: root
+      blockinfile:
+        path: "{{ GFMD_CONF }}"
+        block: |
+          auth enable sharedsecret *
+          auth enable gsi_auth *
+          auth enable tls_client_certificate *
+          auth enable tls_sharedsecret *
+          auth enable sasl *
+          auth enable sasl_auth *
+          auth enable kerberos *
+          auth enable kerberos_auth *
+
+    - name: start gfarm-pgsql
+      become: yes
+      become_user: root
+      ansible.builtin.systemd:
+        name: gfarm-pgsql
+        state: started
+    - name: start gfmd
+      become: yes
+      become_user: root
+      ansible.builtin.systemd:
+        name: gfmd
+        state: started
+
+    - name: set METADB_LIST
+      set_fact:
+        METADB_LIST: "{{ groups['group_gfmd'] | map('regex_replace', '(.+)', '\\1:601') | list | join(' ') }}"
+
+    - name: update gfarm2.conf
+      become: yes
+      become_user: root
+      blockinfile:
+        path: "{{ GFARM2_CONF }}"
+        block: |
+          metadb_server_list {{ METADB_LIST }}
+          auth enable sharedsecret *
+          auth enable gsi_auth *
+          auth enable tls_client_certificate *
+          auth enable tls_sharedsecret *
+          auth enable sasl *
+          auth enable sasl_auth *
+          auth enable kerberos *
+          auth enable kerberos_auth *
