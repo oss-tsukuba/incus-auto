@@ -58,14 +58,15 @@ install_package_debian() {
 
     # for scitokens-cpp
     SUDO apt-get install -y \
-	    cmake \
-	    libcurl4-openssl-dev \
-	    uuid-dev \
-	    libsqlite3-dev
+	 cmake \
+	 libcurl4-openssl-dev \
+	 uuid-dev \
+	 libsqlite3-dev
 
     # for GSI environment
     SUDO apt-get install -y \
-	 globus-gsi-cert-utils-progs
+	 globus-gsi-cert-utils-progs \
+	 myproxy
 }
 
 if $UPDATE_PACKAGE; then
