@@ -9,14 +9,17 @@
   vars: &common_variables
     SHARED_KEY: .gfarm_shared_key
     GFARM_USER: "{{ ansible_user }}"
-    SETUP_TMP: "/home/{{ GFARM_USER }}/gfarm-setup-tmp"
+    USER_HOME: "/home/{{ GFARM_USER }}"
+    SETUP_TMP: "{{ USER_HOME }}/gfarm-setup-tmp"
     GSDIR: /etc/grid-security
+    TLSDIR: /etc/pki/tls
     CERTDIR: "{{ GSDIR }}/certificates"
     HOSTCERT: "{{ GSDIR }}/hostcert.pem"
     SERVICE: gfsd
     GFSD_CERT: "{{ GSDIR }}/{{ SERVICE }}/{{ SERVICE }}cert.pem"
     DIGEST: sha256
     SIGN_WORKDIR: "{{ SETUP_TMP }}/ca_sign"
+    CA_DIR: /var/lib/globus/simple_ca
   tasks:
     - name: Install rsync
       package:
@@ -39,7 +42,7 @@
 ######################################################################
 - name: Setup SASL for servers
   hosts: group_gfmd, group_gfsd
-  gather_facts: false
+  gather_facts: no
   tasks:
     - name: Run pkg-config
       shell: pkg-config --variable=libdir libsasl2
@@ -63,7 +66,7 @@
 
 - name: Setup SASL for all hosts
   hosts: gfarm
-  gather_facts: false
+  gather_facts: no
   tasks:
     - name: Run pkg-config
       shell: pkg-config --variable=libdir libsasl2
@@ -106,7 +109,7 @@
 ######################################################################
 - name: Create .gfarm_shared_key for servers
   hosts: gfmd1
-  gather_facts: false
+  gather_facts: no
   vars: *common_variables
   tasks:
     - name: Create keys for system users
@@ -134,7 +137,7 @@
 
 - name: Copy .gfarm_shared_key to servers
   hosts: group_gfmd:group_gfsd:!gfmd1
-  gather_facts: false
+  gather_facts: no
   vars: *common_variables
   tasks:
     - name: Copy keys
@@ -153,7 +156,7 @@
 
 - name: Copy .gfarm_shared_key to clients
   hosts: group_gfclient
-  gather_facts: false
+  gather_facts: no
   vars: *common_variables
   tasks:
     - name: Copy keys
@@ -171,7 +174,7 @@
 ######################################################################
 - name: Build CA environment for GSI
   hosts: manage
-  gather_facts: false
+  gather_facts: no
   vars: *common_variables
   tags: gsi_ca
   tasks:
@@ -187,9 +190,23 @@
     - name: set fact
       set_fact:
         gsi_ca_hash: "{{ ca_result.stdout }}"
+    - name: id
+      become: yes
+      become_user: root
+      command: id
+
+    - name: Copy cacert.pem
+      become: yes
+      become_user: root
+      shell: |
+        set -e
+        DEST="{{ USER_HOME }}/cacert.pem"
+        cp -f "{{ CA_DIR }}/cacert.pem" "$DEST"
+        chown "{{ GFARM_USER }}:{{ GFARM_USER }}" "$DEST"
+
 - name: sync_gsi_certificates
   hosts: gfarm
-  gather_facts: true
+  gather_facts: no
   vars:
     <<: [*common_variables]
     CA_HASH: "{{ hostvars['manage']['gsi_ca_hash'] }}"
@@ -270,10 +287,9 @@
 
 - name: Sign and copy certificates
   hosts: gfarm
-  gather_facts: false
+  gather_facts: no
   vars:
     <<: [*common_variables]
-    CA_HASH: "{{ hostvars['manage']['gsi_ca_hash'] }}"
   tags: gsi_ca
   serial: 1  # batch size 1 to sign for X.509 serial number
   tasks:
@@ -311,6 +327,63 @@
         owner: _gfarmfs
         group: _gfarmfs
 
+######################################################################
+- name: Setup TLS environment
+  hosts: gfarm
+  gather_facts: yes
+  vars:
+    <<: [*common_variables]
+  tags: tls
+  tasks:
+    - name: Create TLS directories
+      become: yes
+      become_user: root
+      file:
+        path: "{{ TLSDIR }}/{{ item }}"
+        state: directory
+      loop:
+        - certs
+        - private
 
-    - name: DONE
-      shell: hostname
+    - name: Symlink for certificates and keys
+      become: yes
+      become_user: root
+      file:
+        src: "{{ GSDIR }}/{{ item.0 }}"
+        dest: "{{ TLSDIR }}/{{ item.1 }}"
+        state: link
+      loop:  # [src, dest]
+        - ["certificates", "certs/gfarm"]
+        - ["hostcert.pem", "private/gfmd.key"]
+        - ["gfsd/gfsdcert.pem", "certs/gfsd.crt"]
+        - ["gfsd/gfsdkey.pem", "certs/gfsd.key"]
+
+    - name: Copy cacert.pem to hosts
+      copy:
+        src: "{{ USER_HOME }}/cacert.pem"
+        dest: "{{ USER_HOME }}/cacert.pem"
+
+    - name: GSI CA to TLS
+      become: yes
+      become_user: root
+      block:
+        - name: update-ca-certificates for Debian family
+          shell: |
+            set -e
+            mkdir -p /usr/share/ca-certificates/gfarm
+            cp {{ USER_HOME }}/cacert.pem /usr/share/ca-certificates/gfarm/
+            update-ca-certificates
+          # args:
+          #   executable: /bin/bash
+          when: ansible_os_family == "Debian"
+        - name: update-ca-trust for RHEL family
+          shell:
+            set -e
+            cp {{ USER_HOME }}/cacert.pem /usr/share/pki/ca-trust-source/anchors/
+            update-ca-trust
+          when: ansible_os_family == "RHEL"
+          # args:
+          #   executable: /bin/bash
+
+    # - name: DONE
+    #   shell: hostname
