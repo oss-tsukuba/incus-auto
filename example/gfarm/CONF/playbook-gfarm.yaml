@@ -1,13 +1,22 @@
 ---
 - name: Prepare
   hosts: all
+  tags:
+    - gsi_ca
   gather_facts: false
   become: yes
   become_user: root
   vars: &common_variables
     SHARED_KEY: .gfarm_shared_key
     GFARM_USER: "{{ ansible_user }}"
-    SETUP_TMP: "~/gfarm-setup-tmp"
+    SETUP_TMP: "/home/{{ GFARM_USER }}/gfarm-setup-tmp"
+    GSDIR: /etc/grid-security
+    CERTDIR: "{{ GSDIR }}/certificates"
+    HOSTCERT: "{{ GSDIR }}/hostcert.pem"
+    SERVICE: gfsd
+    GFSD_CERT: "{{ GSDIR }}/{{ SERVICE }}/{{ SERVICE }}cert.pem"
+    DIGEST: sha256
+    SIGN_WORKDIR: "{{ SETUP_TMP }}/ca_sign"
   tasks:
     - name: Install rsync
       package:
@@ -17,11 +26,15 @@
 ######################################################################
 - name: Install gfarm
   hosts: gfarm
+  tags:
+    - gfarm
   gather_facts: false
+  # TODO rsync and distclean?
+  serial: 1  # to build on same /SRC directory ...
   tasks:
     - name: install gfarm
-      #command: bash /SCRIPT/install-gfarm.sh
-      command: date  #TODO
+      command: bash /SCRIPT/install-gfarm.sh --no-distclean
+      #command: date  #TODO
 
 ######################################################################
 - name: Setup SASL for servers
@@ -160,6 +173,7 @@
   hosts: manage
   gather_facts: false
   vars: *common_variables
+  tags: gsi_ca
   tasks:
     - name: Install globus-simple-ca
       become: yes
@@ -169,6 +183,134 @@
         state: present
     - name: Initialize CA
       shell: bash -x /SCRIPT/setup-globus-simple-ca.sh
+      register: ca_result
+    - name: set fact
+      set_fact:
+        gsi_ca_hash: "{{ ca_result.stdout }}"
+- name: sync_gsi_certificates
+  hosts: gfarm
+  gather_facts: true
+  vars:
+    <<: [*common_variables]
+    CA_HASH: "{{ hostvars['manage']['gsi_ca_hash'] }}"
+  tags: gsi_ca
+  tasks:
+    - name: debug
+      debug:
+        var: gsi_ca_hash
+    - name: mkdir
+      become: yes
+      become_user: root
+      file:
+        path: "{{ CERTDIR }}"
+        state: directory
+    - name: sync
+      become: yes
+      become_user: root
+      synchronize:
+        src: "{{ CERTDIR }}"
+        dest: "{{ CERTDIR }}"
+    - name: grid-default-ca
+      become: yes
+      become_user: root
+      shell: grid-default-ca -ca {{ CA_HASH }}
+
+    - name: patch for grid-cert-requiest
+      become: yes
+      become_user: root
+      command: sed -i 's/:\/var\/adm\/wtmp:\/var\/log\/messages//' /usr/bin/grid-cert-request
+
+    - name: Check the existence of hostcert
+      become: yes
+      become_user: root
+      stat:
+        path: "{{ HOSTCERT }}"
+      register: hostcert_stat
+
+    - name: hostcert request
+      become: yes
+      become_user: root
+      shell: yes | grid-cert-request -host {{ inventory_hostname }}
+      when: not hostcert_stat.stat.exists
+
+    - name: Check the existence of gfsdcert
+      become: yes
+      become_user: root
+      stat:
+        path: "{{ GFSD_CERT }}"
+      register: gfsdcert_stat
+
+    - name: gfsdcert request
+      become: yes
+      become_user: root
+      shell: yes | grid-cert-request -service {{ SERVICE }} -host {{ inventory_hostname }}
+      when: not gfsdcert_stat.stat.exists
+
+    - name: Create local SIGN_WORKDIR
+      file:
+        path: "{{ SIGN_WORKDIR }}/{{ inventory_hostname }}"
+        state: directory
+      delegate_to: localhost
+
+    - name: fetch hostcert request
+      become: yes
+      become_user: root
+      fetch:
+        src: "{{ GSDIR }}/hostcert_request.pem"
+        dest: "{{ SIGN_WORKDIR }}/{{ inventory_hostname }}/"
+        flat: yes
+
+    - name: fetch gfsdcert request
+      become: yes
+      become_user: root
+      fetch:
+        src: "{{ GSDIR }}/{{ SERVICE }}/{{ SERVICE }}cert_request.pem"
+        dest: "{{ SIGN_WORKDIR }}/{{ inventory_hostname }}/"
+        flat: yes
+
+- name: Sign and copy certificates
+  hosts: gfarm
+  gather_facts: false
+  vars:
+    <<: [*common_variables]
+    CA_HASH: "{{ hostvars['manage']['gsi_ca_hash'] }}"
+  tags: gsi_ca
+  serial: 1  # batch size 1 to sign for X.509 serial number
+  tasks:
+    - name: Sign requests
+      become: yes
+      become_user: root
+      shell: |
+        OUT="{{ SIGN_WORKDIR }}/{{ inventory_hostname }}/{{ item }}.pem"
+        [ -f $OUT ] || cat /CONF/ca-password.txt | grid-ca-sign -in {{ SIGN_WORKDIR }}/{{ inventory_hostname }}/{{ item }}_request.pem -out $OUT -passin stdin -md {{ DIGEST }}
+      loop:
+        - hostcert
+        - "{{ SERVICE }}cert"
+      delegate_to: localhost
+
+    - name: Copy host certificate
+      become: yes
+      become_user: root
+      copy:
+        src: "{{ SIGN_WORKDIR }}/{{ inventory_hostname }}/hostcert.pem"
+        dest: "{{ GSDIR }}/"
+
+    - name: Copy gfsd certificate
+      become: yes
+      become_user: root
+      copy:
+        src: "{{ SIGN_WORKDIR }}/{{ inventory_hostname }}/{{ SERVICE }}cert.pem"
+        dest: "{{ GSDIR }}/{{ SERVICE }}/"
+
+    - name: chown gfsd key for _gfarmfs
+      become: yes
+      become_user: root
+      file:
+        path: "{{ GSDIR }}/{{ SERVICE }}/"
+        recurse: true
+        owner: _gfarmfs
+        group: _gfarmfs
+
 
     - name: DONE
       shell: hostname

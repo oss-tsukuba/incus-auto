@@ -62,6 +62,10 @@ install_package_debian() {
 	    libcurl4-openssl-dev \
 	    uuid-dev \
 	    libsqlite3-dev
+
+    # for GSI environment
+    SUDO apt-get install -y \
+	 globus-gsi-cert-utils-progs
 }
 
 if $UPDATE_PACKAGE; then

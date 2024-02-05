@@ -126,17 +126,17 @@ x-gfarm: &x-gfarm
   profile:
     - prof1
     - prof2net
-  network-static:  # TODO
   volume:
     - ./CONF:/CONF
     - ./SRC:/SRC
+    - ./BACKUP:/BACKUP
   # envvar:
 
 host:
   gfmd1:
     <<: [*x-gfarm]
     group: gfarm/gfmd  #TODO?
-    network-static:  # TODO
+    network-static:
       eth0:
         ipv4.address: 10.123.123.211/24
         ipv4.gateway: 10.123.123.1
@@ -147,8 +147,6 @@ host:
     devices:  # ignored when networ-static.*.ipv4.address is defined
       eth0:
         ipv4.address: 10.123.123.211
-    setup:
-      - bash -x /SCRIPT/setup-gfmd.sh "TODO"
   gfmd2:
     <<: [*x-gfarm]
     group: gfarm/gfmd  #TODO?
