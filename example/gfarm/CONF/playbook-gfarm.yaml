@@ -51,6 +51,7 @@
       user:
         name: "{{ item }}"
         state: present
+        shell: /bin/bash
       loop: "{{ USERS }}"
 
 ######################################################################
@@ -323,7 +324,7 @@
       become_user: root
       file:
         path: "{{ GSDIR }}/{{ SERVICE }}/"
-        recurse: true
+        recurse: yes
         owner: _gfarmfs
         group: _gfarmfs
 
@@ -394,7 +395,7 @@
       become_user: root
       command: chmod -R go-rwx "{{ SETUP_TMP }}/dot_globus/"
       delegate_to: localhost
-      run_once: true
+      run_once: yes
 
 - name: Synchronize .globus
   hosts: gfarm
@@ -410,6 +411,16 @@
         src: "{{ SETUP_TMP }}/dot_globus/{{ item }}/"
         dest: "/home/{{ item }}/.globus/"
       loop: "{{ USERS }}"
+    - name: chown .globus
+      become: yes
+      become_user: root
+      file:
+        dest: "/home/{{ item }}/.globus/"
+        recurse: yes
+        owner: "{{ item }}"
+        group: "{{ item }}"
+      loop: "{{ USERS }}"
+
 
 ######################################################################
 - name: Setup TLS environment
