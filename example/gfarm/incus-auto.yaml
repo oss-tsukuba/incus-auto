@@ -136,54 +136,64 @@ host:
   gfmd1:
     <<: [*x-gfarm]
     group: gfarm/gfmd  #TODO?
-    network-static:
+    alternative:
+      - gfmd1.test
+      - gfmd1.example.org
+    # network-static:
+    #   eth0:
+    #     ipv4.address: 10.123.123.211/24
+    #     ipv4.gateway: 10.123.123.1
+    #     dns:
+    #     - 8.8.8.8
+    #   eth1:
+    #     ipv4.address: 10.210.210.211/24
+    devices:  # ignored when network-static.*.ipv4.address is defined
       eth0:
-        ipv4.address: 10.123.123.211/24
-        ipv4.gateway: 10.123.123.1
-        dns:
-        - 8.8.8.8
-      eth1:
-        ipv4.address: 10.210.210.211/24
-    devices:  # ignored when networ-static.*.ipv4.address is defined
-      eth0:
-        ipv4.address: 10.123.123.211
+        ipv4.address: 10.123.123.101
   gfmd2:
     <<: [*x-gfarm]
     group: gfarm/gfmd  #TODO?
-    network-static:  # TODO
+    devices:
       eth0:
-        ipv4.address: 10.123.123.212/24
-        ipv4.gateway: 10.123.123.1
-        dns:
-        - 8.8.8.8
-      eth1:
-        ipv4.address: 10.210.210.212/24
-    # setup:
-    #   - bash -x /SCRIPT/setup-gfmd.sh "TODO"
-  # gfmd3:
+        ipv4.address: 10.123.123.102
+  gfmd3:
+    <<: [*x-gfarm]
+    group: gfarm/gfmd  #TODO?
+    devices:
+      eth0:
+        ipv4.address: 10.123.123.103
   gfsd1:
     <<: [*x-gfarm]
     group: gfarm/gfsd  #TODO?
-    network-static:  # TODO
+    devices:
       eth0:
-        ipv4.address: 10.123.123.221/24
-        ipv4.gateway: 10.123.123.1
-        dns:
-        - 8.8.8.8
-  # gfsd2:
+        ipv4.address: 10.123.123.111
+  gfsd2:
+    <<: [*x-gfarm]
+    group: gfarm/gfsd  #TODO?
+    devices:
+      eth0:
+        ipv4.address: 10.123.123.112
   # gfsd3:
   # gfsd4:
   gfclient1:
     <<: [*x-gfarm]
     group: gfarm/client  #TODO?
-    network-static:  # TODO
+    devices:
       eth0:
-        ipv4.address: 10.123.123.231/24
-        ipv4.gateway: 10.123.123.1
-        dns:
-        - 8.8.8.8
-  # keycloak:  # 241
-  # jwt-server: # 242
+        ipv4.address: 10.123.123.121
+  keycloak:
+    <<: [*x-gfarm]
+    group: gfarm/client  #TODO?
+    devices:
+      eth0:
+        ipv4.address: 10.123.123.131
+  jwtserver:
+    <<: [*x-gfarm]
+    group: gfarm/client  #TODO?
+    devices:
+      eth0:
+        ipv4.address: 10.123.123.132
   manage:
     image: images:ubuntu/22.04
     series: debian
@@ -206,26 +216,27 @@ host:
     setup:
       - bash -x /SCRIPT/base-for-ubuntu.sh
       - bash -x /SCRIPT/install-ansible-for-ubuntu.sh
-  alma9:
-    image: images:almalinux/9
-    series: rhel
-    vm: False
-    profile:
-      - prof1
-      - prof2net
-    volume:  # TODO
-      - ./CONF:/CONF
-    network-static:
-      eth0:
-        ipv4.address: 10.123.123.252/24
-        ipv4.gateway: 10.123.123.1
-        dns:
-        - 8.8.8.8
-        - 8.8.4.4
-      eth1:
-        ipv4.address: 10.210.210.252/24
-    envvar:
-      TESTENV: abcdefg
+  # alma9:
+  #   image: images:almalinux/9
+  #   series: rhel
+  #   vm: False
+  #   profile:
+  #     - prof1
+  #     - prof2net
+  #   volume:  # TODO
+  #     - ./CONF:/CONF
+  #   network-static:
+  #     eth0:
+  #       ipv4.address: 10.123.123.252/24
+  #       ipv4.gateway: 10.123.123.1
+  #       dns:
+  #       - 8.8.8.8
+  #       - 8.8.4.4
+  #     eth1:
+  #       ipv4.address: 10.210.210.252/24
+  #   envvar:
+  #     TESTENV: abcdefg
+  #
   # mgs:
   #   group: lustre  #TODO?
   #   alternative:
@@ -252,7 +263,7 @@ host:
   #     root:
   #       size: 8GB
   #     # eth0:
-  #     #   ipv4.address: 10.123.123.101  # in DHCP range
+  #     #   ipv4.address: 10.123.123.151  # in DHCP range
   #   volume:
   #     - ./CONF:/CONF
   #     - ./SRC:/SRC
@@ -270,9 +281,9 @@ host:
   #     root:
   #       size: 8GB
   #     eth0:
-  #       ipv4.address: 10.123.123.102
+  #       ipv4.address: 10.123.123.152
   #   setup:
-  #     - "/SCRIPT/setup-lustre-oss.sh 0 10.123.123.101"
+  #     - "/SCRIPT/setup-lustre-oss.sh 0 10.123.123.151"
   # lclient1:
   #   image: incus1:img-lclient
   #   series: rhel
@@ -282,6 +293,6 @@ host:
   #     - prof2net
   #   devices:
   #     eth0:
-  #       ipv4.address: 10.123.123.103
+  #       ipv4.address: 10.123.123.153
   #   setup:
-  #     - "/SCRIPT/setup-lustre-client.sh 0 10.123.123.101"
+  #     - "/SCRIPT/setup-lustre-client.sh 0 10.123.123.151"

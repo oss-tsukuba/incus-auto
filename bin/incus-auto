@@ -584,11 +584,12 @@ class IncusAuto(CUI):
             ip = self.conf_get_ipv4(name)
             if ip is None:
                 continue  # skip
+            # aliases
             alt = self.conf(f'/host/{name}/alternative')
             alt_str = ''
             if alt is not None:
                 alt_str = ' ' + ' '.join(alt)
-            hosts.append(f'{ip}    {fullname} {name}{alt_str}')
+            hosts.append(f'{ip}    {name} {fullname}{alt_str}')
         return hosts
 
     def cmd_etchosts(self):

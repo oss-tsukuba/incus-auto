@@ -4,8 +4,6 @@
   tags:
     - gsi_ca
   gather_facts: false
-  become: yes
-  become_user: root
   vars: &common_variables
     SHARED_KEY: .gfarm_shared_key
     SYS_USER: "{{ ansible_user }}"
@@ -25,11 +23,23 @@
     DIGEST: sha256
     SIGN_WORKDIR: "{{ SETUP_TMP }}/ca_sign"
     CA_DIR: /var/lib/globus/simple_ca
+    gfarm_install: no
   tasks:
     - name: Install rsync
+      become: yes
+      become_user: root
       package:
         name: rsync
         state: present
+    - name: mkdir
+      become: yes
+      become_user: root
+      file:
+        path: "{{ SETUP_TMP }}"
+        state: directory
+        mode: "0700"
+        owner: "{{ SYS_USER }}"
+        group: "{{ SYS_USER }}"
 
 ######################################################################
 - name: Install gfarm
@@ -42,9 +52,10 @@
   # TODO rsync and distclean?
   serial: 1  # to build on same /SRC directory ...
   tasks:
-    - name: install gfarm
+    - name: Install gfarm
       command: bash /SCRIPT/install-gfarm.sh --no-distclean
       #command: date  #TODO
+      when: gfarm_install | bool
     - name: Create local users
       become: yes
       become_user: root
@@ -226,8 +237,8 @@
       become: yes
       become_user: root
       synchronize:
-        src: "{{ CERTDIR }}"
-        dest: "{{ CERTDIR }}"
+        src: "{{ CERTDIR }}/"
+        dest: "{{ CERTDIR }}/"
     - name: grid-default-ca
       become: yes
       become_user: root
@@ -506,9 +517,10 @@
     GFMD_CONF: /usr/local/etc/gfmd.conf
     GFARM2_CONF: /usr/local/etc/gfarm2.conf
     GFDUMP_FILE: "{{ SETUP_TMP }}/gfdump_file"
-    SLAVE_GFMD_LIST: "{{ groups['group_gfmd'] | reject('equalto', 'gfmd1') | list }}"
+    SUB_GFMD_LIST: "{{ groups['group_gfmd'] | reject('equalto', 'gfmd1') | list }}"
     GFSD_LIST: "{{ groups['group_gfsd'] }}"
-    HOST_PREFIX: "gfarm-"   #TODO remove??
+    #HOST_PREFIX: "gfarm-"   #TODO remove??
+    HOST_PREFIX: ""
   tags: config
   tasks:
     - name: config-gfarm
@@ -520,7 +532,7 @@
           echo "EXIST"
           exit 0
         fi
-        config-gfarm -N {{ CONFIG_OPTION }} > /dev/null
+        config-gfarm -N {{ CONFIG_OPTION }}
         echo "INIT"
         exit 0
       register: config_gfarm
@@ -588,23 +600,23 @@
         dest: "{{ SETUP_TMP }}/"
         flat: yes
 
-    - name: master metadata server
+    - name: main metadata server
       # TODO use "{{ ansible_host | default(inventory_hostname) }}"
       # TODO remove {{ HOST_PREFIX }}
       command: gfmdhost -m {{ HOST_PREFIX }}gfmd1 -C {{ hostvars['gfmd1']['gfmd_cluster'] }}
 
-    - name: slave metadata servers
+    - name: sub metadata servers
       shell: |
         set -e
         # TODO remove {{ HOST_PREFIX }}
         GFMD={{ HOST_PREFIX }}{{ item }}
-        EXIST=$(gfmdhost | grep ^${GFMD}\$)
+        EXIST=$(gfmdhost | grep ^${GFMD}\$) || true
         if [ -n "$EXIST" ]; then
           gfmdhost -m $GFMD -C {{ hostvars[item]['gfmd_cluster'] }}
         else
-          gfmdhost -c #GFMD -C {{ hostvars[item]['gfmd_cluster'] }}
+          gfmdhost -c $GFMD -C {{ hostvars[item]['gfmd_cluster'] }}
         fi
-      loop: "{{ SLAVE_GFMD_LIST }}"
+      loop: "{{ SUB_GFMD_LIST }}"
 
     - name: backup DB
       become: yes
@@ -693,7 +705,7 @@
         set -e
         # TODO remove {{ HOST_PREFIX }}
         GFSD={{ HOST_PREFIX }}{{ item }}
-        EXIST=$(gfhost | grep ^${GFSD}\$)
+        EXIST=$(gfhost | grep ^${GFSD}\$) || true
         ARCH={{ hostvars[item]['arch'] }}
         if [ ! -n "$EXIST" ]; then
           #$(ssh $h gfarm.arch.guess)

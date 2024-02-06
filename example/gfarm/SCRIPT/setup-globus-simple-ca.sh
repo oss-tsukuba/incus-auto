@@ -33,4 +33,5 @@ rm -f openssl_req.log
 HASH=$(ca_hash)
 sudo grid-default-ca -ca $HASH > /dev/null
 
+echo $HASH
 status=0

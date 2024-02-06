@@ -10,18 +10,23 @@ gfarm:
     group_gfmd:
       hosts:
         gfmd1:
-        #  ansible_host: 10.123.123.211
+          #ansible_host: 10.123.123.211
           gfmd_cluster: siteA
         gfmd2:
           gfmd_cluster: siteA
-        #gfmd3:
-        #  gfmd_cluster: siteB
+        gfmd3:
+          gfmd_cluster: siteB
     group_gfsd:
       hosts:
         gfsd1:
+        gfsd2:
     group_gfclient:
       hosts:
         gfclient1:
+    group_ext:
+      hosts:
+        jwtserver:
+        keycloak:
 lustre:
   hosts:
     #mgs:
