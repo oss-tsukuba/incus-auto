@@ -483,7 +483,7 @@
 ######################################################################
 - name: DN of gfarmsys user
   hosts: gfclient1
-  gather_facts: yes  # for ansible_os_family
+  gather_facts: no
   vars:
     <<: [*common_variables]
   tags: config
@@ -495,15 +495,20 @@
       register: proxyinfo
       changed_when: false
 
-- name: Configure gfarm
-  hosts: gfmd1
-  gather_facts: yes  # for ansible_os_family
-  vars:
+- name: config-gfarm
+  hosts: group_gfmd
+  gather_facts: no
+  vars: &gfmd_variables
     <<: [*common_variables]
     DN: "{{ hostvars['gfclient1']['proxyinfo']['stdout_lines'][0] }}"
+    # TODO -h hostname ?
     CONFIG_OPTION: "-A {{ SYS_USER }} -r -X -d sha1 -a gsi -D {{ DN }}"
     GFMD_CONF: /usr/local/etc/gfmd.conf
     GFARM2_CONF: /usr/local/etc/gfarm2.conf
+    GFDUMP_FILE: "{{ SETUP_TMP }}/gfdump_file"
+    SLAVE_GFMD_LIST: "{{ groups['group_gfmd'] | reject('equalto', 'gfmd1') | list }}"
+    GFSD_LIST: "{{ groups['group_gfsd'] }}"
+    HOST_PREFIX: "gfarm-"   #TODO remove??
   tags: config
   tasks:
     - name: config-gfarm
@@ -542,6 +547,14 @@
       ansible.builtin.systemd:
         name: gfarm-pgsql
         state: started
+
+- name: Setup gfmd1
+  hosts: gfmd1
+  gather_facts: no
+  vars:
+    <<: [*gfmd_variables]
+  tags: config
+  tasks:
     - name: start gfmd
       become: yes
       become_user: root
@@ -568,3 +581,141 @@
           auth enable sasl_auth *
           auth enable kerberos *
           auth enable kerberos_auth *
+
+    - name: backup gfarm2.conf
+      fetch:
+        src: "{{ GFARM2_CONF }}"
+        dest: "{{ SETUP_TMP }}/"
+        flat: yes
+
+    - name: master metadata server
+      # TODO use "{{ ansible_host | default(inventory_hostname) }}"
+      # TODO remove {{ HOST_PREFIX }}
+      command: gfmdhost -m {{ HOST_PREFIX }}gfmd1 -C {{ hostvars['gfmd1']['gfmd_cluster'] }}
+
+    - name: slave metadata servers
+      shell: |
+        set -e
+        # TODO remove {{ HOST_PREFIX }}
+        GFMD={{ HOST_PREFIX }}{{ item }}
+        EXIST=$(gfmdhost | grep ^${GFMD}\$)
+        if [ -n "$EXIST" ]; then
+          gfmdhost -m $GFMD -C {{ hostvars[item]['gfmd_cluster'] }}
+        else
+          gfmdhost -c #GFMD -C {{ hostvars[item]['gfmd_cluster'] }}
+        fi
+      loop: "{{ SLAVE_GFMD_LIST }}"
+
+    - name: backup DB
+      become: yes
+      become_user: root
+      shell: |
+        set -e
+        DIR=$(dirname "{{ GFDUMP_FILE }}")
+        mkdir -p $DIR
+        gfdump.postgresql -d -f "{{ GFDUMP_FILE }}"
+        chown -R {{ SYS_USER }} $DIR
+
+    - name: fetch dump_file
+      fetch:
+        src: "{{ GFDUMP_FILE }}"
+        dest: "{{ GFDUMP_FILE }}"
+        flat: yes
+
+- name: setup gfmd2...
+  hosts: group_gfmd:!gfmd1
+  gather_facts: no
+  vars:
+    <<: [*gfmd_variables]
+  tags: config
+  tasks:
+    - name: copy gfdump_file
+      copy:
+        src: "{{ GFDUMP_FILE }}"
+        dest: "{{ GFDUMP_FILE }}"
+    - name: restore DB
+      become: yes
+      become_user: root
+      command: gfdump.postgresql -r -f "{{ GFDUMP_FILE }}"
+
+- name: Synchronize gfarm2.conf
+  hosts: gfarm
+  gather_facts: yes
+  vars:
+    <<: [*gfmd_variables]
+  tags: config
+  tasks:
+    - name: Synchronize gfarm2.conf
+      become: yes
+      become_user: root
+      synchronize:
+        src: "{{ SETUP_TMP }}/gfarm2.conf"
+        dest: "{{ GFARM2_CONF }}"
+
+- name: config-gfsd
+  hosts: group_gfsd
+  gather_facts: no
+  vars:
+    <<: [*gfmd_variables]
+  tags: config
+  tasks:
+    - name: config-gfsd
+      become: yes
+      become_user: root
+      shell: |
+        set -e
+        #TODO
+        GFSD={{ HOST_PREFIX }}{{ inventory_hostname }}
+        EXIST=$(sudo -u {{ SYS_USER }} gfhost | grep ^${GFSD}\$) || true
+        if [ ! -n "$EXIST" ]; then
+          config-gfsd
+          echo "INIT"
+        fi
+        exit 0
+      register: config_gfsd
+      changed_when: config_gfsd.stdout == "INIT"
+      failed_when: config_gfsd.rc != 0
+
+    - name: fact for gfsd
+      set_fact:
+        arch: "{{ ansible_architecture }}"
+
+- name: register gfsd
+  hosts: gfmd1
+  gather_facts: no
+  vars:
+    <<: [*gfmd_variables]
+  tags: config
+  tasks:
+    - name: gfhost -c
+      # TODO config-gfsd -h -l
+      shell: |
+        set -e
+        # TODO remove {{ HOST_PREFIX }}
+        GFSD={{ HOST_PREFIX }}{{ item }}
+        EXIST=$(gfhost | grep ^${GFSD}\$)
+        ARCH={{ hostvars[item]['arch'] }}
+        if [ ! -n "$EXIST" ]; then
+          #$(ssh $h gfarm.arch.guess)
+          gfhost -c -a $ARCH -p 600 -n $(nproc) $GFSD
+          echo "INIT"
+        fi
+        exit 0
+      register: gfhost
+      changed_when: gfhost.stdout == "INIT"
+      failed_when: gfhost.rc != 0
+      loop: "{{ GFSD_LIST }}"
+
+- name: start gfsd
+  hosts: group_gfsd
+  gather_facts: no
+  vars:
+    <<: [*gfmd_variables]
+  tags: config
+  tasks:
+    - name: start gfsd
+      become: yes
+      become_user: root
+      ansible.builtin.systemd:
+        name: gfsd
+        state: started

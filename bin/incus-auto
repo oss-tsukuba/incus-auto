@@ -810,8 +810,8 @@ class IncusAuto(CUI):
                             ignore_error=True)
             self.incus_exec(fullname, 'df -h')
 
-    def install_ssh(self, info, fullname):
-        self.incus_exec(fullname, f'hostnamectl set-hostname {fullname}')
+    def install_ssh(self, info, name, fullname):
+        self.incus_exec(fullname, f'hostnamectl set-hostname {name}')
         self.incus_exec(fullname, 'systemctl restart systemd-hostnamed')
         if info['series'] == 'rhel':
             self.incus_exec(fullname, 'yum install -y openssh-server')
@@ -990,7 +990,7 @@ class IncusAuto(CUI):
                 self.growpart(fullname)
             self.setup_user(info, fullname)
             if not self.control_buildimage:
-                self.install_ssh(info, fullname)
+                self.install_ssh(info, name, fullname)
                 self.update_etchosts(info, fullname)
             self.setup_network_static(info, fullname)
             self.incus(f'stop {fullname}')

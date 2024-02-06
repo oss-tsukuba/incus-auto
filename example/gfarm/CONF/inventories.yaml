@@ -11,7 +11,7 @@ gfarm:
       hosts:
         gfmd1:
         #  ansible_host: 10.123.123.211
-          gfmd_cluster: site1
+          gfmd_cluster: siteA
         gfmd2:
           gfmd_cluster: siteA
         #gfmd3:
