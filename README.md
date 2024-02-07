@@ -65,7 +65,7 @@ $ incus storage create mypool dir source=/mnt/disk2/incus-mypool
 See:
 
 ```
-incus -h
+incus-auto -h
 ```
 
 ## Format of incus-auto.yml
