@@ -109,7 +109,7 @@
           xoauth2_user_claim: hpci.id
         dest: "{{ pkgconfig_out.stdout_lines[0] }}/sasl2/gfarm-client.conf"
     - name: create empty sasldb2 database
-      # because the gdbm backend of Cyrus SAL (e.g. on RHEL9) needs this
+      # because the gdbm backend of Cyrus SASL (e.g. on RHEL9) needs this
       # although the berkeley DB backend does NOT
       become: yes
       become_user: root
