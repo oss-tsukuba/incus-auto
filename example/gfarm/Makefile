@@ -6,6 +6,8 @@ client:
 	$(IA) shell gfclient1
 init:
 	$(IA) init
+build:
+	$(IA) build -a
 recreate:
 	./RECREATE.sh ALL
 setup:
