@@ -4,21 +4,25 @@ incus-auto is automating deployment system by Incus or LXD.
 
 ## Usage Summary
 
+- Install Incus
+  - <https://linuxcontainers.org/incus/docs/main/installing/>
 - Prepare storage pool
+  - <https://linuxcontainers.org/incus/docs/main/howto/storage_pools/>
 - Prepare remote server if needed
 - Create `incus-auto.yaml`
-  - define profile
-  - define network
-  - define images to build
-  - define hosts
-  - define scripts to deploy
+  - define config (profile, network, disk, ...)
+  - (optional) define buildimage
+  - define host
 - Initialize profile and network
+  - `incus-auto init`
 - Build images
+  - `incus-auto build -a`
 - Launch containers or virtual machines
+  - `incus-auto launch -a`
 
 ## Install
 
-instlal `bin/incus-auto` to any directory. (PATH)
+install `bin/incus-auto` to the directory set in PATH.
 
 example:
 
@@ -27,8 +31,6 @@ install -m 755 bin/incus-auto /usr/local/bin/
 ```
 
 ### Prepare storage pool
-
-See <https://linuxcontainers.org/incus/docs/main/howto/storage_pools/>
 
 ```
 ### Example
@@ -68,6 +70,4 @@ incus -h
 
 ## Format of incus-auto.yml
 
-- Example: ./example/gfarm-lustre/
-
-TODO
+- Example: ./example/gfarm/incus-auto.yml

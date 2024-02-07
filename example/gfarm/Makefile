@@ -1,14 +1,16 @@
 IA = incus-auto
 
-shell:
-	$(IA) shell gfclient1
 manage:
 	$(IA) shell manage
+client:
+	$(IA) shell gfclient1
 init:
+	$(IA) init
+recreate:
 	./RECREATE.sh ALL
-setup-gfarm:
+setup:
 	$(IA) exec manage -- bash /SCRIPT/setup-gfarm-by-ansible.sh
-clear-gfarm: #TODO
+clear: #TODO
 	$(IA) exec manage -- bash /SCRIPT/clear-gfarm-by-ansible.sh
 down:
 	$(IA) stop -a
