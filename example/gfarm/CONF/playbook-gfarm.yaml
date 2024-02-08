@@ -493,7 +493,7 @@
 
 ######################################################################
 - name: DN of gfarmsys user
-  hosts: gfclient1
+  hosts: gfclient1 gfmd1
   gather_facts: no
   vars:
     <<: [*common_variables]
