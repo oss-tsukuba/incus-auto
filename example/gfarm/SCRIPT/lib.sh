@@ -24,9 +24,15 @@ if [ -f "$CONFIG_OVERRIDE" ]; then
 fi
 
 SUDO() {
-    sudo --preserve-env=http_proxy,https_proxy "$@"
+    sudo -i --preserve-env=http_proxy,https_proxy "$@"
 }
 
 DONE() {
     echo "DONE: $@"
+}
+
+MYIP() {
+    local IF
+    IF=`ip route | awk '/^default/ { print $5 }'`
+    ip addr show $IF | awk '/inet / {print $2}' | cut -d '/' -f 1
 }

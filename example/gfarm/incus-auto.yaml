@@ -61,31 +61,33 @@ config:
           type: nic
 
 buildimage:
-  # img-lserver:
-  #   remote: incus1  #TODO # default: not defined
-  #   image: images:rockylinux/8
-  #   series: rhel
-  #   vm: true
-  #   devices:
-  #     root:
-  #       size: 8GB
-  #     # eth0:
-  #     #  ipv4.address: 10.123.123.191  # NOTE: for ipv4.dhcp=true
-  #   config:
-  #     limits.memory: 4GB
-  #     limits.cpu: 6
-  #   profile:
-  #     - prof1
-  #     - prof2net
-  #   setup:
-  #     - ./CONF:/CONF
-  #     - bash -x /SCRIPT/install-lustre-server.sh "TODO" "a b c" "\\d ef"
-  #   # publish-remote:  # default: local
-  #   #   - incus1
-  #   publish-alias:
-  #     - img-lserver  # short name (without project_name prefix)
-  #     - img-lustre-server
-  #
+  img-lserver:
+    remote: incus1  #TODO # default: not defined
+    image: images:rockylinux/8
+    series: rhel
+    vm: true
+    devices:
+      root:
+        size: 8GB
+      # eth0:
+      #  ipv4.address: 10.123.123.191  # NOTE: for ipv4.dhcp=true
+    config:
+      limits.memory: 4GB
+      limits.cpu: 6
+      security.secureboot: false
+    profile:
+      - prof1
+      - prof2net
+    volume:
+      - ./CONF:/CONF
+    setup:
+      - bash -x /SCRIPT/install-lustre-server.sh
+    # publish-remote:  # default: local
+    #   - incus1
+    publish-alias:
+      - img-lserver  # short name (without project_name prefix)
+      - img-lustre-server
+
   # img-lclient:
   #   image: images:rockylinux/8
   #   series: rhel
