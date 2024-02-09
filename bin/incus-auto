@@ -981,12 +981,28 @@ class IncusAuto(CUI):
         self.incus_exec(fullname, 'tee -a /etc/hosts',
                         input=etchosts_str, output=False)
 
+    def create_block_device(self, info, name, fullname):
+        bd = info.get('block-device', None)
+        if bd is None:
+            return
+        for bdname, params in bd.items():
+            pool = params['pool']  # MUST
+            size = params['size']  # MUST
+            if self.tobool(params.get('delete', False)):  # default: False
+                self.incus(f'storage volume delete {pool} {bdname}')
+            self.incus(f'storage volume create {pool} {bdname} '
+                       + f'size={size} --type=block')
+            #self.incus(f'storage volume create {pool} {bdname} --type=block')
+            #self.incus(f'storage volume set {pool} {bdname} size {size}')
+            self.incus(f'storage volume attach {pool} {bdname} {fullname}')
+
     def launch_common(self):
         for name, fullname, info in self.name_iter(self.use_all):
             if self.control_buildimage:
                 # check yaml
                 info['publish-alias']
             self.incus_launch(info, name, fullname)
+            self.create_block_device(info, name, fullname)
         for name, fullname, info in self.name_iter(self.use_all):
             self.incus_wait_for_wakeup(fullname, info)
             if self.tobool(info['vm']) and info['series'] == 'rhel':

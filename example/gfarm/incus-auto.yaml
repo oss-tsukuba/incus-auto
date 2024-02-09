@@ -67,7 +67,7 @@ buildimage:
     vm: true
     devices:
       root:
-        size: 8GB
+        size: 6GB
       # eth0:
       #  ipv4.address: 10.123.123.191  # NOTE: for ipv4.dhcp=true
     config:
@@ -241,39 +241,41 @@ host:
   #   envvar:
   #     TESTENV: abcdefg
   #
-  # mgs:
-  #   group: lustre  #TODO?
-  #   alternative:
-  #     - mgs.test
-  #     - mgs.example.org
-  #   image: incus1:gfarm-img-lserver  # image alias (fullname)
-  #   series: rhel
-  #   vm: true
-  #   profile:
-  #     - prof1
-  #     - prof2net
-  #   #remote: <NOT DEFINED>  # NOTE: use default server
-  #   remote: incus1
-  #   network-static:  # TODO
-  #     eth0:
-  #       ipv4.address: 10.123.123.201/24   # convert: NETMASK=255.255.255.0
-  #       ipv4.gateway: 10.123.123.1
-  #       dns:
-  #       - 8.8.8.8
-  #       - 8.8.4.4
-  #     eth1:
-  #       ipv4.address: 10.210.210.201/24
-  #   devices:
-  #     root:
-  #       size: 8GB
-  #     # eth0:
-  #     #   ipv4.address: 10.123.123.151  # in DHCP range
-  #   volume:
-  #     - ./CONF:/CONF
-  #     - ./SRC:/SRC
-  #   setup:
-  #     - bash -x /SCRIPT/setup-lustre-mgs.sh "TODO"
-  #
+  mgs:
+    group: lustre  #TODO?
+    alternative:
+      - mgs.test
+      - mgs.example.org
+    image: gfarm-img-lserver  # image alias (fullname)
+    series: rhel
+    vm: true
+    profile:
+      - prof1
+      - prof2net
+    #remote: <NOT DEFINED>  # NOTE: use default server
+    remote: incus1
+    volume:
+      - ./CONF:/CONF
+      - ./SRC:/SRC
+      - ./BACKUP:/BACKUP
+    config:
+      limits.memory: 4GB
+      limits.cpu: 6
+      security.secureboot: false
+    block-device:
+      lustre-mdt:
+        pool: mypool
+        size: 5GB
+        delete: false  # true: delete the block before building
+    devices:
+      root:
+       size: 6GB  # equal to or larger than the image
+      eth0:
+        ipv4.address: 10.123.123.151  # in DHCP range
+    setup:
+      - bash -x /SCRIPT/setup-lustre-mgs.sh
+      - __RESTART__
+
   # oss0:
   #   image: incus1:img-lserver
   #   series: rhel

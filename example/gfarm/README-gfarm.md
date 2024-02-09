@@ -18,3 +18,4 @@
 - ctrl-d (exit from gfclient1)
 - ctrl-d (exit from manage)
 - run `make down` to destroy the environemnt
+- run `make delete-lustre-block`

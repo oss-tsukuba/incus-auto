@@ -46,7 +46,7 @@ fi
 # SUDO grubby --set-default=${KERNEL}
 
 GRUB_ENV=/etc/default/grub
-if [ ! -f $GRUB_ENV ]; then
+if ! grep -q "GRUB_DISABLE_SUBMENU=true" $GRUB_ENV; then
     cat <<EOF | SUDO tee -a $GRUB_ENV
 GRUB_DISABLE_SUBMENU=true
 GRUB_DEFAULT=2
