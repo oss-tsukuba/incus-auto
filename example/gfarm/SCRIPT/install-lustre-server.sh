@@ -2,6 +2,14 @@
 
 source /SCRIPT/lib.sh
 
+# for developer
+SUDO yum install -y \
+     less \
+     emacs-nox \
+     vim
+     # gdb \
+     # valgrind
+
 cat <<EOF | SUDO tee /etc/yum.repos.d/lustre.repo
 [lustre-server]
 name=lustre-server

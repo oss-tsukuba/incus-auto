@@ -14,9 +14,17 @@ setup:
 	$(IA) exec manage -- bash /SCRIPT/setup-gfarm-by-ansible.sh
 clear: #TODO
 	$(IA) exec manage -- bash /SCRIPT/clear-gfarm-by-ansible.sh
-delete-lustre-volume:
-	incus delete -f gfarm-mgs
-	incus storage volume delete mypool lustre-mdt
+recreate-lustre:
+	incus delete -f gfarm-mgs || true
+	incus delete -f gfarm-oss0 || true
+	incus storage volume delete mypool gfarm-lustre-mdt || true
+	incus storage volume delete mypool gfarm-lustre-oss0 || true
+	./RECREATE.sh mgs
+	./RECREATE.sh oss0
+	make update-etchosts
+update-etchosts:
+	$(IA) update-etchosts -a
+	$(IA) exec manage -- bash -x /SCRIPT/setup-ansible.sh
 down:
 	$(IA) stop -a
 	$(IA) delete -a

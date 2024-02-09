@@ -330,7 +330,7 @@ class IncusAuto(CUI):
                     'vm': False,
                     'devices': {
                         'root': {
-                            'size': '5GB',
+                            # 'size': '5GB',
                         },
                     },
                 },
@@ -340,7 +340,7 @@ class IncusAuto(CUI):
                     'vm': False,
                     'devices': {
                         'root': {
-                            'size': '5GB',
+                            # 'size': '5GB',
                         },
                     },
                 },

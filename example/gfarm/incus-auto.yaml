@@ -136,6 +136,23 @@ x-gfarm: &x-gfarm
     - ./BACKUP:/BACKUP
   # envvar:
 
+x-lustre: &x-lustre
+  series: rhel
+  vm: true
+  profile:
+    - prof1
+    - prof2net
+  #remote: <NOT DEFINED>  # NOTE: use default server
+  remote: incus1
+  volume:
+    - ./CONF:/CONF
+    - ./SRC:/SRC
+    - ./BACKUP:/BACKUP
+  config:
+    limits.memory: 4GB
+    limits.cpu: 6
+    security.secureboot: false
+
 host:
   gfmd1:
     <<: [*x-gfarm]
@@ -242,28 +259,29 @@ host:
   #     TESTENV: abcdefg
   #
   mgs:
-    group: lustre  #TODO?
+    <<: [*x-lustre]
+    group: lustre/mgs
     alternative:
       - mgs.test
       - mgs.example.org
     image: gfarm-img-lserver  # image alias (fullname)
-    series: rhel
-    vm: true
-    profile:
-      - prof1
-      - prof2net
+    #series: rhel
+    #vm: true
+    #profile:
+    #  - prof1
+    #  - prof2net
     #remote: <NOT DEFINED>  # NOTE: use default server
-    remote: incus1
-    volume:
-      - ./CONF:/CONF
-      - ./SRC:/SRC
-      - ./BACKUP:/BACKUP
-    config:
-      limits.memory: 4GB
-      limits.cpu: 6
-      security.secureboot: false
+    #remote: incus1
+    #volume:
+    #  - ./CONF:/CONF
+    #  - ./SRC:/SRC
+    #  - ./BACKUP:/BACKUP
+    #config:
+    #  limits.memory: 4GB
+    #  limits.cpu: 6
+    #  security.secureboot: false
     block-device:
-      lustre-mdt:
+      gfarm-lustre-mdt:
         pool: mypool
         size: 5GB
         delete: false  # true: delete the block before building
@@ -276,20 +294,22 @@ host:
       - bash -x /SCRIPT/setup-lustre-mgs.sh
       - __RESTART__
 
-  # oss0:
-  #   image: incus1:img-lserver
-  #   series: rhel
-  #   vm: true
-  #   profile:
-  #     - prof1
-  #     - prof2net
-  #   devices:
-  #     root:
-  #       size: 8GB
-  #     eth0:
-  #       ipv4.address: 10.123.123.152
-  #   setup:
-  #     - "/SCRIPT/setup-lustre-oss.sh 0 10.123.123.151"
+  oss0:
+    <<: [*x-lustre]
+    group: lustre/oss
+    image: gfarm-img-lserver
+    block-device:
+      gfarm-lustre-oss0:
+        pool: mypool
+        size: 6GB
+        delete: false
+    devices:
+      root:
+        size: 7GB
+      eth0:
+        ipv4.address: 10.123.123.152
+    setup:
+      - bash -x /SCRIPT/setup-lustre-oss.sh 0 10.123.123.151
   # lclient1:
   #   image: incus1:img-lclient
   #   series: rhel
