@@ -31,4 +31,4 @@ SUDO yum --nogpgcheck --enablerepo=e2fsprogs-wc upgrade -y \
 SUDO yum --nogpgcheck --enablerepo=lustre-client install -y \
      kmod-lustre-client lustre-client
 
-# TODO install gfarm clinet
+REGPATH_usrlocalbin

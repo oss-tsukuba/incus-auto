@@ -96,8 +96,10 @@ buildimage:
       - prof2net
     volume:
       - ./SRC:/SRC
+      #- ./HOME/img-lclient:/home/gfarmsys
     setup:
       - bash -x /SCRIPT/install-lustre-client.sh
+      - bash -x /SCRIPT/install-gfarm.sh
     # publish-remote:
     #   - incus1
     publish-alias:  # MUST
@@ -284,7 +286,7 @@ host:
       gfarm-lustre-mdt:
         pool: mypool
         size: 5GB
-        delete: false  # true: delete the block before building
+        create: true  # true: delete the block before building
     devices:
       root:
         size: 6GB  # equal to or larger than the image
@@ -302,7 +304,7 @@ host:
       gfarm-lustre-oss0:
         pool: mypool
         size: 6GB
-        delete: false
+        create: true
     devices:
       root:
         size: 6GB
@@ -318,7 +320,7 @@ host:
       gfarm-lustre-oss1:
         pool: mypool
         size: 6GB
-        delete: false
+        create: true
     devices:
       root:
         size: 6GB
@@ -343,7 +345,7 @@ host:
       - ./BACKUP:/BACKUP
     config:
       limits.memory: 4GB
-      limits.cpu: 6
+      limits.cpu: 4
       security.secureboot: false  # for lustre kernel module
     setup:
       - bash -x /SCRIPT/setup-lustre-client.sh 10.123.123.151 testfs

@@ -26,38 +26,40 @@ install_package_debian() {
     # for developer
     SUDO apt-get update
     SUDO apt-get install -y \
-	    less \
-	    emacs-nox \
-	    vim \
-	    gdb \
-	    valgrind
+	 git \
+	 less \
+	 emacs-nox \
+	 vim \
+	 gdb \
+	 valgrind
 
     # for Gfarm (from INSTALL.en)
     SUDO apt-get install -y \
-	    libssl-dev \
-	    libpq-dev \
-	    libsasl2-dev \
-	    sasl2-bin \
-	    libkrb5-dev \
-	    libglobus-gssapi-gsi-dev \
-	    pkg-config \
-	    libibverbs-dev \
-	    postgresql \
-	    postgresql-client \
-	    libfuse-dev \
-	    libacl1-dev \
-	    python3 \
-	    python3-docopt \
-	    python3-schema \
-	    ruby \
-	    golang
+	 libssl-dev \
+	 libpq-dev \
+	 libsasl2-dev \
+	 sasl2-bin \
+	 libkrb5-dev \
+	 libglobus-gssapi-gsi-dev \
+	 pkg-config \
+	 libibverbs-dev \
+	 postgresql \
+	 postgresql-client \
+	 libfuse-dev \
+	 libacl1-dev \
+	 python3 \
+	 python3-docopt \
+	 python3-schema \
+	 ruby \
+	 golang
 
     # to build gfarm
     SUDO apt-get install -y \
-	    make
+	 make
 
     # for scitokens-cpp
     SUDO apt-get install -y \
+	 g++ \
 	 cmake \
 	 libcurl4-openssl-dev \
 	 uuid-dev \
@@ -65,6 +67,59 @@ install_package_debian() {
 
     # for GSI environment
     SUDO apt-get install -y \
+	 globus-gsi-cert-utils-progs \
+	 myproxy
+}
+
+install_package_rhel() {
+    # base package
+    SUDO dnf install -y \
+	 rsync
+
+    # for developer
+    SUDO dnf install -y \
+	 git \
+	 less \
+	 emacs-nox \
+	 vim \
+	 gdb \
+	 valgrind
+
+    # for Gfarm (from INSTALL.en)
+    SUDO dnf install -y epel-release
+    SUDO dnf install -y \
+	 openssl-devel \
+	 postgresql-devel \
+	 cyrus-sasl-devel \
+	 krb5-devel \
+	 globus-gssapi-gsi-devel \
+	 pkgconfig \
+	 rdma-core-devel \
+	 postgresql postgresql-server \
+	 fuse-devel libacl-devel \
+	 python3 python3-docopt python3-schema \
+	 ruby \
+	 golang
+
+    # to build gfarm
+    SUDO dnf install -y \
+	 make
+
+    # for scitokens-cpp
+    SUDO dnf install -y \
+	 gcc-c++ \
+	 cmake \
+	 libcurl-devel \
+	 libuuid-devel \
+	 sqlite-devel
+
+    # for cyrus-sasl-xoauth2-idp
+    SUDO dnf install -y \
+	 libtool
+
+
+    # for GSI environment
+    SUDO dnf install -y \
 	 globus-gsi-cert-utils-progs \
 	 myproxy
 }
@@ -85,7 +140,14 @@ if $UPDATE_PACKAGE; then
 fi
 
 ###################################################################
-GFARM_WORKDIR=/SRC/gfarm
+GFARM_SRCDIR=/SRC/gfarm
+GFARM_WORKDIR=${HOME}/gfarm
+
+RSYNC_OPT=
+if $DISTCLEAN; then
+    RSYNC_OPT="--delete"
+fi
+rsync -a $RSYNC_OPT ${GFARM_SRCDIR}/ ${GFARM_WORKDIR}/
 
 # install gfarm
 cd $GFARM_WORKDIR
@@ -110,8 +172,10 @@ $DISTCLEAN && (test -f Makefile && make distclean || true)
 $DISTCLEAN && ./configure --with-gfarm=/usr/local
 make -j $MAKE_NUM_JOBS
 SUDO make install
-# for autofs
-SUDO cp -af $(which mount.gfarm2fs) /sbin/
+if [ ! -f /sbin/mount.gfarm2fs ]; then
+    # for autofs
+    SUDO ln -s $(which mount.gfarm2fs) /sbin/
+fi
 
 ###################################################################
 # install jwt-logon
@@ -131,6 +195,7 @@ SUDO make PREFIX=/usr/local install
 
 cd $GFARM_WORKDIR
 cd scitokens-cpp
+rm -rf build
 mkdir -p build
 cd build
 scitokens_prefix=/usr
@@ -152,7 +217,7 @@ sasl_libdir=$(pkg-config --variable=libdir libsasl2)
 # /usr/local/lib64/sasl2/
 $DISTCLEAN && ./autogen.sh
 $DISTCLEAN && ./configure --libdir="${sasl_libdir}"
-make
+make -j $MAKE_NUM_JOBS
 SUDO make install
 
 DONE "$0" "$@"

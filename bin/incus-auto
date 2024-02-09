@@ -993,12 +993,11 @@ class IncusAuto(CUI):
         for bdname, params in bd.items():
             pool = params['pool']  # MUST
             size = params['size']  # MUST
-            if self.tobool(params.get('delete', False)):  # default: False
-                self.incus(f'storage volume delete {pool} {bdname}')
-            self.incus(f'storage volume create {pool} {bdname} '
-                       + f'size={size} --type=block')
-            #self.incus(f'storage volume create {pool} {bdname} --type=block')
-            #self.incus(f'storage volume set {pool} {bdname} size {size}')
+            if self.tobool(params.get('create', False)):  # default: False
+                self.incus(f'storage volume delete {pool} {bdname}',
+                           ignore_error=True)
+                self.incus(f'storage volume create {pool} {bdname} '
+                           + f'size={size} --type=block')
             self.incus(f'storage volume attach {pool} {bdname} {fullname}')
 
     def launch_common(self):

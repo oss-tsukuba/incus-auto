@@ -62,3 +62,5 @@ GRUB_DEFAULT=2
 EOF
 fi
 SUDO grub2-mkconfig -o /boot/efi/EFI/rocky/grub.cfg
+
+REGPATH_usrlocalbin
