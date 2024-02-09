@@ -62,7 +62,6 @@ config:
 
 buildimage:
   img-lserver:
-    remote: incus1  #TODO # default: not defined
     image: images:rockylinux/8
     series: rhel
     vm: true
@@ -82,25 +81,28 @@ buildimage:
       - ./CONF:/CONF
     setup:
       - bash -x /SCRIPT/install-lustre-server.sh
+    # "Error: The source and target servers must be different" if "remote name" and localost are the same
     # publish-remote:  # default: local
     #   - incus1
-    publish-alias:
+    publish-alias:  # MUST
       - img-lserver  # short name (without project_name prefix)
       - img-lustre-server
-
-  # img-lclient:
-  #   image: images:rockylinux/8
-  #   series: rhel
-  #   vm: true
-  #   profile:
-  #     - prof1
-  #     - prof2net
-  #   volume:
-  #     - ./SRC:/SRC
-  #   setup:
-  #     - /SCRIPT/install-lustre-client.sh
-  #   publish-remote:
-  #     - incus1
+  img-lclient:
+    image: images:rockylinux/8
+    series: rhel
+    vm: true
+    profile:
+      - prof1
+      - prof2net
+    volume:
+      - ./SRC:/SRC
+    setup:
+      - bash -x /SCRIPT/install-lustre-client.sh
+    # publish-remote:
+    #   - incus1
+    publish-alias:  # MUST
+      - img-lclient
+      - img-lustre-client
   img-gfarm:
     image: images:ubuntu/22.04
     series: debian

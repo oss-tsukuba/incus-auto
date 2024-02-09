@@ -983,6 +983,9 @@ class IncusAuto(CUI):
 
     def launch_common(self):
         for name, fullname, info in self.name_iter(self.use_all):
+            if self.control_buildimage:
+                # check yaml
+                info['publish-alias']
             self.incus_launch(info, name, fullname)
         for name, fullname, info in self.name_iter(self.use_all):
             self.incus_wait_for_wakeup(fullname, info)
