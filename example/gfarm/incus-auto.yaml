@@ -287,11 +287,11 @@ host:
         delete: false  # true: delete the block before building
     devices:
       root:
-       size: 6GB  # equal to or larger than the image
+        size: 6GB  # equal to or larger than the image
       eth0:
         ipv4.address: 10.123.123.151  # in DHCP range
     setup:
-      - bash -x /SCRIPT/setup-lustre-mgs.sh
+      - bash -x /SCRIPT/setup-lustre-mgs.sh testfs
       - __RESTART__
 
   oss0:
@@ -309,7 +309,7 @@ host:
       eth0:
         ipv4.address: 10.123.123.152
     setup:
-      - bash -x /SCRIPT/setup-lustre-oss.sh 0 10.123.123.151
+      - bash -x /SCRIPT/setup-lustre-oss.sh 10.123.123.151 testfs 0
   oss1:
     <<: [*x-lustre]
     group: lustre/oss
@@ -325,17 +325,25 @@ host:
       eth0:
         ipv4.address: 10.123.123.153
     setup:
-      - bash -x /SCRIPT/setup-lustre-oss.sh 1 10.123.123.151
+      - bash -x /SCRIPT/setup-lustre-oss.sh 10.123.123.151 testfs 1
 
-  # lclient1:
-  #   image: incus1:img-lclient
-  #   series: rhel
-  #   vm: true
-  #   profile:
-  #     - prof1
-  #     - prof2net
-  #   devices:
-  #     eth0:
-  #       ipv4.address: 10.123.123.153
-  #   setup:
-  #     - "/SCRIPT/setup-lustre-client.sh 0 10.123.123.151"
+  lclient1:
+    image: gfarm-img-lclient
+    series: rhel
+    vm: true
+    profile:
+      - prof1
+      - prof2net
+    devices:
+      eth0:
+        ipv4.address: 10.123.123.161
+    volume:
+      - ./CONF:/CONF
+      - ./SRC:/SRC
+      - ./BACKUP:/BACKUP
+    config:
+      limits.memory: 4GB
+      limits.cpu: 6
+      security.secureboot: false  # for lustre kernel module
+    setup:
+      - bash -x /SCRIPT/setup-lustre-client.sh 10.123.123.151 testfs

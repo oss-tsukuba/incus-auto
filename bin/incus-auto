@@ -331,9 +331,9 @@ class IncusAuto(CUI):
                 '__ANY__': {
                     'vm': False,
                     'devices': {
-                        'root': {
-                            # 'size': '5GB',
-                        },
+                        # 'root': {
+                        #     'size': '5GB',
+                        # },
                     },
                 },
             },
@@ -341,9 +341,9 @@ class IncusAuto(CUI):
                 '__ANY__': {
                     'vm': False,
                     'devices': {
-                        'root': {
-                            # 'size': '5GB',
-                        },
+                        # 'root': {
+                        #     'size': '5GB',
+                        # },
                     },
                 },
             },
@@ -668,10 +668,11 @@ class IncusAuto(CUI):
 
     def cmd_ls(self):
         if self.use_all or len(self.names) == 0:
-            print(self.incus(f'ls -c ns4t {self.project_prefix}'))
+            print(self.incus(f'ls -c ns4t -f compact {self.project_prefix}'))
         else:
             for name, _, _ in self.name_iter(False):
-                print(self.incus(f'ls -c ns4t {self.project_prefix}{name}$'))
+                print(self.incus(f'ls -c ns4t -f compact'
+                                 + f' {self.project_prefix}{name}$'))
 
     def cmd_ps(self):
         if len(self.names) == 0:
@@ -701,6 +702,7 @@ class IncusAuto(CUI):
 
     def cmd_shell(self):
         for name, fullname, info in self.name_iter(False):
+            self.incus_wait_for_wakeup(fullname, info)
             args = [self.incus_command, 'exec', fullname]
             env = self.get_env(fullname)
             envkeys = []
@@ -725,6 +727,7 @@ class IncusAuto(CUI):
 
     def cmd_exec(self):
         for name, fullname, info in self.name_iter(False):
+            # TODO incus-auto wait : self.incus_wait_for_wakeup(fullname, info)
             self.incus_exec(fullname, self.opt['<args>'],
                             user_is_root=self.user_is_root)
             break

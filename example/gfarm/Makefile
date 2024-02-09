@@ -18,7 +18,8 @@ recreate-lustre:
 	# TODO incus-auto delete -f
 	incus delete -f gfarm-mgs || true
 	incus delete -f gfarm-oss0 || true
-	incus delete -f gfarm-oss0 || true
+	incus delete -f gfarm-oss1 || true
+	incus delete -f gfarm-lclient1 || true
 	# TODO incus-auto delete-block
 	incus storage volume delete mypool gfarm-lustre-mdt || true
 	incus storage volume delete mypool gfarm-lustre-oss0 || true
@@ -26,6 +27,7 @@ recreate-lustre:
 	./RECREATE.sh mgs
 	./RECREATE.sh oss0
 	./RECREATE.sh oss1
+	./RECREATE.sh lclient1
 	make update-etchosts
 update-etchosts:
 	$(IA) update-etchosts -a

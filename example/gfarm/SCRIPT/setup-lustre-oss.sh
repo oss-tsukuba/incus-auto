@@ -2,8 +2,9 @@
 
 source /SCRIPT/lib.sh
 
-INDEX="$1"
-MGS_IP="$2"
+MGS_IP="$1"
+FSNAME="$2"
+INDEX="$3"
 
 IP=$(MYIP)
 NETIF=enp5s0
@@ -19,14 +20,15 @@ net:
 EOF
 
 SUDO systemctl enable lnet
-SUDO systemctl start lnet
+SUDO systemctl stop lnet || true
+SUDO systemctl start lnet || true
 SUDO lnetctl net show
 
 BD=/dev/sdb
 MNTDIR=/mnt/ost
-FSNAME=test1
 
-REFORMAT="--reformat"
+#REFORMAT="--reformat"
+REFORMAT=""
 
 if ! (mount | grep -q $MNTDIR); then
     SUDO mkfs.lustre --fsname=${FSNAME} --mgsnode=${MGS_IP}@tcp --ost --index=${INDEX} ${REFORMAT} ${BD}
