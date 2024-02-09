@@ -31,6 +31,8 @@ import yaml
 
 program_name = os.path.basename(__file__)
 
+# TODO {f} delete-block
+
 __doc__ = """
 Automating deployment system by Incus or LXD.
 

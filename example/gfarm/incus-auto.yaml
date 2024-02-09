@@ -305,11 +305,28 @@ host:
         delete: false
     devices:
       root:
-        size: 7GB
+        size: 6GB
       eth0:
         ipv4.address: 10.123.123.152
     setup:
       - bash -x /SCRIPT/setup-lustre-oss.sh 0 10.123.123.151
+  oss1:
+    <<: [*x-lustre]
+    group: lustre/oss
+    image: gfarm-img-lserver
+    block-device:
+      gfarm-lustre-oss1:
+        pool: mypool
+        size: 6GB
+        delete: false
+    devices:
+      root:
+        size: 6GB
+      eth0:
+        ipv4.address: 10.123.123.153
+    setup:
+      - bash -x /SCRIPT/setup-lustre-oss.sh 1 10.123.123.151
+
   # lclient1:
   #   image: incus1:img-lclient
   #   series: rhel
