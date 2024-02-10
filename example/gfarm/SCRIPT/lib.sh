@@ -37,6 +37,26 @@ MYIP() {
     ip addr show $IF | awk '/inet / {print $2}' | cut -d '/' -f 1
 }
 
+BACKUP_RESTORE() {
+    local FILE="$1"
+    local ORIG="${FILE}.orig"
+    if [ -f "$ORIG" ]; then
+        SUDO cp -af "$ORIG" "$FILE"
+    else
+        SUDO cp -an "$FILE" "$ORIG"
+    fi
+}
+
+INSTALL_RPM() {
+    local ARGS=""
+    local A
+
+    for A in "$@"; do
+        ARGS="$ARGS ${A}-[0-9]*.rpm"
+    done
+    SUDO rpm -ivh --force $ARGS
+}
+
 REGPATH_usrlocalbin() {
     profile=/etc/profile.d/usrlocalbin.sh
     if [ ! -f $profile ]; then

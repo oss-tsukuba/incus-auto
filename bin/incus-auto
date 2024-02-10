@@ -1007,6 +1007,14 @@ class IncusAuto(CUI):
                 info['publish-alias']
             self.incus_launch(info, name, fullname)
             self.create_block_device(info, name, fullname)
+
+        for name, fullname, info in self.name_iter(self.use_all):
+            self.incus_wait_for_wakeup(fullname, info)
+            self.setup_network_static(info, fullname)
+            self.incus(f'stop {fullname}')
+            self.mount_volume(fullname, info)
+            self.incus(f'start {fullname}')
+
         for name, fullname, info in self.name_iter(self.use_all):
             self.incus_wait_for_wakeup(fullname, info)
             if self.tobool(info['vm']) and info['series'] == 'rhel':
@@ -1016,13 +1024,7 @@ class IncusAuto(CUI):
             if not self.control_buildimage:
                 self.install_ssh(info, name, fullname)
                 self.update_etchosts(info, fullname)
-            self.setup_network_static(info, fullname)
-            self.incus(f'stop {fullname}')
-            self.mount_volume(fullname, info)
-            self.incus(f'start {fullname}')
-        for name, fullname, info in self.name_iter(self.use_all):
-            self.incus_wait_for_wakeup(fullname, info)
-        for name, fullname, info in self.name_iter(self.use_all):
+
             # run /host|buildimage/NAME/setup
             for cmd in info.get('setup', []):
                 if cmd == '__RESTART__':
@@ -1030,9 +1032,9 @@ class IncusAuto(CUI):
                     self.incus_wait_for_wakeup(fullname, info)
                 else:
                     self.incus_exec(fullname, cmd, user_is_root=False)
-        if self.control_buildimage:
-            # publish buildimage
-            for name, fullname, info in self.name_iter(self.use_all):
+
+            if self.control_buildimage:
+                # publish buildimage
                 remotes = info.get('publish-remote', None)
                 aliases = info['publish-alias']
                 self.incus(f'stop {fullname}')

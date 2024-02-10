@@ -1,3 +1,5 @@
 /incus-auto.override.yaml
 /CONF/config.sh
 /SRC/gfarm
+/CACHE/lustre-*
+/CACHE/e2fsprogs-*

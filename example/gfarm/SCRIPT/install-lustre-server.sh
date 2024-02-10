@@ -1,20 +1,15 @@
 #!/bin/bash
 
 source /SCRIPT/lib.sh
+source /SCRIPT/install-lustre-common.sh
 
-# for developer
-SUDO yum install -y \
-     less \
-     emacs-nox \
-     vim
-     # gdb \
-     # valgrind
+install_lustre_common
 
 cat <<EOF | SUDO tee /etc/yum.repos.d/lustre.repo
 [lustre-server]
 name=lustre-server
 #baseurl=http://metaserver/repo/lustre-server
-baseurl=https://downloads.whamcloud.com/public/lustre/latest-release/el8.9/server
+baseurl=http://downloads.whamcloud.com/public/lustre/latest-release/el8.9/server
 enabled=0
 gpgcheck=0
 proxy=_none_
@@ -22,24 +17,67 @@ proxy=_none_
 [lustre-client]
 name=lustre-client
 #baseurl=http://metaserver/repo/lustre-client
-baseurl=https://downloads.whamcloud.com/public/lustre/latest-release/el8.9/client
+baseurl=http://downloads.whamcloud.com/public/lustre/latest-release/el8.9/client
 enabled=0
 gpgcheck=0
 
 [e2fsprogs-wc]
 name=e2fsprogs-wc
 #baseurl=http://metaserver/repo/e2fsprogs-wc
-baseurl=https://downloads.whamcloud.com/public/e2fsprogs/latest/el8
+baseurl=http://downloads.whamcloud.com/public/e2fsprogs/latest/el8
 enabled=0
 gpgcheck=0
 EOF
 
-SUDO yum --nogpgcheck --disablerepo=* --enablerepo=e2fsprogs-wc install -y \
-     e2fsprogs
-SUDO yum --nogpgcheck --enablerepo=lustre-server install -y \
-     --skip-broken \
-     kmod-lustre kmod-lustre-osd-ldiskfs lustre-osd-ldiskfs-mount \
-     lustre lustre-resource-agents
+install_lustre_yum() {
+    SUDO yum --nogpgcheck --enablerepo=lustre-server install -y \
+	 --skip-broken \
+	 kmod-lustre kmod-lustre-osd-ldiskfs lustre-osd-ldiskfs-mount \
+	 lustre lustre-resource-agents
+    SUDO yum --nogpgcheck --disablerepo=* \
+	 --enablerepo=e2fsprogs-wc install -y \
+	 e2fsprogs
+}
+
+install_lustre_rpm() {
+    #TODO
+    # OUTDIR=/CACHE/${LUSTRE_VER}
+    # mkdir -p $OUTDIR
+    # which wget || SUDO yum install -y wget
+
+    # # default: downloads.whamcloud.com/public/lustre/lustre-2.15.4/el8.9/server/RPMS/x86_64/
+    # # -nH : public/lustre/lustre-2.15.4/el8.9/server/RPMS/x86_64/
+    # # --cut-dir=7
+    # wget -r -nc -c --accept '.rpm' --reject '-debuginfo-' --reject '-tests-' -nH --cut-dir=7 -P $OUTDIR $LUSTRE_SERVER_URL
+    # wget -O ${OUTDIR}/sha256sum ${LUSTRE_SERVER_URL}/sha256sum
+
+    # grep -v -- '-debuginfo-' ${OUTDIR}/sha256sum > ${OUTDIR}/sha256sum-1
+    # grep -v -- '-tests-' ${OUTDIR}/sha256sum-1 > ${OUTDIR}/sha256sum-2
+    # (cd $OUTDIR && sha256sum -c ${OUTDIR}/sha256sum-2)
+
+    cache_rpm ${E2FSPROGS_DIR} ${E2FSPROGS_URL} 6
+    cache_rpm ${LUSTRE_SERVER_DIR} ${LUSTRE_SERVER_URL} 7
+
+    SUDO yum install -y \
+         perl-interpreter \
+         libnl3
+
+    (cd $E2FSPROGS_DIR && \
+         INSTALL_RPM e2fsprogs
+    )
+    (cd $LUSTRE_SERVER_DIR && \
+         INSTALL_RPM \
+             kernel-core \
+             kmod-lustre \
+             kmod-lustre-osd-ldiskfs \
+             lustre-osd-ldiskfs-mount \
+             lustre
+    )
+    #lustre-resource-agents  # not installed even if using yum
+}
+
+#install_lustre_yum
+install_lustre_rpm
 
 if [ ! -f /etc/lnet.conf.orig ]; then
     SUDO mv /etc/lnet.conf /etc/lnet.conf.orig
@@ -54,13 +92,12 @@ fi
 # SUDO grubby --set-default=${KERNEL}
 
 GRUB_ENV=/etc/default/grub
-if ! grep -q "GRUB_DISABLE_SUBMENU=true" $GRUB_ENV; then
-    cat <<EOF | SUDO tee -a $GRUB_ENV
+BACKUP_RESTORE $GRUB_ENV
+cat <<EOF | SUDO tee -a $GRUB_ENV
 GRUB_DISABLE_SUBMENU=true
 GRUB_DEFAULT=2
 #GRUB_TIMEOUT=10
 EOF
-fi
 SUDO grub2-mkconfig -o /boot/efi/EFI/rocky/grub.cfg
 
 REGPATH_usrlocalbin

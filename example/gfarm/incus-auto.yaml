@@ -65,20 +65,21 @@ buildimage:
     image: images:rockylinux/8
     series: rhel
     vm: true
+    profile:
+      - prof1
+      - prof2net
     devices:
       root:
-        size: 6GB
+        size: 6GB  # test override
       # eth0:
       #  ipv4.address: 10.123.123.191  # NOTE: for ipv4.dhcp=true
     config:
       limits.memory: 4GB
-      limits.cpu: 6
+      limits.cpu: 1
       security.secureboot: false
-    profile:
-      - prof1
-      - prof2net
     volume:
       - ./CONF:/CONF
+      - ./CACHE:/CACHE
     setup:
       - bash -x /SCRIPT/install-lustre-server.sh
     # "Error: The source and target servers must be different" if "remote name" and localost are the same
@@ -94,8 +95,13 @@ buildimage:
     profile:
       - prof1
       - prof2net
+    config:
+      limits.memory: 4GB
+      limits.cpu: 1
+      security.secureboot: false
     volume:
       - ./SRC:/SRC
+      - ./CACHE:/CACHE
       #- ./HOME/img-lclient:/home/gfarmsys
     setup:
       - bash -x /SCRIPT/install-lustre-client.sh
@@ -150,9 +156,10 @@ x-lustre: &x-lustre
     - ./CONF:/CONF
     - ./SRC:/SRC
     - ./BACKUP:/BACKUP
+    - ./CACHE:/CACHE
   config:
     limits.memory: 4GB
-    limits.cpu: 6
+    limits.cpu: 1
     security.secureboot: false
 
 host:
@@ -267,21 +274,6 @@ host:
       - mgs.test
       - mgs.example.org
     image: gfarm-img-lserver  # image alias (fullname)
-    #series: rhel
-    #vm: true
-    #profile:
-    #  - prof1
-    #  - prof2net
-    #remote: <NOT DEFINED>  # NOTE: use default server
-    #remote: incus1
-    #volume:
-    #  - ./CONF:/CONF
-    #  - ./SRC:/SRC
-    #  - ./BACKUP:/BACKUP
-    #config:
-    #  limits.memory: 4GB
-    #  limits.cpu: 6
-    #  security.secureboot: false
     block-device:
       gfarm-lustre-mdt:
         pool: mypool
@@ -299,6 +291,9 @@ host:
   oss0:
     <<: [*x-lustre]
     group: lustre/oss
+    alternative:
+      - oss0.test
+      - oss0.example.org
     image: gfarm-img-lserver
     block-device:
       gfarm-lustre-oss0:
@@ -315,6 +310,9 @@ host:
   oss1:
     <<: [*x-lustre]
     group: lustre/oss
+    alternative:
+      - oss1.test
+      - oss1.example.org
     image: gfarm-img-lserver
     block-device:
       gfarm-lustre-oss1:
