@@ -39,10 +39,11 @@ install_lustre_yum() {
 
 install_lustre_rpm() {
     cache_rpm ${E2FSPROGS_DIR} ${E2FSPROGS_URL} 6
-    cache_rpm ${LUSTRE_SERVER_DIR} ${LUSTRE_SERVER_URL} 7
     (cd $E2FSPROGS_DIR && \
-         INSTALL_RPM e2fsprogs
+         INSTALL_RPM e2fsprogs e2fsprogs-libs libcom_err libss
     )
+
+    cache_rpm ${LUSTRE_SERVER_DIR} ${LUSTRE_SERVER_URL} 7
     (cd $LUSTRE_SERVER_DIR && \
          INSTALL_RPM \
              kernel-core \

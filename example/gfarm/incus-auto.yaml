@@ -359,7 +359,7 @@ host:
       - ./BACKUP:/BACKUP
     config:
       limits.memory: 4GB
-      limits.cpu: 4
+      limits.cpu: 1
       security.secureboot: false  # for lustre kernel module
     setup:
       - bash -x /SCRIPT/setup-lustre-client.sh 10.123.123.151 testfs
