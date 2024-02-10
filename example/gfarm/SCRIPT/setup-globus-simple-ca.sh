@@ -28,7 +28,7 @@ ca_hash() {
 
 # install and create simple ca
 #TODO -pass "$(cat /CONF/ca-password.txt)"
-sudo grid-ca-create -noint -subject "$SUBJECT" -nobuild
+sudo grid-ca-create -noint -subject "$SUBJECT" -nobuild > /dev/null
 rm -f openssl_req.log
 HASH=$(ca_hash)
 sudo grid-default-ca -ca $HASH > /dev/null

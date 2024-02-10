@@ -592,7 +592,7 @@
           auth enable sasl_auth *
           auth enable kerberos *
           auth enable kerberos_auth *
-          auth_trial_order gsi_auth
+          auth_trial_order sharedsecret gsi_auth
 
     - name: backup gfarm2.conf
       fetch:
