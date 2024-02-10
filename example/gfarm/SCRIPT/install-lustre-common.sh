@@ -21,6 +21,10 @@ install_lustre_common() {
 	 vim
     # gdb \
     # valgrind
+
+    SUDO yum install -y \
+         perl-interpreter \
+         libnl3
 }
 
 cache_rpm() {

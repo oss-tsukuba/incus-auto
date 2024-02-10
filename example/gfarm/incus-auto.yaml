@@ -62,6 +62,7 @@ config:
 
 buildimage:
   img-lserver:
+    depend: [img-gfarm]
     image: images:rockylinux/8
     series: rhel
     vm: true
@@ -88,7 +89,22 @@ buildimage:
     publish-alias:  # MUST
       - img-lserver  # short name (without project_name prefix)
       - img-lustre-server
+  tmp-gfarm-rocky:  # speedup for build gfarm (VM is slow)
+    depend: img-gfarm
+    image: images:rockylinux/8
+    series: rhel
+    vm: false  # container
+    profile:
+      - prof1
+      - prof2net
+    volume:
+      - ./SRC:/SRC
+      - ./CACHE:/CACHE
+    setup:
+      - bash -x /SCRIPT/install-gfarm.sh --use-cache
+    # not publish
   img-lclient:
+    depend: [tmp-gfarm-rocky,img-lserver]
     image: images:rockylinux/8
     series: rhel
     vm: true
@@ -104,8 +120,8 @@ buildimage:
       - ./CACHE:/CACHE
       #- ./HOME/img-lclient:/home/gfarmsys
     setup:
+      - bash -x /SCRIPT/install-gfarm.sh --no-distclean --use-cache
       - bash -x /SCRIPT/install-lustre-client.sh
-      - bash -x /SCRIPT/install-gfarm.sh
     # publish-remote:
     #   - incus1
     publish-alias:  # MUST

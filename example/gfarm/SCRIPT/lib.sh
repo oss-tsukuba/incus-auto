@@ -64,4 +64,5 @@ REGPATH_usrlocalbin() {
 export PATH=$PATH:/usr/local/bin
 EOF
     fi
+    source $profile
 }

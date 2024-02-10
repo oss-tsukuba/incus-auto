@@ -45,6 +45,8 @@ install_lustre_rpm() {
     )
 }
 
+install_lustre_common
+
 #install_lustre_yum
 install_lustre_rpm
 

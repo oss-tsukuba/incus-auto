@@ -8,7 +8,7 @@ init:
 	$(IA) init
 build:
 	$(IA) build -a
-recreate:
+create:
 	./RECREATE.sh ALL
 setup:
 	make update-etchosts

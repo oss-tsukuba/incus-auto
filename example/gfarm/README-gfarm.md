@@ -10,7 +10,7 @@
 - run `./git-clone-pull.sh`
 - run `make init`
 - run `make build`
-- run `make recreate`
+- run `make create`
 - run `make setup`
 - run `make` (login to the manage container)
 - run `ssh gfclient1`

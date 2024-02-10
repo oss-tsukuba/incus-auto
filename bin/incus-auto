@@ -43,10 +43,11 @@ Usage:
   {f} ps [options]
   {f} shell <name> [--root] [options]
   {f} exec <name> [--root] [options] [--] <args>...
+  {f} exec --all [--root] [options] [--] <args>...
   {f} config [options]
   {f} ansible-inventory [options]
   {f} etchosts [options]
-  {f} <command> <name>... [options]
+  {f} <command> <name> [options]
   {f} <command> --all [options]
 
 Options:
@@ -81,6 +82,10 @@ Command:
   start              start hosts
   restart            restart hosts
   delete             delete stopped hosts, profile and network
+
+Multiple targets:
+  Example:
+    {f} exec host1,host2 hostname
 """.format(f=program_name)
 
 opt_schema = Schema({
@@ -102,7 +107,7 @@ opt_schema = Schema({
     'config': bool,
     'ansible-inventory': bool,
     'etchosts': bool,
-    '<name>': [str],
+    '<name>': Or(str, None),
     '<args>': [str],
     '--': bool,
 })
@@ -260,7 +265,11 @@ class IncusAuto(CUI):
         return opt_schema
 
     def parse_opt(self):
-        self.names = self.opt['<name>']
+        name = self.opt['<name>']
+        if name is not None:
+            self.names = name.split(',')
+        else:
+            self.names = []
         self.use_all = self.opt['--all']  # CANNOT be changed outside of cmd_*
         self.control_buildimage = self.opt['--buildimage']
         self.conf_file = self.opt['--file']
@@ -374,6 +383,37 @@ class IncusAuto(CUI):
             return default
         return result
 
+    def depend_name_sort(self, d):
+        limit = len(d.keys())
+
+        def depth(name, n):
+            max_dep = n
+            if max_dep >= limit:
+                self.logger.debug(f'depth({name}, {n}): {max_dep} LIMIT')
+                return max_dep
+            info = d.get(name, None)
+            if info is None:
+                return max_dep
+            depends = info.get('depend', None)
+            if depends is None:
+                return max_dep
+            if isinstance(depends, str):
+                depends = depends.split(',')
+            for item in depends:
+                tmp = depth(item, n+1)
+                if tmp > max_dep:
+                    max_dep = tmp
+            self.logger.debug(f'depth({name}, {n}): {max_dep}')
+            return max_dep
+
+        def custom_key(name):
+            self.logger.debug(f'depend_name_sort: {name}: start')
+            dep = depth(name, 0)
+            self.logger.debug(f'depend_name_sort: {name}: result={dep}')
+            return dep
+
+        return sorted(d.keys(), key=custom_key)
+
     def name_iter(self, use_all):
         if self.control_buildimage:
             target_path = '/buildimage'
@@ -381,10 +421,13 @@ class IncusAuto(CUI):
             target_path = '/host'
         d = self.conf(target_path)
         if use_all:
-            for name in d.keys():
+            for name in self.depend_name_sort(d):
                 yield (name, self.project_prefix + name, d[name])
         else:  # specified hosts
+            target_dict = {}
             for name in self.names:
+                target_dict[name] = d[name]
+            for name in self.depend_name_sort(target_dict):
                 self.check_defined(name, target_path)
                 yield (name, self.project_prefix + name, d[name])
 
@@ -451,7 +494,7 @@ class IncusAuto(CUI):
 
     def incus_is_running(self, name):
         try:
-            self.incus(['exec', name, 'hostname'])
+            self.incus(['exec', name, 'hostname'], output=False)
             return True
         except Exception:
             return False
@@ -467,12 +510,25 @@ class IncusAuto(CUI):
 
     def incus_wait_for_wakeup(self, name, info):
         net_if = self.convert_net_if('eth0', info)
+        first = True
         while not self.incus_is_running(name):
-            self.logger.info(f'Waiting for startup: {name}')
+            if first or self.loglevel == logging.DEBUG:
+                self.logger.info(f'Waiting for startup: {name}')
+                first = False
+            else:
+                print('.', end='', flush=True)
             time.sleep(1)
+        if not first:
+            print('OK')
+        first = True
         while self.incus_get_ipv4(name, net_if) is None:
-            self.logger.info(f'Waiting until seeing IP address: {name}')
+            if first or self.loglevel == logging.DEBUG:
+                self.logger.info(f'Waiting until seeing IP address: {name}')
+            else:
+                print('.', end='', flush=True)
             time.sleep(1)
+        if not first:
+            print('OK')
 
     def incus_get_ipv4(self, name, net_if):
         for hostinfo in self.incus_ls_json():
@@ -671,7 +727,7 @@ class IncusAuto(CUI):
             print(self.incus(f'ls -c ns4t -f compact {self.project_prefix}'))
         else:
             for name, _, _ in self.name_iter(False):
-                print(self.incus(f'ls -c ns4t -f compact'
+                print(self.incus('ls -c ns4t -f compact'
                                  + f' {self.project_prefix}{name}$'))
 
     def cmd_ps(self):
@@ -726,11 +782,9 @@ class IncusAuto(CUI):
             break
 
     def cmd_exec(self):
-        for name, fullname, info in self.name_iter(False):
-            # TODO incus-auto wait : self.incus_wait_for_wakeup(fullname, info)
+        for name, fullname, info in self.name_iter(self.use_all):
             self.incus_exec(fullname, self.opt['<args>'],
                             user_is_root=self.user_is_root)
-            break
 
     def incus_launch(self, info, name, fullname):
         image = info['image']
@@ -1003,8 +1057,8 @@ class IncusAuto(CUI):
     def launch_common(self):
         for name, fullname, info in self.name_iter(self.use_all):
             if self.control_buildimage:
-                # check yaml
-                info['publish-alias']
+                # check required values (MUST)
+                info['series']
             self.incus_launch(info, name, fullname)
             self.create_block_device(info, name, fullname)
 
@@ -1035,26 +1089,27 @@ class IncusAuto(CUI):
 
             if self.control_buildimage:
                 # publish buildimage
-                remotes = info.get('publish-remote', None)
-                aliases = info['publish-alias']
-                self.incus(f'stop {fullname}')
+                aliases = info.get('publish-alias', None)
+                if aliases is not None:
+                    remotes = info.get('publish-remote', None)
+                    self.incus(f'stop {fullname}')
 
-                def publish(remote):
-                    args = ['publish', fullname]
-                    if remote is not None:
-                        args.append(remote + ':')
-                    for alias in aliases:
-                        full_alias = self.project_prefix + alias
-                        self.incus(['image', 'delete', full_alias],
-                                   ignore_error=True)
-                        args.extend(['--alias', full_alias])
-                    self.incus(args)
+                    def publish(remote):
+                        args = ['publish', fullname]
+                        if remote is not None:
+                            args.append(remote + ':')
+                        for alias in aliases:
+                            full_alias = self.project_prefix + alias
+                            self.incus(['image', 'delete', full_alias],
+                                       ignore_error=True)
+                            args.extend(['--alias', full_alias])
+                        self.incus(args)
 
-                if remotes is None:
-                    publish(None)
-                else:
-                    for remote in remotes:
-                        publish(remote)
+                    if remotes is None:
+                        publish(None)
+                    else:
+                        for remote in remotes:
+                            publish(remote)
 
     def cmd_build(self):
         self.control_buildimage = True

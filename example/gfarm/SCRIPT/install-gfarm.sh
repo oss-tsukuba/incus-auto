@@ -2,6 +2,7 @@
 
 source /SCRIPT/lib.sh
 
+USE_CACHE=false
 DISTCLEAN=true
 UPDATE_PACKAGE=true
 for arg in "$@"; do
@@ -17,12 +18,19 @@ for arg in "$@"; do
         --no-update-package)
             UPDATE_PACKAGE=false
             ;;
+        --use-cache)
+            USE_CACHE=true
+            ;;
     esac
 done
 
 ###################################################################
 
 install_package_debian() {
+    # base package
+    SUDO apt-get install -y \
+	 rsync
+
     # for developer
     SUDO apt-get update
     SUDO apt-get install -y \
@@ -125,28 +133,46 @@ install_package_rhel() {
 }
 
 if $UPDATE_PACKAGE; then
-    for id in $ID_LIKE rhel; do  # from /etc/os-release
+    for id in $ID_LIKE rhel; do  # ID_LIKE from /etc/os-release
         case $id in
             debian)
                 install_package_debian
-                break  # for id
+                break  # from id
                 ;;
             rhel)
                 install_package_rhel
-                break  # for id
+                break  # from id
                 ;;
         esac
     done
 fi
 
+for id in $ID_LIKE rhel; do  # ID_LIKE from /etc/os-release
+    case $id in
+        debian)
+            break  # from id
+            ;;
+        rhel)
+            REGPATH_usrlocalbin
+            break  # from id
+            ;;
+    esac
+done
+
 ###################################################################
 GFARM_SRCDIR=/SRC/gfarm
-GFARM_WORKDIR=${HOME}/gfarm
+
+if $USE_CACHE; then
+    GFARM_WORKDIR=/CACHE/${ID}/gfarm  # ID from /etc/os-release
+else
+    GFARM_WORKDIR=${HOME}/gfarm
+fi
 
 RSYNC_OPT=
 if $DISTCLEAN; then
     RSYNC_OPT="--delete"
 fi
+mkdir -p ${GFARM_WORKDIR}
 rsync -a $RSYNC_OPT ${GFARM_SRCDIR}/ ${GFARM_WORKDIR}/
 
 # install gfarm
@@ -174,7 +200,8 @@ make -j $MAKE_NUM_JOBS
 SUDO make install
 if [ ! -f /sbin/mount.gfarm2fs ]; then
     # for autofs
-    SUDO ln -s $(which mount.gfarm2fs) /sbin/
+    p=$(which mount.gfarm2fs)
+    SUDO ln -s "$p" /sbin/
 fi
 
 ###################################################################

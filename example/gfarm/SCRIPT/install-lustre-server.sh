@@ -3,8 +3,6 @@
 source /SCRIPT/lib.sh
 source /SCRIPT/install-lustre-common.sh
 
-install_lustre_common
-
 cat <<EOF | SUDO tee /etc/yum.repos.d/lustre.repo
 [lustre-server]
 name=lustre-server
@@ -40,28 +38,8 @@ install_lustre_yum() {
 }
 
 install_lustre_rpm() {
-    #TODO
-    # OUTDIR=/CACHE/${LUSTRE_VER}
-    # mkdir -p $OUTDIR
-    # which wget || SUDO yum install -y wget
-
-    # # default: downloads.whamcloud.com/public/lustre/lustre-2.15.4/el8.9/server/RPMS/x86_64/
-    # # -nH : public/lustre/lustre-2.15.4/el8.9/server/RPMS/x86_64/
-    # # --cut-dir=7
-    # wget -r -nc -c --accept '.rpm' --reject '-debuginfo-' --reject '-tests-' -nH --cut-dir=7 -P $OUTDIR $LUSTRE_SERVER_URL
-    # wget -O ${OUTDIR}/sha256sum ${LUSTRE_SERVER_URL}/sha256sum
-
-    # grep -v -- '-debuginfo-' ${OUTDIR}/sha256sum > ${OUTDIR}/sha256sum-1
-    # grep -v -- '-tests-' ${OUTDIR}/sha256sum-1 > ${OUTDIR}/sha256sum-2
-    # (cd $OUTDIR && sha256sum -c ${OUTDIR}/sha256sum-2)
-
     cache_rpm ${E2FSPROGS_DIR} ${E2FSPROGS_URL} 6
     cache_rpm ${LUSTRE_SERVER_DIR} ${LUSTRE_SERVER_URL} 7
-
-    SUDO yum install -y \
-         perl-interpreter \
-         libnl3
-
     (cd $E2FSPROGS_DIR && \
          INSTALL_RPM e2fsprogs
     )
@@ -75,6 +53,8 @@ install_lustre_rpm() {
     )
     #lustre-resource-agents  # not installed even if using yum
 }
+
+install_lustre_common
 
 #install_lustre_yum
 install_lustre_rpm
