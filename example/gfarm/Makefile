@@ -15,6 +15,8 @@ setup:
 	$(IA) exec manage -- bash /SCRIPT/setup-gfarm-by-ansible.sh
 clear: #TODO
 	$(IA) exec manage -- bash /SCRIPT/clear-gfarm-by-ansible.sh
+reinstall-gfarm:
+	$(IA) exec manage -- bash /SCRIPT/reinstall-gfarm-by-ansible.sh
 recreate-lustre:
 	# TODO incus-auto delete -f
 	incus delete -f gfarm-mgs || true

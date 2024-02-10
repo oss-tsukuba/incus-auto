@@ -52,10 +52,9 @@
   # TODO rsync and distclean?
   serial: 1  # to build on same /SRC directory ...
   tasks:
-    - name: Install gfarm
-      command: bash /SCRIPT/install-gfarm.sh --no-distclean
-      #command: date  #TODO
-      when: gfarm_install | bool
+    # - name: Install gfarm
+    #   command: bash /SCRIPT/install-gfarm.sh --no-distclean
+    #   when: gfarm_install | bool
     - name: Create local users
       become: yes
       become_user: root
