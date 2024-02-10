@@ -394,12 +394,12 @@ class IncusAuto(CUI):
             info = d.get(name, None)
             if info is None:
                 return max_dep
-            depends = info.get('depend', None)
-            if depends is None:
+            depend_list = info.get('depend', None)
+            if depend_list is None:
                 return max_dep
-            if isinstance(depends, str):
-                depends = depends.split(',')
-            for item in depends:
+            if isinstance(depend_list, str):
+                depend_list = depend_list.split(',')
+            for item in depend_list:
                 tmp = depth(item, n+1)
                 if tmp > max_dep:
                     max_dep = tmp

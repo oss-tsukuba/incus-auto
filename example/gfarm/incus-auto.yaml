@@ -283,7 +283,7 @@ host:
   #   envvar:
   #     TESTENV: abcdefg
   #
-  mgs:
+  mgs:  # with mds
     <<: [*x-lustre]
     group: lustre/mgs
     alternative:
@@ -306,6 +306,7 @@ host:
 
   oss0:
     <<: [*x-lustre]
+    depend: mgs
     group: lustre/oss
     alternative:
       - oss0.test
@@ -325,6 +326,7 @@ host:
       - bash -x /SCRIPT/setup-lustre-oss.sh 10.123.123.151 testfs 0
   oss1:
     <<: [*x-lustre]
+    depend: mgs
     group: lustre/oss
     alternative:
       - oss1.test
@@ -344,6 +346,7 @@ host:
       - bash -x /SCRIPT/setup-lustre-oss.sh 10.123.123.151 testfs 1
 
   lclient1:
+    depend: [mgs, oss0, oss1]
     image: gfarm-img-lclient
     series: rhel
     vm: true
