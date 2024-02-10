@@ -31,7 +31,8 @@ install_lustre_yum() {
     SUDO yum --nogpgcheck --enablerepo=e2fsprogs-wc upgrade -y \
          e2fsprogs
     SUDO yum --nogpgcheck --enablerepo=lustre-client install -y \
-         kmod-lustre-client lustre-client
+         kmod-lustre-client lustre-client \
+         lustre-client-devel  # for HSM
 }
 
 install_lustre_rpm() {
@@ -42,7 +43,8 @@ install_lustre_rpm() {
 
     cache_rpm ${LUSTRE_CLIENT_DIR} ${LUSTRE_CLIENT_URL} 7
     (cd $LUSTRE_CLIENT_DIR && \
-         INSTALL_RPM kmod-lustre-client lustre-client
+         INSTALL_RPM kmod-lustre-client lustre-client \
+                     lustre-client-devel  # for HSM
     )
 }
 

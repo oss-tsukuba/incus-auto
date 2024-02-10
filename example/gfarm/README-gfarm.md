@@ -12,10 +12,29 @@
 - run `make build`
 - run `make create`
 - run `make setup`
-- run `make` (login to the manage container)
-- run `ssh gfclient1`
+- run `make` (login to the manage container) and `ssh gfclient1`
+  - or run `make gfclient`
 - enjoy Gfarm operations ...
 - ctrl-d (exit from gfclient1)
 - ctrl-d (exit from manage)
-- run `make down` to destroy the environemnt
-- run `make delete-lustre-block`
+
+## Lustre HSM for Gfarm
+
+- run `cd SRC`
+  - run `git clone -b hsm-posix-for-gfarm2fs https://github.com/oss-tsukuba/lustre-release.git`
+  - (Or) run `git clone -b hsm-posix-for-gfarm2fs git@github.com:oss-tsukuba/lustre-release.git`
+  - run `cd ..`
+- run `make start-lustre-hsm` (foregroud, ctrl-c to stop)
+- run `make lclient` and `cd /mnt/lustre`
+- enjoy Lustre operations ...
+  - sudo lfs hsm_archive FILENAME
+  - sudo lfs hsm_release FILENAME
+  - sudo lfs hsm_restore FILENAME
+  - sudo lfs hsm_remove FILENAME
+  - sudo lfs setstripe -c 2 .
+- ctrl-d (exit from lclient1)
+
+## Good-bye
+
+- run `make down` to remove only containers
+- run `make CLEAN` to destroy the environemnt

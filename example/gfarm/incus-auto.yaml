@@ -360,6 +360,7 @@ host:
       - ./CONF:/CONF
       - ./SRC:/SRC
       - ./BACKUP:/BACKUP
+      - ./CACHE:/CACHE
     config:
       limits.memory: 4GB
       limits.cpu: 1

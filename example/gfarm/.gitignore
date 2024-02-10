@@ -1,6 +1,7 @@
 /incus-auto.override.yaml
 /CONF/config.sh
 /SRC/gfarm
+/SRC/lustre-release
 /CACHE/lustre-*
 /CACHE/e2fsprogs-*
 /CACHE/rocky

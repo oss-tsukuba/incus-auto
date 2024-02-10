@@ -1,9 +1,13 @@
 IA = incus-auto
+FSNAME = testfs
+MDTNAME = mdt.$(FSNAME)-MDT0000
 
 manage:
 	$(IA) shell manage
-client:
+gfclient:
 	$(IA) shell gfclient1
+lclient:
+	$(IA) shell lclient1
 init:
 	$(IA) init
 build:
@@ -23,18 +27,23 @@ recreate-lustre:
 	incus delete -f gfarm-oss0 || true
 	incus delete -f gfarm-oss1 || true
 	incus delete -f gfarm-lclient1 || true
-	# TODO incus-auto delete-block
-	# incus storage volume delete mypool gfarm-lustre-mdt || true
-	# incus storage volume delete mypool gfarm-lustre-oss0 || true
-	# incus storage volume delete mypool gfarm-lustre-oss1 || true
 	./RECREATE.sh mgs
 	./RECREATE.sh oss0
 	./RECREATE.sh oss1
 	./RECREATE.sh lclient1
 	make update-etchosts
+start-lustre-hsm:
+	$(IA) exec mgs --root -- lctl set_param $(MDTNAME).hsm_control=enabled
+	$(IA) exec mgs --root -- lctl get_param $(MDTNAME).hsm_control
+	$(IA) exec lclient1 -- bash /SCRIPT/hsm-start.sh
 update-etchosts:
 	$(IA) update-etchosts -a
 	$(IA) exec manage -- bash -x /SCRIPT/setup-ansible.sh
 down:
 	$(IA) stop -a
 	$(IA) delete -a
+	incus storage volume delete mypool gfarm-lustre-mdt || true
+	incus storage volume delete mypool gfarm-lustre-oss0 || true
+	incus storage volume delete mypool gfarm-lustre-oss1 || true
+CLEAN: down
+	$(IA) destroy
