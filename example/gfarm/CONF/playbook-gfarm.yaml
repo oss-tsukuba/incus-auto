@@ -610,7 +610,7 @@
         set -e
         # TODO remove {{ HOST_PREFIX }}
         GFMD={{ HOST_PREFIX }}{{ item }}
-        EXIST=$(gfmdhost | grep ^${GFMD}\$) || true
+        EXIST=$(gfmdhost -l | awk '{print $6}' | grep ^${GFMD}\$) || true
         if [ -n "$EXIST" ]; then
           gfmdhost -m $GFMD -C {{ hostvars[item]['gfmd_cluster'] }}
         else
@@ -705,7 +705,7 @@
         set -e
         # TODO remove {{ HOST_PREFIX }}
         GFSD={{ HOST_PREFIX }}{{ item }}
-        EXIST=$(gfhost | grep ^${GFSD}\$) || true
+        EXIST=$(gfhost -l | awk '{print $5}' | grep ^${GFSD}\$) || true
         ARCH={{ hostvars[item]['arch'] }}
         if [ ! -n "$EXIST" ]; then
           #$(ssh $h gfarm.arch.guess)
@@ -730,4 +730,4 @@
       become_user: root
       ansible.builtin.systemd:
         name: gfsd
-        state: started
+        state: restarted
