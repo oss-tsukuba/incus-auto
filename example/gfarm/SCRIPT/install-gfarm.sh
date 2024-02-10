@@ -104,7 +104,7 @@ install_package_rhel() {
 	 pkgconfig \
 	 rdma-core-devel \
 	 postgresql postgresql-server \
-	 fuse-devel libacl-devel \
+	 fuse fuse-devel libacl-devel \
 	 python3 python3-docopt python3-schema \
 	 ruby \
 	 golang
