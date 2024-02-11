@@ -1,0 +1,13 @@
+/incus-auto.override.yaml
+/CONF/admin_public.pem
+/CONF/admin_private.pem
+/CONF/sshkey
+/CONF/sshkey.pub
+/CONF/provider.tf
+/CONF/availability-domains.tf
+/CONF/compute.tf
+/CONF/output.tf
+/CONF/.terraform.lock.hcl
+/CONF/.terraform/
+/CONF/terraform.tfstate
+/CONF/terraform.tfstate.backup
