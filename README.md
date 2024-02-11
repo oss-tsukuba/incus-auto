@@ -6,13 +6,27 @@ incus-auto is automating deployment system by Incus or LXD.
 
 - Install Incus
   - <https://linuxcontainers.org/incus/docs/main/installing/>
+- Install python3-docopt, python3-schema, python3-yaml
+  - Debian:
+    - `apt-get install python3 python3-docopt python3-schema python3-yaml`
+  - RHEL:
+    - `yum install epel-release`
+    - `yum install python3 python3-docopt python3-schema python3-pyyaml`
+- Install incus-auto
+  - Example:
+    - `install -m 755 bin/incus-auto /usr/local/bin/`
 - Prepare storage pool
   - <https://linuxcontainers.org/incus/docs/main/howto/storage_pools/>
+  - Example:
+    - `mkdir /mnt/disk2/incus-mypool`
+    - `incus storage create mypool dir source=/mnt/disk2/incus-mypool`
 - Prepare remote server if needed
 - Create `incus-auto.yaml`
-  - define config (profile, network, disk, ...)
-  - (optional) define buildimage
-  - define host
+  - Define config (profile, network, disk, ...)
+  - (Optional) Define buildimage
+  - Define host
+  - Example: `./example/gfarm/incus-auto.yml`
+    - Detail: `./example/gfarm/README-gfarm.md`
 - Initialize profile and network
   - `incus-auto init`
 - Build images
@@ -20,23 +34,9 @@ incus-auto is automating deployment system by Incus or LXD.
 - Launch containers or virtual machines
   - `incus-auto launch -a`
 
-## Install
+## Install incus-auto
 
 install `bin/incus-auto` to the directory set in PATH.
-
-example:
-
-```
-install -m 755 bin/incus-auto /usr/local/bin/
-```
-
-### Prepare storage pool
-
-```
-### Example
-$ mkdir /mnt/disk2/incus-mypool
-$ incus storage create mypool dir source=/mnt/disk2/incus-mypool
-```
 
 ## Add remote Incus server
 
@@ -67,7 +67,3 @@ See:
 ```
 incus-auto -h
 ```
-
-## Format of incus-auto.yml
-
-- Example: ./example/gfarm/incus-auto.yml

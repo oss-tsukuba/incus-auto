@@ -20,10 +20,6 @@
 
 ## Lustre HSM for Gfarm
 
-- run `cd SRC`
-  - run `git clone -b hsm-posix-for-gfarm2fs https://github.com/oss-tsukuba/lustre-release.git`
-  - (Or) run `git clone -b hsm-posix-for-gfarm2fs git@github.com:oss-tsukuba/lustre-release.git`
-  - run `cd ..`
 - run `make start-lustre-hsm` (foregroud, ctrl-c to stop)
 - run `make lclient` and `cd /mnt/lustre`
 - enjoy Lustre operations ...
