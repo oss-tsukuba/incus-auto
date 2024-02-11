@@ -27,6 +27,9 @@
 - run `make start-lustre-hsm` (foregroud, ctrl-c to stop)
 - run `make lclient` and `cd /mnt/lustre`
 - enjoy Lustre operations ...
+  - sudo mkdir tmp
+  - sudo chmod 1777 tmp
+  - ...
   - sudo lfs hsm_archive FILENAME
   - sudo lfs hsm_release FILENAME
   - sudo lfs hsm_restore FILENAME

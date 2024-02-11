@@ -17,8 +17,8 @@ create:
 setup:
 	make update-etchosts
 	$(IA) exec manage -- bash /SCRIPT/setup-gfarm-by-ansible.sh
-clear: #TODO
-	$(IA) exec manage -- bash /SCRIPT/clear-gfarm-by-ansible.sh
+reset-gfarm: #TODO
+	$(IA) exec manage -- bash /SCRIPT/reset-gfarm-by-ansible.sh
 reinstall-gfarm:
 	$(IA) exec manage -- bash /SCRIPT/reinstall-gfarm-by-ansible.sh
 recreate-lustre:
@@ -47,3 +47,9 @@ down:
 	incus storage volume delete mypool gfarm-lustre-oss1 || true
 CLEAN: down
 	$(IA) destroy
+REBUILD-ALL:
+	make CLEAN
+	make init
+	make build
+	make create
+	make setup
