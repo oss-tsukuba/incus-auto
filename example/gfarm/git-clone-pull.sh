@@ -1,36 +1,40 @@
-#!/bin/bash
+#!/bin/sh
 
-set -eux
+set -eu
+set -x
 
-cd SRC
+PULL=${1-} # "pull"
 
-if [ ! -d gfarm ]; then
-    git clone git@github.com:oss-tsukuba/gfarm.git
-    cd gfarm
-else
-    cd gfarm
-    git pull
-fi
-GFARM_DIR=$(pwd)
+CLN()
+{
+    URL="$1"
+    DIR="$2"
+    BRANCH="$3"
+    NAME=$(basename "${URL}" .git)
 
-LIST="
-git@github.com:oss-tsukuba/gfarm2fs.git
-git@github.com:oss-tsukuba/jwt-logon.git
-git@github.com:oss-tsukuba/jwt-agent.git
-git@github.com:oss-tsukuba/cyrus-sasl-xoauth2-idp.git
-git@github.com:scitokens/scitokens-cpp.git
-git@github.com:oss-tsukuba/jwt-server.git
-"
-
-for url in $LIST; do
-    name=$(basename $url)
-    name=${name%.git}
-    cd "$GFARM_DIR"
-    if [ ! -d $name ]; then
-        git clone $url
-        cd $name
+    if [ ! -d "${DIR}/${NAME}" ]; then
+        (cd "${DIR}" && git clone -b "${BRANCH}" "${URL}")
     else
-        cd $name
-        git pull
+        if [ "${PULL}" = "pull" ]; then
+            (cd "${DIR}/${NAME}" && git config pull.ff only && git pull)
+        else
+            (cd "${DIR}/${NAME}" && git checkout "${BRANCH}")
+        fi
     fi
-done
+}
+
+DIR=$(dirname $0)
+cd "${DIR}/SRC"
+
+CLN git@github.com:oss-tsukuba/gfarm.git                  .     2.8
+CLN git@github.com:oss-tsukuba/gfarm2fs.git               gfarm master
+CLN git@github.com:oss-tsukuba/jwt-logon.git              gfarm main
+CLN git@github.com:oss-tsukuba/jwt-agent.git              gfarm main
+CLN git@github.com:oss-tsukuba/cyrus-sasl-xoauth2-idp.git gfarm feature/keycloak
+CLN git@github.com:scitokens/scitokens-cpp.git            gfarm master
+CLN git@github.com:oss-tsukuba/jwt-server.git             gfarm main
+
+CLN git@github.com:oss-tsukuba/lustre-release.git         .     hsm-posix-for-gfarm2fs
+
+CLN git@github.com:oss-tsukuba/nextcloud-gfarm.git        .     master
+CLN git@github.com:oss-tsukuba/gfarm-gridftp-dsi.git      .     master
