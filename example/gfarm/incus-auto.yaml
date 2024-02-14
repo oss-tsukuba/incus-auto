@@ -44,7 +44,7 @@ config:
         root:
           type: disk
           path: /
-          pool: mypool
+          pool: &POOL mypool
           size: 5GB
         SCRIPT:
           type: disk
@@ -228,6 +228,8 @@ host:
     devices:
       eth0:
         ipv4.address: 10.123.123.121
+    setup:
+      - bash -x /SCRIPT/install-squid.sh
   keycloak:
     <<: [*x-gfarm]
     group: gfarm/client  #TODO?
@@ -292,7 +294,7 @@ host:
     image: gfarm-img-lserver  # image alias (fullname)
     block-device:
       gfarm-lustre-mdt:
-        pool: mypool
+        pool: *POOL
         size: 5GB
         create: true  # true: delete the block before building
     devices:
@@ -314,7 +316,7 @@ host:
     image: gfarm-img-lserver
     block-device:
       gfarm-lustre-oss0:
-        pool: mypool
+        pool: *POOL
         size: 6GB
         create: true
     devices:
@@ -334,7 +336,7 @@ host:
     image: gfarm-img-lserver
     block-device:
       gfarm-lustre-oss1:
-        pool: mypool
+        pool: *POOL
         size: 6GB
         create: true
     devices:
