@@ -229,6 +229,8 @@ host:
         ipv4.address: 10.123.123.121
     setup:
       - bash -x /SCRIPT/install-squid.sh
+      ### available after `make setup`
+      #- bash -x /SCRIPT/setup-gfperf.sh
   keycloak:
     <<: [*x-gfarm]  # TODO
     group: extra  #TODO?
