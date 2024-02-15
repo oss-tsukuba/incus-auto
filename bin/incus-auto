@@ -1107,11 +1107,11 @@ class IncusAuto(CUI):
                     self.incus_exec(fullname, cmd, user_is_root=False)
 
             if self.control_buildimage:
+                self.incus(f'stop {fullname}')
                 # publish buildimage
                 aliases = info.get('publish-alias', None)
                 if aliases is not None:
                     remotes = info.get('publish-remote', None)
-                    self.incus(f'stop {fullname}')
 
                     def publish(remote):
                         args = ['publish', fullname]
