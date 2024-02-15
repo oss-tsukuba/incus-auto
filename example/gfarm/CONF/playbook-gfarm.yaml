@@ -47,7 +47,7 @@
       become: true
 
 ######################################################################
-- name: Install gfarm
+- name: Gfarm environemnt
   hosts: gfarm
   tags:
     - gfarm
@@ -219,6 +219,21 @@
         cp -f "{{ CA_DIR }}/cacert.pem" "$DEST"
         chown "{{ SYS_USER }}:{{ SYS_USER }}" "$DEST"
 
+    - name: patch for grid-ca-sign
+      become: yes
+      become_user: root
+      shell: |
+        set -e
+        CMD=`which grid-ca-sign`
+        CMD_ORIG=${CMD}.orig
+        if [ -f $CMD_ORIG ]; then
+            cp -f $CMD_ORIG $CMD
+        else
+            cp -f $CMD $CMD_ORIG
+        fi
+        sed -i -e '/^\s*req_subj=/{N;d;}' $CMD
+        sed -i -e '/^\s*# find signed cert/ i\        req_subj="$(sed -e "s|subject= *|/|" -e "s|,|/|g" < "${subj_tmp_output}")"' $CMD
+
 - name: Request GSI server certificates
   #hosts: group_gfmd group_gfsd  #TODO jwtserver keycloak
   hosts: gfarm
@@ -369,7 +384,7 @@
       become_user: root
       fetch:
         src: "/home/{{ item }}/.globus/usercert_request.pem"
-        dest: "{{ SIGN_WORKDIR }}/usercert_request-{{ item }}.pem"
+        dest: "{{ SIGN_WORKDIR }}/usercert_request-{{ item }}.pem.tmp"
         flat: yes
       loop: "{{ USERS }}"
 
@@ -377,9 +392,13 @@
       become: yes
       become_user: root
       shell: |
+        set -e
         IN="{{ SIGN_WORKDIR }}/usercert_request-{{ item }}.pem"
+        TMP="${IN}.tmp"
         OUT="{{ SIGN_WORKDIR }}/usercert-{{ item }}.pem"
-        [ -f $OUT ] || cat /CONF/ca-password.txt | grid-ca-sign -in $IN -out $OUT -passin stdin -md {{ DIGEST }}
+        cmp -s $IN $TMP && exit 0
+        mv -f $TMP $IN
+        grid-ca-sign -in $IN -out $OUT -passin pass:$(cat /CONF/ca-password.txt) -md {{ DIGEST }}
       loop: "{{ USERS }}"
       delegate_to: localhost
 
@@ -394,7 +413,17 @@
         mode: "0600"
       loop: "{{ USERS }}"
 
-    - name: Fetch .globus
+    # - name: remove old dot_globus/*
+    #   become: yes
+    #   become_user: root
+    #   file:
+    #     path: "{{ SETUP_TMP }}/dot_globus/{{ item.0 }}/{{ item.1 }}"
+    #     state: absent
+    #   with_nested:
+    #     - "{{ USERS }}"
+    #     - [ "usercert.pem", "usercert_request.pem", "userkey.pem"]
+
+    - name: Fetch .globus to manage
       become: yes
       become_user: root
       fetch:
@@ -405,6 +434,7 @@
       with_nested:
         - "{{ USERS }}"
         - [ "usercert.pem", "usercert_request.pem", "userkey.pem"]
+
     - name: chmod -R go-rwx .globus
       become: yes
       become_user: root
