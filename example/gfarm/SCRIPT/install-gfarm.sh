@@ -2,6 +2,7 @@
 
 source /SCRIPT/lib.sh
 
+BUILD_CACHE=false
 USE_CACHE=false
 DISTCLEAN=true
 UPDATE_PACKAGE=true
@@ -18,8 +19,13 @@ for arg in "$@"; do
         --no-update-package)
             UPDATE_PACKAGE=false
             ;;
+        --build-cache)
+            BUILD_CACHE=true
+            DISTCLEAN=true
+            ;;
         --use-cache)
             USE_CACHE=true
+            DISTCLEAN=false
             ;;
     esac
 done
@@ -137,11 +143,11 @@ if $UPDATE_PACKAGE; then
         case $id in
             debian)
                 install_package_debian
-                break  # from id
+                break
                 ;;
             rhel)
                 install_package_rhel
-                break  # from id
+                break
                 ;;
         esac
     done
@@ -150,31 +156,33 @@ fi
 for id in $ID_LIKE rhel; do  # ID_LIKE from /etc/os-release
     case $id in
         debian)
-            break  # from id
+            break
             ;;
         rhel)
             REGPATH_usrlocalbin
-            break  # from id
+            break
             ;;
     esac
 done
 
 ###################################################################
 GFARM_SRCDIR=/SRC/gfarm
-
-if $USE_CACHE; then
-    GFARM_WORKDIR=/CACHE/${ID}/gfarm  # ID from /etc/os-release
-else
-    GFARM_WORKDIR=${HOME}/gfarm
-fi
+GFARM_WORKDIR=${HOME}/gfarm
+CACHE_DIR=/CACHE/${ID}/gfarm  # ID from /etc/os-release
 
 RSYNC_OPT=
 if $DISTCLEAN; then
     RSYNC_OPT="--delete"
 fi
-mkdir -p ${GFARM_WORKDIR}
-rsync -a $RSYNC_OPT ${GFARM_SRCDIR}/ ${GFARM_WORKDIR}/
 
+mkdir -p $GFARM_WORKDIR
+if $USE_CACHE; then
+    rsync -a $RSYNC_OPT ${CACHE_DIR}/ ${GFARM_WORKDIR}/
+else
+    rsync -a $RSYNC_OPT ${GFARM_SRCDIR}/ ${GFARM_WORKDIR}/
+fi
+
+###################################################################
 # install gfarm
 cd $GFARM_WORKDIR
 WITH_OPENSSL_OPT=
@@ -248,3 +256,9 @@ make -j $MAKE_NUM_JOBS
 SUDO make install
 
 DONE "$0" "$@"
+
+###################################################################
+if $BUILD_CACHE; then
+    mkdir -p $CACHE_DIR
+    rsync -a $RSYNC_OPT ${GFARM_WORKDIR}/ ${CACHE_DIR}/
+fi

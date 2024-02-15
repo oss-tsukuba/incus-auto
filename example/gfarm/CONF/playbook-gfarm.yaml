@@ -24,6 +24,7 @@
     SIGN_WORKDIR: "{{ SETUP_TMP }}/ca_sign"
     CA_DIR: /var/lib/globus/simple_ca
     gfarm_install: no
+    TIME_ZONE: "Asia/Tokyo"
   tasks:
     - name: Install rsync
       become: yes
@@ -40,6 +41,10 @@
         mode: "0700"
         owner: "{{ SYS_USER }}"
         group: "{{ SYS_USER }}"
+    - name: Set timezone
+      community.general.timezone:
+        name: "{{ TIME_ZONE }}"
+      become: true
 
 ######################################################################
 - name: Install gfarm

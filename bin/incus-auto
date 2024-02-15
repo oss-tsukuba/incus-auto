@@ -31,8 +31,6 @@ import yaml
 
 program_name = os.path.basename(__file__)
 
-# TODO {f} delete-block
-
 __doc__ = """
 Automating deployment system by Incus or LXD.
 
@@ -326,7 +324,7 @@ class IncusAuto(CUI):
             self.logger.debug(self.override_file + ' (override): '
                               + self.pformat(self.conf_dict))
 
-        # TODO set defaults
+        # define defaults
         config_defaults = {
             'config': {
                 'incus_command': 'incus',
@@ -519,7 +517,7 @@ class IncusAuto(CUI):
                 print('.', end='', flush=True)
             time.sleep(1)
         if not first:
-            print('OK')
+            print('')
         first = True
         while self.incus_get_ipv4(fullname, net_if) is None:
             if first or self.loglevel == logging.DEBUG:
@@ -529,7 +527,7 @@ class IncusAuto(CUI):
                 print('.', end='', flush=True)
             time.sleep(1)
         if not first:
-            print('OK')
+            print('')
 
     def incus_get_ipv4(self, fullname, net_if, ls_info=None):
         if ls_info is None:
@@ -628,14 +626,19 @@ class IncusAuto(CUI):
         hosts = {}
         user = self.conf('/config/user')
         for name, fullname, info in self.name_iter(True):
-            ip = self.conf_ipv4(name)
-            if ip is None:
-                ip = name
-            hosts[name] = {
-                'ansible_host': ip,
-                'ansible_user': user,
-            }
-        inv = {}
+            hosts[name] = None
+        inv = {
+            'all': {
+                'var': {
+                    'ansible_user': user,
+                },
+            },
+        }
+        def hide_null(self, _):
+            return self.represent_scalar('tag:yaml.org,2002:null', '')
+
+        yaml.add_representer(type(None), hide_null)
+
         inv[self.conf('/config/project')] = {'hosts': hosts}
         print(yaml.dump(inv, sort_keys=False))
 
@@ -813,7 +816,8 @@ class IncusAuto(CUI):
             val = ','.join(kvlist)
             args += ['-d', val]
 
-        # NOT WORK: Error: Cannot override config for device "VOLUME_0":
+        # NOTE: NOT WORK:
+        # Error: Cannot override config for device "VOLUME_0":
         # Device not found in profile devices
         #
         # volume_list = info.get('volume', None)
@@ -824,7 +828,7 @@ class IncusAuto(CUI):
         #     for volume_map in volume_list:
         #         device_name = f'VOLUME_{count}'
         #         kvlist = [device_name]
-        #         v = volume_map.split(':')  # TODO support "SRC":"DST" ?
+        #         v = volume_map.split(':')
         #         src = self.convert_fullpath(v[0])
         #         dst = v[1]
         #         val = f'{device_name},type=disk,source={src},path={dst}'

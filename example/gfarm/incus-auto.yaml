@@ -89,7 +89,7 @@ buildimage:
     publish-alias:  # MUST
       - img-lserver  # short name (without project_name prefix)
       - img-lustre-server
-  tmp-gfarm-rocky:  # speedup for build gfarm (VM is slow)
+  tmp-gfarm-rocky:  # speedup for build gfarm for VM (VM is slow)
     depend: img-gfarm
     image: images:rockylinux/8
     series: rhel
@@ -101,7 +101,7 @@ buildimage:
       - ./SRC:/SRC
       - ./CACHE:/CACHE
     setup:
-      - bash -x /SCRIPT/install-gfarm.sh --use-cache
+      - bash -x /SCRIPT/install-gfarm.sh --build-cache
     # not publish
   img-lclient:
     depend: [tmp-gfarm-rocky,img-lserver]
@@ -118,9 +118,8 @@ buildimage:
     volume:
       - ./SRC:/SRC
       - ./CACHE:/CACHE
-      #- ./HOME/img-lclient:/home/gfarmsys
     setup:
-      - bash -x /SCRIPT/install-gfarm.sh --no-distclean --use-cache
+      - bash -x /SCRIPT/install-gfarm.sh --use-cache
       - bash -x /SCRIPT/install-lustre-client.sh
     # publish-remote:
     #   - incus1
@@ -231,14 +230,14 @@ host:
     setup:
       - bash -x /SCRIPT/install-squid.sh
   keycloak:
-    <<: [*x-gfarm]
-    group: gfarm/client  #TODO?
+    <<: [*x-gfarm]  # TODO
+    group: extra  #TODO?
     devices:
       eth0:
         ipv4.address: 10.123.123.131
   jwtserver:
-    <<: [*x-gfarm]
-    group: gfarm/client  #TODO?
+    <<: [*x-gfarm] #TODO
+    group: extra  #TODO?
     devices:
       eth0:
         ipv4.address: 10.123.123.132

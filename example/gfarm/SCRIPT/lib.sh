@@ -7,8 +7,8 @@ SCRIPT_DIR=/SCRIPT
 SECRET_DIR=/SECRET  # secret dir for management host
 INV=${CONF_DIR}/inventories.yaml
 
-ANSIBLE_USER=gfarmsys  # incus-auto.yaml:/config/user
-HOMEDIR="/home/${ANSIBLE_USER}"
+SYS_USER=gfarmsys  # incus-auto.yaml:/config/user
+HOMEDIR="/home/${SYS_USER}"
 SSHDIR="${HOMEDIR}/.ssh"
 SSH_PRIVKEY_SRC="${SECRET_DIR}/sample-id_ecdsa"
 SSH_PRIVKEY_DST="${SSHDIR}/id_ecdsa"
