@@ -1078,10 +1078,12 @@ class IncusAuto(CUI):
             if self.control_buildimage:
                 # check required values (MUST)
                 info['series']
+            self.logger.info(f'[STEP-1] launch: {name}')
             self.incus_launch(info, name, fullname)
             self.create_block_device(info, name, fullname)
 
         for name, fullname, info in self.name_iter(self.use_all):
+            self.logger.info(f'[STEP-2] initialize network: {name}')
             self.incus_wait_for_wakeup(fullname, info)
             self.setup_network_static(info, fullname)
             self.incus(f'stop {fullname}')
@@ -1089,24 +1091,30 @@ class IncusAuto(CUI):
             self.incus(f'start {fullname}')
 
         for name, fullname, info in self.name_iter(self.use_all):
+            self.logger.info(f'[STEP-3] setup: {name}')
             self.incus_wait_for_wakeup(fullname, info)
             if self.tobool(info['vm']) and info['series'] == 'rhel':
                 # growpart for rhel VM
+                self.logger.info(f'[STEP-3.A] growpart: {name}')
                 self.growpart(fullname)
             self.setup_user(info, fullname)
             if not self.control_buildimage:
+                self.logger.info(f'[STEP-3.B] sshd: {name}')
                 self.install_ssh(info, name, fullname)
                 self.update_etchosts(info, fullname)
 
             # run /host|buildimage/NAME/setup
             for cmd in info.get('setup', []):
                 if cmd == '__RESTART__':
+                    self.logger.info(f'[STEP-3.C] setup(__RESTART__): {name}')
                     self.incus(f'restart {fullname}')
                     self.incus_wait_for_wakeup(fullname, info)
                 else:
+                    self.logger.info(f'[STEP-3.D] setup(str(cmd)): {name}')
                     self.incus_exec(fullname, cmd, user_is_root=False)
 
             if self.control_buildimage:
+                self.logger.info(f'[STEP-3.E] publish image: {name}')
                 self.incus(f'stop {fullname}')
                 # publish buildimage
                 aliases = info.get('publish-alias', None)
