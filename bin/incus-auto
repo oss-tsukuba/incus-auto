@@ -698,10 +698,12 @@ class IncusAuto(CUI):
         # delete profiles
         for profname in self.conf('/config/profile').keys():
             fullname = self.project_prefix + profname
+            print(f'incus profile delete {fullname}')
             self.incus(f'profile delete {fullname}', ignore_error=True,
                        output=True)
         # delete networks
         for netname in self.conf('/config/network').keys():
+            print(f'incus network delete {netname}')
             self.incus(f'network delete {netname}', ignore_error=True,
                        output=True)
 
