@@ -3,9 +3,10 @@ set -eux
 
 ARGS="$@"
 
-IA="../../bin/incus-auto -f incus-auto.yaml,incus-auto.lustre.yaml,incus-auto.override.yaml"
+CONFIG=$(./CONFIG.sh all)
+IA="../../bin/incus-auto -c ${CONFIG}"
 
-$IA stop "${ARGS[@]}"
+$IA stop -f "${ARGS[@]}"
 $IA delete "${ARGS[@]}"
 $IA launch "${ARGS[@]}" -l debug
 

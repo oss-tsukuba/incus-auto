@@ -54,8 +54,9 @@ Usage:
 Options:
   -a, --all                 control all hosts (or buildimages)
   -b, --buildimage          control buildimages
-  -f, --file=FILEs          configuration files (YAML) (comma sepalator)
+  -c, --config=FILEs        configuration files (YAML) (comma separator)
                             [default: {d1},{d2}]
+  -f, --force               force to stop
   --root                    execute by root
   -l, --loglevel=LEVEL      log level (debug, info, warning, error)
                             [default: info]
@@ -90,8 +91,9 @@ Multiple targets:
 opt_schema = Schema({
     '--all': bool,
     '--buildimage': bool,
+    '--config': str,
+    '--force': bool,
     '--root': bool,
-    '--file': str,
     '--loglevel': str,
     '--encoding': str,
     '--help': bool,
@@ -270,7 +272,8 @@ class IncusAuto(CUI):
             self.names = []
         self.use_all = self.opt['--all']  # CANNOT be changed outside of cmd_*
         self.control_buildimage = self.opt['--buildimage']
-        self.conf_files = self.opt['--file'].split(',')
+        self.conf_files = self.opt['--config'].split(',')
+        self.force = self.opt['--force']
         self.encoding = self.opt['--encoding']
         self.user_is_root = self.opt['--root']
 
@@ -322,7 +325,10 @@ class IncusAuto(CUI):
                 self.logger.debug(conf_file + ': load and override: '
                                   + self.pformat(self.conf_dict))
             elif conf_file != default_conf1 and conf_file != default_conf2:
-                raise FileNotFoundError(conf_file)
+                if '.override.' in conf_file:
+                    self.logger.debug(f'IGNORE: File not found: {conf_file}')
+                else:
+                    raise FileNotFoundError(conf_file)
 
         # define defaults
         config_defaults = {
@@ -634,6 +640,7 @@ class IncusAuto(CUI):
                 },
             },
         }
+
         def hide_null(self, _):
             return self.represent_scalar('tag:yaml.org,2002:null', '')
 
@@ -717,8 +724,10 @@ class IncusAuto(CUI):
                         build=self.control_buildimage, ignore_error=True)
 
     def cmd_stop(self):
-        self.incus_each('stop', ['--verbose',
-                                 '--timeout', str(self.stop_timeout)],
+        opt = ['--verbose', '--timeout', str(self.stop_timeout)]
+        if self.force:
+            opt.append('--force')
+        self.incus_each('stop', opt,
                         build=self.control_buildimage, ignore_error=True)
 
     def cmd_delete(self):

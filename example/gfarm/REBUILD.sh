@@ -2,18 +2,12 @@
 set -eux
 
 ARGS="$@"
-PROJECT="gfarm"
 
-IA=incus-auto
+CONFIG=$(./CONFIG.sh all)
+IA="../../bin/incus-auto -c ${CONFIG}"
 
-if [ ${ARGS[0]} = ALL ]; then
-    $IA stop -a -b
-    $IA delete -a -b
-    $IA build -a -b
-else
-    $IA stop "${ARGS[@]}" -b
-    $IA delete "${ARGS[@]}" -b
-    $IA build "${ARGS[@]}" -l debug
-fi
+$IA stop "${ARGS[@]}" -b
+$IA delete "${ARGS[@]}" -b
+$IA build "${ARGS[@]}" -l debug
 
-$IA ls
+$IA ps -b

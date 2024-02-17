@@ -1,7 +1,7 @@
 IA = ../../bin/incus-auto
-IAGF = $(IA) -f incus-auto.yaml,incus-auto.gfarm.yaml,incus-auto.override.yaml
-IALS = $(IA) -f incus-auto.yaml,incus-auto.lustre.yaml,incus-auto.override.yaml
-IAALL= $(IA) -f incus-auto.yaml,incus-auto.gfarm.yaml,incus-auto.lustre.yaml,incus-auto.override.yaml
+IAGF = $(IA) -c $(shell ./CONFIG.sh gfarm)
+IALS = $(IA) -c $(shell ./CONFIG.sh lustre)
+IAALL= $(IA) -c $(shell ./CONFIG.sh all)
 POOL = mypool
 FSNAME = testfs
 MDTNAME = mdt.$(FSNAME)-MDT0000
@@ -14,7 +14,9 @@ lclient:
 	$(IALS) shell lclient1
 
 ps:
-	$(IAALL) ps
+	@$(IAALL) ps
+image:
+	@$(IAALL) ps -b
 show-config-all:
 	$(IAALL) config
 update-etchosts:
