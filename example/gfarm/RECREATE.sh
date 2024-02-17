@@ -3,16 +3,10 @@ set -eux
 
 ARGS="$@"
 
-IA=incus-auto
+IA="../../bin/incus-auto -f incus-auto.yaml,incus-auto.lustre.yaml,incus-auto.override.yaml"
 
-if [ ${ARGS[0]} = ALL ]; then
-    $IA stop -a
-    $IA delete -a
-    $IA launch -a
-else
-    $IA stop "${ARGS[@]}"
-    $IA delete "${ARGS[@]}"
-    $IA launch "${ARGS[@]}" -l debug
-fi
+$IA stop "${ARGS[@]}"
+$IA delete "${ARGS[@]}"
+$IA launch "${ARGS[@]}" -l debug
 
-$IA ls
+$IA ps

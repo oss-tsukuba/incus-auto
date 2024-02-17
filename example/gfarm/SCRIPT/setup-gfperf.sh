@@ -51,4 +51,4 @@ rm -rf $tmpfile
 
 
 IP=$(MYIP)
-echo "URL: http://${IP}/gfper/"
+echo "URL: http://gfclient1/gfperf/ via squid (http proxy: http://${IP}:3128)"

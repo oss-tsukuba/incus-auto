@@ -22,14 +22,19 @@ gfarm:
     group_gfclient:
       hosts:
         gfclient1:
-        lclient1:
+      children:
+        group_lclient:
 extra:
   hosts:
     jwtserver:
     keycloak:
 lustre:
-  hosts:
-    mgs:
-    oss0:
-    oss1:
-    lclient1:
+  children:
+    group_lserver:
+      hosts:
+        mgs:
+        oss0:
+        oss1:
+    group_lclient:
+      hosts:
+        lclient1:

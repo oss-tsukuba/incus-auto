@@ -7,5 +7,5 @@ source /SCRIPT/lib.sh
 # add ~/.ssh/known_hosts
 ansible-playbook -i $INV /CONF/ssh-keyscan.yaml
 
-ansible -i $INV all -m ping
-ansible -i $INV all -a hostname
+#ansible -i $INV all -m ping
+#ansible -i $INV all -a hostname

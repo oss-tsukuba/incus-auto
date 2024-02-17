@@ -3,6 +3,7 @@ database: {filename: "/var/www/gfperf_db/database.db", check span: "10days",
 
 #authentication: ["gsi_auth", "gsi"]
 authentication: ["sharedsecret"]
+#authentication: ["tls_client_certificate"]
 
 gfarm2fs_mountpoint: ["/mnt/_gfperf"]
 

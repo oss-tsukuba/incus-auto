@@ -6,20 +6,24 @@
 - (optional) create CONF/config.sh to override parameters
 - install incus
 - install pigz
+- run `mkdir /mnt/diskX/incus-mypool`
+- run `incus storage create mypool dir source=/mnt/diskX/incus-mypool`
 - run `incus config set images.compression_algorithm pigz`
 - run `./git-clone-pull.sh`
 - run `make init`
-- run `make build`
-- run `make create`
-- run `make setup`
-- run `make` (login to the manage container) and `ssh gfclient1`
-  - or run `make gfclient`
+- run `make build-gfarm`
+- run `make launch-gfarm`
+- run `make setup-gfarm`
+- run `make gfclient`
+  - or run `make` (login to the manage container) and `ssh gfclient1`
 - enjoy Gfarm operations ...
 - ctrl-d (exit from gfclient1)
 - ctrl-d (exit from manage)
 
 ## Lustre HSM for Gfarm
 
+- run `make build-lustre`
+- run `make launch-lustre`
 - run `make start-lustre-hsm` (foregroud, ctrl-c to stop)
 - run `make lclient` and `cd /mnt/lustre`
 - enjoy Lustre operations ...

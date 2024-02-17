@@ -6,6 +6,7 @@ incus-auto is automating deployment system by Incus or LXD.
 
 - Install Incus
   - <https://linuxcontainers.org/incus/docs/main/installing/>
+- Run `incus config set images.compression_algorithm pigz`
 - Install python3-docopt, python3-schema, python3-yaml
   - Debian:
     - `apt-get install python3 python3-docopt python3-schema python3-yaml`

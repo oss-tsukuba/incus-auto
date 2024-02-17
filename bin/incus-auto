@@ -31,6 +31,9 @@ import yaml
 
 program_name = os.path.basename(__file__)
 
+default_conf1 = 'incus-auto.yaml'
+default_conf2 = 'incus-auto.override.yaml'
+
 __doc__ = """
 Automating deployment system by Incus or LXD.
 
@@ -49,12 +52,10 @@ Usage:
   {f} <command> --all [options]
 
 Options:
-  -a, --all                 all buildimages or all hosts
+  -a, --all                 control all hosts (or buildimages)
   -b, --buildimage          control buildimages
-  -f, --file=FILE           configuration file (YAML)
-                            [default: incus-auto.yaml]
-  -o, --override=FILE       override configuration file (if it exists)
-                            [default: incus-auto.override.yaml]
+  -f, --file=FILEs          configuration files (YAML) (comma sepalator)
+                            [default: {d1},{d2}]
   --root                    execute by root
   -l, --loglevel=LEVEL      log level (debug, info, warning, error)
                             [default: info]
@@ -84,14 +85,13 @@ Command:
 Multiple targets:
   Example:
     {f} exec host1,host2 hostname
-""".format(f=program_name)
+""".format(f=program_name, d1=default_conf1, d2=default_conf2)
 
 opt_schema = Schema({
     '--all': bool,
     '--buildimage': bool,
     '--root': bool,
     '--file': str,
-    '--override': str,
     '--loglevel': str,
     '--encoding': str,
     '--help': bool,
@@ -173,7 +173,7 @@ class CUI():
         if ret != 0:
             msg = f'{str(args)}: {str(err)}'
             if ignore_error:
-                self.logger.info('Error ignored: ' + msg)
+                self.logger.info('IGNORE: Error: ' + msg)
                 return
             else:
                 raise Exception('Error: ' + msg)
@@ -270,13 +270,12 @@ class IncusAuto(CUI):
             self.names = []
         self.use_all = self.opt['--all']  # CANNOT be changed outside of cmd_*
         self.control_buildimage = self.opt['--buildimage']
-        self.conf_file = self.opt['--file']
-        self.override_file = self.opt['--override']
+        self.conf_files = self.opt['--file'].split(',')
         self.encoding = self.opt['--encoding']
         self.user_is_root = self.opt['--root']
 
     def change_dir(self):
-        self.basedir = os.path.realpath(os.path.dirname(self.conf_file))
+        self.basedir = os.path.realpath(os.path.dirname(self.conf_files[0]))
         os.chdir(self.basedir)
 
     @classmethod
@@ -313,16 +312,17 @@ class IncusAuto(CUI):
 
     def load_conf(self):
         self.logger.debug(self.pformat(self.opt))
-        with open(self.conf_file) as f:
-            self.conf_dict = yaml.safe_load(f)
-        self.logger.debug(self.conf_file + ' (original): '
-                          + self.pformat(self.conf_dict))
-        if os.path.exists(self.override_file):
-            with open(self.override_file) as f:
-                override_dict = yaml.safe_load(f)
-                self.deep_update(self.conf_dict, override_dict, override=True)
-            self.logger.debug(self.override_file + ' (override): '
-                              + self.pformat(self.conf_dict))
+        self.conf_dict = {}
+        for conf_file in self.conf_files:
+            if os.path.exists(conf_file):
+                with open(conf_file) as f:
+                    override_dict = yaml.safe_load(f)
+                    self.deep_update(self.conf_dict,
+                                     override_dict, override=True)
+                self.logger.debug(conf_file + ': load and override: '
+                                  + self.pformat(self.conf_dict))
+            elif conf_file != default_conf1 and conf_file != default_conf2:
+                raise FileNotFoundError(conf_file)
 
         # define defaults
         config_defaults = {
@@ -337,7 +337,7 @@ class IncusAuto(CUI):
             'buildimage': {
                 '__ANY__': {
                     'vm': False,
-                    'devices': {
+                    'devices': {  # not null
                         # 'root': {
                         #     'size': '5GB',
                         # },
@@ -347,7 +347,7 @@ class IncusAuto(CUI):
             'host': {
                 '__ANY__': {
                     'vm': False,
-                    'devices': {
+                    'devices': {  # not null
                         # 'root': {
                         #     'size': '5GB',
                         # },
@@ -355,7 +355,7 @@ class IncusAuto(CUI):
                 },
             },
         }
-        self.deep_update(self.conf_dict, config_defaults)
+        self.deep_update(self.conf_dict, config_defaults, override=False)
         self.logger.debug('self.conf_dict (set defaults): '
                           + self.pformat(self.conf_dict))
 

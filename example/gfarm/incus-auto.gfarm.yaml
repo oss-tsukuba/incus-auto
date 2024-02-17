@@ -1,0 +1,122 @@
+buildimage:
+  img-gfarm:
+    image: images:ubuntu/22.04
+    series: debian
+    vm: false
+    devices:
+    profile:
+      - prof1
+      - prof2net
+    volume:
+      - ./CONF:/CONF
+      - ./SRC:/SRC
+    # envvar:
+    setup:
+      - bash -x /SCRIPT/install-gfarm.sh
+      - __RESTART__
+    # publish-remote:  #TODO
+    #   - incus1
+    publish-alias:
+      - img-gfarm  # short name
+
+x-gfarm: &x-gfarm
+  image: gfarm-img-gfarm
+  series: debian
+  vm: false
+  profile:
+    - prof1
+    - prof2net
+  volume:
+    - ./CONF:/CONF
+    - ./SRC:/SRC
+    - ./BACKUP:/BACKUP
+  # envvar:
+
+host:
+  gfmd1:
+    <<: [*x-gfarm]
+    group: gfarm/gfmd  #TODO?
+    alternative:
+      - gfmd1.test
+      - gfmd1.example.org
+    # network-static:
+    #   eth0:
+    #     ipv4.address: 10.123.123.211/24
+    #     ipv4.gateway: 10.123.123.1
+    #     dns:
+    #     - 8.8.8.8
+    #   eth1:
+    #     ipv4.address: 10.210.210.211/24
+    devices:  # ignored when network-static.*.ipv4.address is defined
+      eth0:
+        ipv4.address: 10.123.123.101
+  gfmd2:
+    <<: [*x-gfarm]
+    group: gfarm/gfmd  #TODO?
+    devices:
+      eth0:
+        ipv4.address: 10.123.123.102
+  gfmd3:
+    <<: [*x-gfarm]
+    group: gfarm/gfmd  #TODO?
+    devices:
+      eth0:
+        ipv4.address: 10.123.123.103
+  gfsd1:
+    <<: [*x-gfarm]
+    group: gfarm/gfsd  #TODO?
+    devices:
+      eth0:
+        ipv4.address: 10.123.123.111
+  gfsd2:
+    <<: [*x-gfarm]
+    group: gfarm/gfsd  #TODO?
+    devices:
+      eth0:
+        ipv4.address: 10.123.123.112
+  # gfsd3:
+  # gfsd4:
+  gfclient1:
+    <<: [*x-gfarm]
+    group: gfarm/client  #TODO?
+    devices:
+      eth0:
+        ipv4.address: 10.123.123.121
+    setup:
+      - bash -x /SCRIPT/install-squid.sh
+      ### available after `make setup`
+      #- bash -x /SCRIPT/setup-gfperf.sh
+  keycloak:
+    <<: [*x-gfarm]  # TODO
+    group: extra  #TODO?
+    devices:
+      eth0:
+        ipv4.address: 10.123.123.131
+  jwtserver:
+    <<: [*x-gfarm] #TODO
+    group: extra  #TODO?
+    devices:
+      eth0:
+        ipv4.address: 10.123.123.132
+  manage:
+    image: images:ubuntu/22.04
+    series: debian
+    vm: false
+    profile:
+      - prof1
+      - prof2net
+    volume:  # TODO
+      - ./CONF:/CONF
+      - ./:/SECRET
+    network-static:
+      eth0:
+        ipv4.address: 10.123.123.251/24
+        ipv4.gateway: 10.123.123.1
+        dns:
+        - 8.8.8.8
+        - 8.8.4.4
+      eth1:
+        ipv4.address: 10.210.210.251/24
+    setup:
+      - bash -x /SCRIPT/base-for-ubuntu.sh
+      - bash -x /SCRIPT/install-ansible-for-ubuntu.sh
