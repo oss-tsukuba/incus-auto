@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/bin/bash
 
-cd /CONF
-ansible -i inventories.yaml gfarm -a "bash /SCRIPT/install-gfarm.sh --reinstall"
+source /SCRIPT/lib.sh
+
+ansible -i $INV gfarm -a "bash /SCRIPT/install-gfarm.sh --reinstall"

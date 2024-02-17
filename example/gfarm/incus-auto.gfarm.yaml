@@ -14,7 +14,7 @@ buildimage:
     setup:
       - bash -x /SCRIPT/install-gfarm.sh
       - __RESTART__
-    # publish-remote:  #TODO
+    # publish-remote:
     #   - incus1
     publish-alias:
       - img-gfarm  # short name
@@ -35,7 +35,7 @@ x-gfarm: &x-gfarm
 host:
   gfmd1:
     <<: [*x-gfarm]
-    group: gfarm/gfmd  #TODO?
+    group: gfarm/group_gfmd
     alternative:
       - gfmd1.test
       - gfmd1.example.org
@@ -50,35 +50,51 @@ host:
     devices:  # ignored when network-static.*.ipv4.address is defined
       eth0:
         ipv4.address: 10.123.123.101
+    envvar:
+      gfmd_cluster: siteA
   gfmd2:
     <<: [*x-gfarm]
-    group: gfarm/gfmd  #TODO?
+    group: gfarm/group_gfmd
     devices:
       eth0:
         ipv4.address: 10.123.123.102
+    envvar:
+      gfmd_cluster: siteA
   gfmd3:
     <<: [*x-gfarm]
-    group: gfarm/gfmd  #TODO?
+    group: gfarm/group_gfmd
     devices:
       eth0:
         ipv4.address: 10.123.123.103
+    envvar:
+      gfmd_cluster: siteB
   gfsd1:
     <<: [*x-gfarm]
-    group: gfarm/gfsd  #TODO?
+    group: gfarm/group_gfsd
     devices:
       eth0:
         ipv4.address: 10.123.123.111
   gfsd2:
     <<: [*x-gfarm]
-    group: gfarm/gfsd  #TODO?
+    group: gfarm/group_gfsd
     devices:
       eth0:
         ipv4.address: 10.123.123.112
   # gfsd3:
+  #   <<: [*x-gfarm]
+  #   group: gfarm/group_gfsd
+  #   devices:
+  #     eth0:
+  #       ipv4.address: 10.123.123.113
   # gfsd4:
+  #   <<: [*x-gfarm]
+  #   group: gfarm/group_gfsd
+  #   devices:
+  #     eth0:
+  #       ipv4.address: 10.123.123.114
   gfclient1:
     <<: [*x-gfarm]
-    group: gfarm/client  #TODO?
+    group: gfarm/group_gfclient
     devices:
       eth0:
         ipv4.address: 10.123.123.121
@@ -88,24 +104,25 @@ host:
       #- bash -x /SCRIPT/setup-gfperf.sh
   keycloak:
     <<: [*x-gfarm]  # TODO
-    group: extra  #TODO?
+    group: extra
     devices:
       eth0:
         ipv4.address: 10.123.123.131
   jwtserver:
     <<: [*x-gfarm] #TODO
-    group: extra  #TODO?
+    group: extra
     devices:
       eth0:
         ipv4.address: 10.123.123.132
   manage:
+    group: control
     image: images:ubuntu/22.04
     series: debian
     vm: false
     profile:
       - prof1
       - prof2net
-    volume:  # TODO
+    volume:
       - ./CONF:/CONF
       - ./:/SECRET
     network-static:

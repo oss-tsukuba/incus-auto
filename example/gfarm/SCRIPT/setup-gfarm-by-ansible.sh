@@ -1,7 +1,9 @@
-#!/bin/sh
+#!/bin/bash
 
 set -eu
 set -x
+
+source /SCRIPT/lib.sh
 
 TARGET="$1"
 shift
@@ -14,11 +16,11 @@ EXTRA=
 LIMIT=
 case $TARGET in
     gfarm)
-        LIMIT="--limit !lustre"
+        LIMIT="--limit control:gfarm:extra:!lustre"
         ;;
     lustre)
-        LIMIT="--limit !gfarm"
+        LIMIT="--limit lustre"
         ;;
 esac
 
-ansible-playbook $EXTRA -i inventories.yaml $LIMIT playbook-gfarm.yaml -vv "$@"
+ansible-playbook $EXTRA -i $INV $LIMIT playbook-gfarm.yaml -vv "$@"

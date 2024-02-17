@@ -5,6 +5,7 @@ IAALL= $(IA) -c $(shell ./CONFIG.sh all)
 POOL = mypool
 FSNAME = testfs
 MDTNAME = mdt.$(FSNAME)-MDT0000
+INV = CACHE/tmp-inventory.yaml  # SEE ALSO: SCRIPT/lib.sh
 
 manage:
 	$(IAGF) shell manage
@@ -21,7 +22,10 @@ show-config-all:
 	$(IAALL) config
 update-etchosts:
 	$(IAALL) update-etchosts -a
+gen-inventory:
+	$(IAALL) ansible-inventory > $(INV)
 ansible-init:
+	make gen-inventory
 	$(IAALL) exec manage -- bash -x /SCRIPT/setup-ansible.sh
 
 init:

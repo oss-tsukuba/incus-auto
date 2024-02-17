@@ -86,7 +86,7 @@ x-lustre: &x-lustre
 host:
   mgs:  # with mds
     <<: [*x-lustre]
-    group: lustre/mgs
+    group: lustre/group_lserver
     alternative:
       - mgs.test
       - mgs.example.org
@@ -104,10 +104,11 @@ host:
     setup:
       - bash -x /SCRIPT/setup-lustre-mgs.sh testfs
       - __RESTART__
+
   oss0:
     <<: [*x-lustre]
     depend: mgs
-    group: lustre/oss
+    group: lustre/group_lserver
     alternative:
       - oss0.test
       - oss0.example.org
@@ -127,7 +128,7 @@ host:
   oss1:
     <<: [*x-lustre]
     depend: mgs
-    group: lustre/oss
+    group: lustre/group_lserver
     alternative:
       - oss1.test
       - oss1.example.org
@@ -147,6 +148,7 @@ host:
 
   lclient1:
     depend: [mgs, oss0, oss1]
+    group: [lustre/group_lclient, gfarm/group_gfclient]
     image: gfarm-img-lclient
     series: rhel
     vm: true

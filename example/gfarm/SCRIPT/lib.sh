@@ -5,7 +5,7 @@ source /etc/os-release
 CONF_DIR=/CONF
 SCRIPT_DIR=/SCRIPT
 SECRET_DIR=/SECRET  # secret dir for management host
-INV=${CONF_DIR}/inventories.yaml
+INV=${SECRET_DIR}/CACHE/tmp-inventory.yaml
 
 SYS_USER=gfarmsys  # incus-auto.yaml:/config/user
 HOMEDIR="/home/${SYS_USER}"

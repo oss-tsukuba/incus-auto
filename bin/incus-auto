@@ -47,6 +47,7 @@ Usage:
   {f} exec --all [--root] [options] [--] <args>...
   {f} config [options]
   {f} ansible-inventory [options]
+  {f} inv [options]
   {f} etchosts [options]
   {f} <command> <name> [options]
   {f} <command> --all [options]
@@ -76,6 +77,7 @@ Command:
   exec               execute command
   config             check and show configuration parameters
   ansible-inventory  for ansible-inventory -i -
+  inv                alias of ansible-inventory
   etchosts           print list for /etc/hosts
   update-etchosts    update /etc/hosts for hosts
   stop               stop hosts
@@ -106,6 +108,7 @@ opt_schema = Schema({
     'exec': bool,
     'config': bool,
     'ansible-inventory': bool,
+    'inv': bool,
     'etchosts': bool,
     '<name>': Or(str, None),
     '<args>': [str],
@@ -588,6 +591,7 @@ class IncusAuto(CUI):
             'exec': self.cmd_exec,
             'config': self.cmd_config,
             'ansible-inventory': self.cmd_ansible_inventory,
+            'inv': self.cmd_ansible_inventory,
             'etchosts': self.cmd_etchosts,
             'update-etchosts': self.cmd_update_etchosts,
             'build': self.cmd_build,
@@ -605,6 +609,7 @@ class IncusAuto(CUI):
                            'exec',
                            'config',
                            'ansible-inventory',
+                           'inv',
                            'etchosts',
                            ]
         cmd_name = None
@@ -629,24 +634,50 @@ class IncusAuto(CUI):
         return ip.split('/')[0]
 
     def cmd_ansible_inventory(self):
-        hosts = {}
         user = self.conf('/config/user')
-        for name, fullname, info in self.name_iter(True):
-            hosts[name] = None
         inv = {
             'all': {
-                'var': {
+                'vars': {
                     'ansible_user': user,
                 },
             },
         }
+        envvar1 = self.conf('/config/envvar')
+        if envvar1 is not None:
+            inv['all']['vars'].update(envvar1)
+
+        for name, fullname, info in self.name_iter(True):
+            groups = info.get('group')
+            envvar2 = info.get('envvar')
+
+            if groups is None:
+                continue
+            if isinstance(groups, str):
+                groups = groups.split(',')
+            for group in groups:
+                glist = group.split('/')
+                parent = glist[:-1]
+                lastgrp = glist[-1]
+                d = inv
+                for g in parent:
+                    gval = d.get(g, {})
+                    d[g] = gval
+                    children = gval.get('children', {})
+                    gval['children'] = children
+                    d = children
+                gval = d.get(lastgrp, {})
+                d[lastgrp] = gval
+                hosts = gval.get('hosts', {})
+                gval['hosts'] = hosts
+                if envvar2 is None:
+                    hosts[name] = None
+                else:
+                    hosts[name] = envvar2
 
         def hide_null(self, _):
             return self.represent_scalar('tag:yaml.org,2002:null', '')
 
         yaml.add_representer(type(None), hide_null)
-
-        inv[self.conf('/config/project')] = {'hosts': hosts}
         print(yaml.dump(inv, sort_keys=False))
 
     def gen_etchosts(self):
