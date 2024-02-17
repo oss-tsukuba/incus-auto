@@ -592,6 +592,7 @@
       ansible.builtin.systemd:
         name: gfarm-pgsql
         state: started
+        enabled: yes
 
 - name: Setup gfmd1
   hosts: gfmd1
@@ -606,6 +607,7 @@
       ansible.builtin.systemd:
         name: gfmd
         state: started
+        enabled: yes
 
     - name: set METADB_LIST
       set_fact:
@@ -765,3 +767,4 @@
       ansible.builtin.systemd:
         name: gfsd
         state: restarted
+        enabled: yes
