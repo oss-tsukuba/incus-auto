@@ -48,8 +48,7 @@ reinstall-gfarm:
 setup-gfperf:
 	$(IAGF) exec gfclient1 -- bash /SCRIPT/setup-gfperf.sh
 delete-gfarm:
-	$(IAGF) stop -a
-	#TODO $(IAGF) delete -a -f
+	$(IAGF) stop -a -f
 	$(IAGF) delete -a
 
 show-config-lustre:
@@ -60,13 +59,7 @@ launch-lustre:
 	$(IALS) launch -a
 	$(IAALL) update-etchosts -a
 delete-lustre:
-	# TODO incus-auto delete -f
-	# incus delete -f gfarm-mgs || true
-	# incus delete -f gfarm-oss0 || true
-	# incus delete -f gfarm-oss1 || true
-	# incus delete -f gfarm-lclient1 || true
-	$(IALS) stop -a
-	#TODO $(IAGF) delete -a -f
+	$(IALS) stop -a -f
 	$(IALS) delete -a
 start-lustre-hsm:
 	$(IALS) exec mgs --root -- lctl set_param $(MDTNAME).hsm_control=enabled
@@ -78,7 +71,7 @@ setup-gfarm-all:
 	$(IAGF) exec manage -- bash /SCRIPT/setup-gfarm-by-ansible.sh all
 
 down:
-	$(IAALL) stop -a
+	$(IAALL) stop -a -f
 	$(IAALL) delete -a
 	incus storage volume delete $(POOL) gfarm-lustre-mdt || true
 	incus storage volume delete $(POOL) gfarm-lustre-oss0 || true
