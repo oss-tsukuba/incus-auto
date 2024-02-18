@@ -78,6 +78,16 @@ down:
 	incus storage volume delete $(POOL) gfarm-lustre-oss1 || true
 CLEAN: down
 	$(IAALL) destroy
+
+REBUILD-GFARM:
+	make CLEAN
+	make show-config-all
+	make init
+	make build-gfarm
+	make launch-gfarm
+	make setup-gfarm
+	make setup-gfperf
+
 REBUILD-ALL:
 	make CLEAN
 	make show-config-all
