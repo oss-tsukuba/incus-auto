@@ -40,5 +40,5 @@ if ! grep -q "$MNTDIR" /etc/fstab; then
 /dev/sdb  ${MNTDIR}   lustre  defaults   0 0
 EOF
     SUDO systemctl daemon-reload
-    SUDO mount $MNTDIR
+    #SUDO mount $MNTDIR
 fi

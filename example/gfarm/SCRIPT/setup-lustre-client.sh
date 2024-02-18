@@ -31,5 +31,5 @@ if ! grep -q "$MNTDIR" /etc/fstab; then
 ${MGS_IP}@tcp:/${FSNAME} ${MNTDIR} lustre defaults,noatime,flock,_netdev,x-systemd.automount,x-systemd.requires=network.service 0 0
 EOF
     SUDO systemctl daemon-reload
-    SUDO mount $MNTDIR
+    #SUDO mount $MNTDIR
 fi

@@ -24,8 +24,27 @@ if [ -f "$CONFIG_OVERRIDE" ]; then
     source "$CONFIG_OVERRIDE"
 fi
 
+IS_ID_LIKE_DEBIAN() {
+    for id in $ID_LIKE; do  # ID_LIKE from /etc/os-release
+        case $id in
+            debian)
+                return 0
+                ;;
+        esac
+    done
+    return 1
+}
+
+SUDO_INITIALIZED=false
+PRESERVE_ENV="http_proxy,https_proxy"
+
 SUDO() {
-    sudo --preserve-env=http_proxy,https_proxy "$@"
+    if ! $SUDO_INITIALIZED; then
+        export DEBIAN_FRONTEND=noninteractive
+        PRESERVE_ENV+=",DEBIAN_FRONTEND"
+        SUDO_INITIALIZED=true
+    fi
+    sudo --preserve-env=${PRESERVE_ENV} "$@"
 }
 
 DONE() {

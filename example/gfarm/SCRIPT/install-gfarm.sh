@@ -6,6 +6,7 @@ BUILD_CACHE=false
 USE_CACHE=false
 DISTCLEAN=true
 UPDATE_PACKAGE=true
+INSTALL_MANPAGE=true
 for arg in "$@"; do
     echo $arg
     case "$arg" in
@@ -26,6 +27,9 @@ for arg in "$@"; do
         --use-cache)
             USE_CACHE=true
             DISTCLEAN=false
+            ;;
+        --no-manpage)
+            INSTALL_MANPAGE=false
             ;;
     esac
 done
@@ -139,7 +143,7 @@ install_package_rhel() {
 }
 
 if $UPDATE_PACKAGE; then
-    for id in $ID_LIKE rhel; do  # ID_LIKE from /etc/os-release
+    for id in $ID_LIKE; do  # ID_LIKE from /etc/os-release
         case $id in
             debian)
                 install_package_debian
@@ -153,7 +157,7 @@ if $UPDATE_PACKAGE; then
     done
 fi
 
-for id in $ID_LIKE rhel; do  # ID_LIKE from /etc/os-release
+for id in $ID_LIKE; do  # ID_LIKE from /etc/os-release
     case $id in
         debian)
             break
@@ -193,7 +197,15 @@ GFARM_OPT="--with-globus=/usr --enable-xmlattr ${WITH_OPENSSL_OPT}"
 $DISTCLEAN && (test -f Makefile && make distclean || true)
 $DISTCLEAN && ./configure $GFARM_OPT
 make -j $MAKE_NUM_JOBS
-SUDO make install
+
+if $INSTALL_MANPAGE; then
+    SUDO make install
+else
+  (cd include/gfarm && SUDO make install)
+  (cd lib && SUDO make install)
+  (cd gftool && SUDO make install)
+  (cd pkgconfig && SUDO make install)
+fi
 
 SUDO useradd -m _gfarmfs || true
 SUDO useradd -m _gfarmmd || true
@@ -262,3 +274,5 @@ if $BUILD_CACHE; then
     mkdir -p $CACHE_DIR
     rsync -a $RSYNC_OPT ${GFARM_WORKDIR}/ ${CACHE_DIR}/
 fi
+
+SUDO apt-get autoremove

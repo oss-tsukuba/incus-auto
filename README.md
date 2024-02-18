@@ -26,8 +26,9 @@ incus-auto is automating deployment system by Incus or LXD.
   - Define config (profile, network, disk, ...)
   - (Optional) Define buildimage
   - Define host
-  - Example: `./example/gfarm/incus-auto.yml`
+  - Example: `./example/gfarm/incus-auto.*yaml`
     - Detail: `./example/gfarm/README-gfarm.md`
+- (Recommendation) Install apt-cacher-ng and set http_proxy to accelerate
 - Initialize profile and network
   - `incus-auto init`
 - Build images
@@ -60,6 +61,17 @@ install `bin/incus-auto` to the directory set in PATH.
   - LXD
     - lxc remote add lxd1 https://SERVERNAME:18443
     - lxc ls lxd1:
+
+## Using http_proxy (apt-cacher-ng, etc.)
+
+Create `incus-auto.override.yaml`
+
+```
+config:
+  envvar:
+    http_proxy: http://<apt-cacher-ng IP address>:3142
+    https_proxy: http://<apt-cacher-ng IP address>:3142
+```
 
 ## Commands
 

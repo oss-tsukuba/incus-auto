@@ -1,6 +1,6 @@
 buildimage:
-  img-gfarm:
-    image: images:ubuntu/22.04
+  IMG-gfarm:
+    image: images:ubuntu/24.04
     series: debian
     vm: false
     devices:
@@ -17,11 +17,26 @@ buildimage:
     # publish-remote:
     #   - incus1
     publish-alias:
-      - img-gfarm  # short name
+      - IMG-gfarm  # short name
 
 x-gfarm: &x-gfarm
-  image: gfarm-img-gfarm
+  image: gfarm-IMG-gfarm
   series: debian
+  vm: false
+  profile:
+    - prof1
+    - prof2net
+  volume:
+    - ./CONF:/CONF
+    - ./SRC:/SRC
+    - ./BACKUP:/BACKUP
+  # envvar:
+
+x-extra: &x-extra
+  image: images:rockylinux/8
+  series: rhel
+  #image: images:ubuntu/24.04
+  #series: debian
   vm: false
   profile:
     - prof1
@@ -80,18 +95,18 @@ host:
     devices:
       eth0:
         ipv4.address: 10.123.123.112
-  # gfsd3:
-  #   <<: [*x-gfarm]
-  #   group: gfarm/group_gfsd
-  #   devices:
-  #     eth0:
-  #       ipv4.address: 10.123.123.113
-  # gfsd4:
-  #   <<: [*x-gfarm]
-  #   group: gfarm/group_gfsd
-  #   devices:
-  #     eth0:
-  #       ipv4.address: 10.123.123.114
+  gfsd3:
+    <<: [*x-gfarm]
+    group: gfarm/group_gfsd
+    devices:
+      eth0:
+        ipv4.address: 10.123.123.113
+  gfsd4:
+    <<: [*x-gfarm]
+    group: gfarm/group_gfsd
+    devices:
+      eth0:
+        ipv4.address: 10.123.123.114
   gfclient1:
     <<: [*x-gfarm]
     group: gfarm/group_gfclient
@@ -103,20 +118,22 @@ host:
       ### available after `make setup`
       #- bash -x /SCRIPT/setup-gfperf.sh
   keycloak:
-    <<: [*x-gfarm]  # TODO
+    <<: [*x-extra]
     group: extra
     devices:
       eth0:
         ipv4.address: 10.123.123.131
   jwtserver:
-    <<: [*x-gfarm] #TODO
+    <<: [*x-extra]
     group: extra
     devices:
       eth0:
         ipv4.address: 10.123.123.132
+
   manage:
     group: control
     image: images:ubuntu/22.04
+    #image: images:ubuntu/24.04
     series: debian
     vm: false
     profile:

@@ -374,7 +374,7 @@ class IncusAuto(CUI):
                     'Error: buildimage and host cannot be duplicated: ' + name)
         self.project_prefix = self.conf('/config/project') + '-'
         self.incus_command = self.conf('/config/incus_command')
-        self.stop_timeout = 60
+        self.stop_timeout = 300  # TODO opt
 
     def check_required(self):
         self.authorized_keys = self.convert_fullpath(
@@ -494,6 +494,16 @@ class IncusAuto(CUI):
         fullargs += args
         return self.incus(fullargs, input=input, output=output,
                           ignore_error=ignore_error)
+
+    def incus_stop(self, fullname, timeout=-1, ignore_error=False):
+        args = ['stop', fullname, '--verbose']
+        if timeout == -1:
+            timeout = self.stop_timeout
+        if timeout is not None and timeout > 0:
+            args += ['--timeout', str(timeout)]
+        if self.force:
+            args.append('--force')
+        self.incus(args, ignore_error=ignore_error)
 
     def incus_ls_info(self):
         j_str = self.incus('ls -f json', output=True)
@@ -724,9 +734,6 @@ class IncusAuto(CUI):
             self.incus(f'profile edit {fullname}', input=str_input)
             self.logger.info(f'profile: "{fullname}" created')
             self.incus(f'profile show {fullname}')
-        # create buildimages
-        self.use_all = True
-        self.cmd_build()
 
     def cmd_destroy(self):
         # delete buildimages
@@ -794,9 +801,14 @@ class IncusAuto(CUI):
         for name, fullname, info in self.name_iter(self.use_all):
             hostinfo = host_dict.get(fullname, None)
             if hostinfo is None:
-                state = "NOTCREATED"
+                state = 'NOTCREATED'
             else:
-                state = hostinfo['config']['volatile.last_state.power']
+                config = hostinfo.get('config', None)
+                state = None
+                if config is not None:
+                    state = config.get('volatile.last_state.power', None)
+                if state is None:
+                    state = 'INITIALIZING'
             state_dict[fullname] = state
             net_if = self.convert_net_if('eth0', info)
             ipv4 = self.incus_get_ipv4(fullname, net_if, ls_info)
@@ -1094,7 +1106,8 @@ class IncusAuto(CUI):
         if not self.tobool(self.conf('/config/etchosts', default=True)):
             return  # disabled
         # backup and restore
-        self.incus_exec(fullname, 'cp -n /etc/hosts /etc/hosts.orig')
+        self.incus_exec(fullname, 'cp -n /etc/hosts /etc/hosts.orig',
+                        ignore_error=True)
         self.incus_exec(fullname, 'cp -f /etc/hosts.orig /etc/hosts')
         etchosts = self.gen_etchosts()
         etchosts_str = '\n' + '\n'.join(etchosts) + '\n'
@@ -1128,7 +1141,7 @@ class IncusAuto(CUI):
             self.logger.info(f'[STEP-2] initialize network: {name}')
             self.incus_wait_for_wakeup(fullname, info)
             self.setup_network_static(info, fullname)
-            self.incus(f'stop {fullname}')
+            self.incus_stop(fullname)
             self.mount_volume(fullname, info)
             self.incus(f'start {fullname}')
 
@@ -1149,7 +1162,8 @@ class IncusAuto(CUI):
             for cmd in info.get('setup', []):
                 if cmd == '__RESTART__':
                     self.logger.info(f'[STEP-3.C] setup(__RESTART__): {name}')
-                    self.incus(f'restart {fullname}')
+                    self.incus_stop(fullname)
+                    self.incus(f'start {fullname}')
                     self.incus_wait_for_wakeup(fullname, info)
                 else:
                     self.logger.info(f'[STEP-3.D] setup(str(cmd)): {name}')
@@ -1157,7 +1171,7 @@ class IncusAuto(CUI):
 
             if self.control_buildimage:
                 self.logger.info(f'[STEP-3.E] publish image: {name}')
-                self.incus(f'stop {fullname}')
+                self.incus_stop(fullname)
                 # publish buildimage
                 aliases = info.get('publish-alias', None)
                 if aliases is not None:

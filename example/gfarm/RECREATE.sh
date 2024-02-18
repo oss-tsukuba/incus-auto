@@ -6,7 +6,7 @@ ARGS="$@"
 CONFIG=$(./CONFIG.sh all)
 IA="../../bin/incus-auto -c ${CONFIG}"
 
-$IA stop -f "${ARGS[@]}"
+$IA stop "${ARGS[@]}" -f
 $IA delete "${ARGS[@]}"
 $IA launch "${ARGS[@]}" -l debug
 
