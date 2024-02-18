@@ -542,6 +542,7 @@ class IncusAuto(CUI):
             if first or self.loglevel == logging.DEBUG:
                 self.logger.info('Waiting until seeing IP address:'
                                  + f' {fullname}')
+                first = False
             else:
                 print('.', end='', flush=True)
             time.sleep(1)
@@ -1174,7 +1175,9 @@ class IncusAuto(CUI):
                 self.incus_stop(fullname)
                 # publish buildimage
                 aliases = info.get('publish-alias', None)
-                if aliases is not None:
+                if aliases is None:
+                    self.logger.info(f'not published (no publish-alias): {name}')
+                else:
                     remotes = info.get('publish-remote', None)
 
                     def publish(remote):
