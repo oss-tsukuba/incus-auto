@@ -13,8 +13,8 @@ buildimage:
       # eth0:
       #  ipv4.address: 10.123.123.191  # NOTE: for ipv4.dhcp=true
     config:
-      limits.memory: 4GB
-      limits.cpu: 1
+      # limits.memory: 4GB
+      # limits.cpu: 4
       security.secureboot: false
     volume:
       - ./CONF:/CONF
@@ -50,8 +50,8 @@ buildimage:
       - prof1
       - prof2net
     config:
-      limits.memory: 4GB
-      limits.cpu: 1
+      # limits.memory: 4GB
+      # limits.cpu: 4
       security.secureboot: false
     volume:
       - ./SRC:/SRC
@@ -79,8 +79,8 @@ x-lustre: &x-lustre
     - ./BACKUP:/BACKUP
     - ./CACHE:/CACHE
   config:
-    limits.memory: 4GB
-    limits.cpu: 1
+    # limits.memory: 4GB
+    # limits.cpu: 4
     security.secureboot: false
 
 host:
@@ -164,8 +164,8 @@ host:
       - ./BACKUP:/BACKUP
       - ./CACHE:/CACHE
     config:
-      limits.memory: 4GB
-      limits.cpu: 1
+      # limits.memory: 4GB
+      # limits.cpu: 4
       security.secureboot: false  # for lustre kernel module
     setup:
       - bash -x /SCRIPT/setup-lustre-client.sh 10.123.123.151 testfs

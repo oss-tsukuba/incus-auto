@@ -34,7 +34,7 @@ config:
       description: "gfarm profile1"
       config:
         limits.memory: 2GB
-        limits.cpu: 4
+        limits.cpu: 6
         # NOTE: same as "idmap: true"
         # raw.idmap: both 1000 0
         # raw.idmap: |
