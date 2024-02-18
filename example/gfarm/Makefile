@@ -84,7 +84,7 @@ REBUILD-ALL:
 	make init
 	make build-gfarm
 	make launch-gfarm
-	make setup-gfperf
 	make build-lustre
 	make launch-lustre
 	make setup-gfarm-all
+	make setup-gfperf
