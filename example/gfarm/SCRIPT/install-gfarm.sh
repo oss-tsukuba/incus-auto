@@ -230,7 +230,7 @@ SUDO make PREFIX=/usr/local install
 
 cd $GFARM_WORKDIR
 cd scitokens-cpp
-rm -rf build
+$DISTCLEAN && rm -rf build
 mkdir -p build
 cd build
 scitokens_prefix=/usr
