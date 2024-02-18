@@ -621,14 +621,14 @@
         block: |
           metadb_server_list {{ METADB_LIST }}
           auth enable sharedsecret *
-          auth enable gsi_auth *
-          auth enable tls_client_certificate *
-          auth enable tls_sharedsecret *
-          auth enable sasl *
-          auth enable sasl_auth *
-          auth enable kerberos *
-          auth enable kerberos_auth *
-          auth_trial_order sharedsecret gsi_auth
+          #auth enable gsi_auth *
+          #auth enable tls_client_certificate *
+          #auth enable tls_sharedsecret *
+          #auth enable sasl *
+          #auth enable sasl_auth *
+          #auth enable kerberos *
+          #auth enable kerberos_auth *
+          #auth_trial_order sharedsecret gsi_auth
 
     - name: backup gfarm2.conf
       fetch:
