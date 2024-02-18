@@ -142,32 +142,35 @@ install_package_rhel() {
 	 myproxy
 }
 
-if $UPDATE_PACKAGE; then
-    for id in $ID_LIKE; do  # ID_LIKE from /etc/os-release
-        case $id in
-            debian)
-                install_package_debian
-                break
-                ;;
-            rhel)
-                install_package_rhel
-                break
-                ;;
-        esac
-    done
-fi
+clean_package_debian() {
+    SUDO apt autoclean
+    SUDO apt-get autoremove
+}
+
+clean_package_rhel() {
+    SUDO yum clean all
+}
 
 for id in $ID_LIKE; do  # ID_LIKE from /etc/os-release
     case $id in
         debian)
+            install_package=install_package_debian
+            clean_package=clean_package_debian
             break
             ;;
         rhel)
+            install_package=install_package_rhel
+            clean_package=clean_package_rhel
             REGPATH_usrlocalbin
             break
             ;;
     esac
 done
+
+###################################################################
+if $UPDATE_PACKAGE; then
+    $install_package
+fi
 
 ###################################################################
 GFARM_SRCDIR=/SRC/gfarm
@@ -275,4 +278,4 @@ if $BUILD_CACHE; then
     rsync -a $RSYNC_OPT ${GFARM_WORKDIR}/ ${CACHE_DIR}/
 fi
 
-SUDO apt-get autoremove
+$clean_package
