@@ -10,4 +10,5 @@ $IA stop "${ARGS[@]}" -f
 $IA delete "${ARGS[@]}"
 $IA launch "${ARGS[@]}" -l debug
 
-$IA ps
+#$IA ps
+echo DONE $0 "$@"

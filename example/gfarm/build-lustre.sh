@@ -20,32 +20,59 @@ clean() {
     [ -f "$LOG4" ] && rm -f $LOG4
 }
 
-trap clean EXIT
+mkt() {
+    mktemp tmp.XXXXXXXXXX.${1}
+}
 
-LOG1=$(mktemp)
-LOG2=$(mktemp)
-LOG3=$(mktemp)
-LOG4=$(mktemp)
+trap clean EXIT
 
 # SEE ALSO: incus-auto.lustre.yaml
 
 case $TARGET in
     build)
-        $B img-lserver > $LOG1 2>&1 &
-        ($B tmp-gfarm-rocky && $B img-lclient) > $LOG2 2>&1 &
-        wait
+        LOG1=$(mkt IMG-lserver)
+        LOG2=$(mkt IMG-lclient)
+
+        $B IMG-lserver > $LOG1 2>&1 &
+        p1=$!
+        ($B TMP-gfarm-rocky && $B IMG-lclient) > $LOG2 2>&1 &
+        p2=$!
+        tail -f $LOG1 $LOG2 &
+        t=$!
+        ERR=0
+        wait $p1 $p2 || ERR=$?
         cat $LOG1 $LOG2
+        kill -9 $t || true
+        wait || true
         ;;
     launch)
+        LOG1=$(mkt mgs)
+        LOG2=$(mkt oss0)
+        LOG3=$(mkt oss1)
+        LOG4=$(mkt lclient1)
+
         $C mgs > $LOG1 2>&1 &
+        p1=$!
         $C oss0 > $LOG2 2>&1 &
+        p2=$!
         $C oss1 > $LOG3 2>&1 &
+        p3=$!
         $C lclient1 > $LOG4 2>&1 &
-        wait
-        cat $LOG1 $LOG2 $LOG3
+        p4=$!
+        tail -f $LOG1 $LOG2 $LOG3 $LOG4 &
+        t=$!
+        ERR=0
+        wait $p1 $p2 $p3 $p4 || ERR=$?
+        cat $LOG1 $LOG2 $LOG3 $LOG4
+        kill -9 $t || true
+        wait || true
         $IA restart oss0 &
         $IA restart oss1 &
-        wait
+        wait || true
         $IA restart lclient
         ;;
 esac
+
+if [ $ERR -ne 0 ]; then
+    exit $ERR
+fi

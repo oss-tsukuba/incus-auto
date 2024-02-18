@@ -1138,7 +1138,7 @@ class IncusAuto(CUI):
             self.create_block_device(info, name, fullname)
 
         for name, fullname, info in self.name_iter(self.use_all):
-            self.logger.info(f'[STEP-2] initialize network: {name}')
+            self.logger.info(f'[STEP-2] initialize network and volume: {name}')
             self.incus_wait_for_wakeup(fullname, info)
             self.setup_network_static(info, fullname)
             self.incus_stop(fullname)
