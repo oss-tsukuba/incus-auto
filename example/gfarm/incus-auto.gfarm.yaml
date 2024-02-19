@@ -54,7 +54,12 @@ host:
     alternative:
       - gfmd1.test
       - gfmd1.example.org
-    # network-static:
+    # remote: incus1 #TODO
+    # target: incus2 #TODO cluster
+    devices:  # ignored when network-static.*.ipv4.address is defined
+      eth0:
+        ipv4.address: 10.123.123.101
+    # network-static:  # instead of devices:eth0
     #   eth0:
     #     ipv4.address: 10.123.123.211/24
     #     ipv4.gateway: 10.123.123.1
@@ -62,9 +67,6 @@ host:
     #     - 8.8.8.8
     #   eth1:
     #     ipv4.address: 10.210.210.211/24
-    devices:  # ignored when network-static.*.ipv4.address is defined
-      eth0:
-        ipv4.address: 10.123.123.101
     envvar:
       gfmd_cluster: siteA
   gfmd2:

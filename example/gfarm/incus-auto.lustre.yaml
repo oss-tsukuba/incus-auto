@@ -74,7 +74,7 @@ x-lustre: &x-lustre
     - prof1
     - prof2net
   #remote: <NOT DEFINED>  # NOTE: use default server
-  remote: incus1
+  #remote: incus2 # TODO
   volume:
     - ./CONF:/CONF
     - ./SRC:/SRC

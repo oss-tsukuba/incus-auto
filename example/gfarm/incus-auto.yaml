@@ -11,9 +11,6 @@ config:
   # envvar:
   #   http_proxy: http://...
   #   https_proxy: http://...
-  # remote:  #TODO
-  #   local: false  # NOTE: default=local:true
-  #   incus1: true
   network:
     gfarm1: # witout project name
       description: "gfarm net1"
@@ -59,3 +56,9 @@ config:
         eth1:
           network: gfarm2
           type: nic
+  # remote:  #TODO
+  #   incus2:
+  #     network:
+  #       ...
+  #     profile:
+  #       ...
