@@ -35,7 +35,7 @@ wp() {
     shift
     local rv=0
     for p in "$@"; do
-        wait $p || ERR=$?
+        wait $p || rv=$?
     done
     kill -9 $t || true
     wait || true
@@ -45,7 +45,7 @@ wp() {
             cat $L
         fi
     done
-    return $v
+    return $rv
 }
 
 # SEE ALSO: incus-auto.lustre.yaml
@@ -110,7 +110,4 @@ case $TARGET in
         ;;
 esac
 
-if [ $ERR -ne 0 ]; then
-    exit $ERR
-fi
-exit 0
+exit $ERR
