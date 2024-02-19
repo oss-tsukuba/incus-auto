@@ -74,6 +74,8 @@ start-lustre-hsm:
 	$(IALS) exec mgs --root -- lctl get_param $(MDTNAME).hsm_control
 	$(IALS) exec lclient1 -- bash /SCRIPT/hsm-start.sh
 
+wait-all:
+	$(IAALL) wait -a
 setup-gfarm-all:
 	make update-etchosts-all
 	make ansible-init
@@ -103,6 +105,7 @@ REBUILD-ALL:
 	make launch-gfarm
 	make build-lustre
 	make launch-lustre
+	make wait-all
 	make setup-gfarm-all
 	make setup-gfperf
 
