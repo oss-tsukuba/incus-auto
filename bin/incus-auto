@@ -382,6 +382,7 @@ class IncusAuto(CUI):
         if not os.access(self.authorized_keys, os.R_OK):
             raise Exception(f'Error: cannot read: {self.authorized_keys}')
 
+    # DO NOT OVERWRITE
     def conf(self, confpath, default=None, notfound=False):
         result = self.dictpath(self.conf_dict, confpath)
         if result is None:
@@ -459,13 +460,14 @@ class IncusAuto(CUI):
 
     def get_env(self, fullname):
         name = self.fullname_to_shortname(fullname)
-        envvar1 = self.conf('/config/envvar')
+        envvar1 = self.conf('/config/envvar').copy()
         if self.control_buildimage:
             envvar2 = self.conf(f'/buildimage/{name}/envvar')
         else:
             envvar2 = self.conf(f'/host/{name}/envvar')
         if envvar1 is not None:  # dict
             if envvar2 is not None:
+                # update envvar1
                 self.deep_update(envvar1, envvar2, override=True)
                 return envvar1
             else:
