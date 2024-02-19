@@ -40,8 +40,10 @@ PRESERVE_ENV="http_proxy,https_proxy"
 
 SUDO() {
     if ! $SUDO_INITIALIZED; then
-        export DEBIAN_FRONTEND=noninteractive
-        PRESERVE_ENV+=",DEBIAN_FRONTEND"
+        if IS_ID_LIKE_DEBIAN; then
+            export DEBIAN_FRONTEND=noninteractive
+            PRESERVE_ENV+=",DEBIAN_FRONTEND"
+        fi
         SUDO_INITIALIZED=true
     fi
     sudo --preserve-env=${PRESERVE_ENV} "$@"
