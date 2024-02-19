@@ -28,7 +28,9 @@ if ! grep -q "$MNTDIR" /etc/fstab; then
     SUDO mkdir -p $MNTDIR
 
     cat <<EOF | SUDO tee -a /etc/fstab
-${MGS_IP}@tcp:/${FSNAME} ${MNTDIR} lustre defaults,relatime,flock,_netdev,x-systemd.automount,x-systemd.requires=network.service 0 0
+#${MGS_IP}@tcp:/${FSNAME} ${MNTDIR} lustre defaults,relatime,flock,_netdev,x-systemd.automount,x-systemd.requires=network.service 0 0
+#${MGS_IP}@tcp:/${FSNAME} ${MNTDIR} lustre defaults,relatime,flock,_netdev,x-systemd.automount,x-systemd.requires=NetworkManager-wait-online.service 0 0
+${MGS_IP}@tcp:/${FSNAME} ${MNTDIR} lustre defaults,relatime,flock,_netdev,x-systemd.automount 0 0
 EOF
     SUDO systemctl daemon-reload
     #SUDO mount $MNTDIR
