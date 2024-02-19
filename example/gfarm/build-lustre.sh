@@ -93,9 +93,14 @@ case $TARGET in
         wp $t $p1 $p2 $p3 $p4
         ERR=$?
         $IA restart oss0 &
+        $p1=$!
         $IA restart oss1 &
-        wait
-        $IA restart lclient1
+        $p2=$!
+        $IA restart lclient1 &
+        $p3=$!
+        wait $p1
+        wait $p2
+        wait $p3
         ;;
     *)
         exit 1

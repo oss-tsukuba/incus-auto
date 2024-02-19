@@ -101,8 +101,12 @@ host:
     devices:
       root:
         size: 6GB  # equal to or larger than the image
+    network-static:
       eth0:
-        ipv4.address: 10.123.123.151  # in DHCP range
+        ipv4.address: 10.123.123.241/24
+        ipv4.gateway: 10.123.123.1
+        dns:
+        - 8.8.8.8
     setup:
       - bash -x /SCRIPT/setup-lustre-mgs.sh testfs
       - __RESTART__
@@ -115,18 +119,22 @@ host:
       - oss0.test
       - oss0.example.org
     image: gfarm-IMG-lserver
+    devices:
+      root:
+        size: 6GB  # equal to or larger than the image
+    network-static:
+      eth0:
+        ipv4.address: 10.123.123.242/24
+        ipv4.gateway: 10.123.123.1
+        dns:
+        - 8.8.8.8
     block-device:
       gfarm-lustre-oss0:
         pool: mypool
         size: 6GB
         create: true
-    devices:
-      root:
-        size: 6GB
-      eth0:
-        ipv4.address: 10.123.123.152
     setup:
-      - bash -x /SCRIPT/setup-lustre-oss.sh 10.123.123.151 testfs 0
+      - bash -x /SCRIPT/setup-lustre-oss.sh mgs.test testfs 0
       #- __RESTART__
   oss1:
     <<: [*x-lustre]
@@ -136,18 +144,22 @@ host:
       - oss1.test
       - oss1.example.org
     image: gfarm-IMG-lserver
+    devices:
+      root:
+        size: 6GB  # equal to or larger than the image
+    network-static:
+      eth0:
+        ipv4.address: 10.123.123.243/24
+        ipv4.gateway: 10.123.123.1
+        dns:
+        - 8.8.8.8
     block-device:
       gfarm-lustre-oss1:
         pool: mypool
         size: 6GB
         create: true
-    devices:
-      root:
-        size: 6GB
-      eth0:
-        ipv4.address: 10.123.123.153
     setup:
-      - bash -x /SCRIPT/setup-lustre-oss.sh 10.123.123.151 testfs 1
+      - bash -x /SCRIPT/setup-lustre-oss.sh mgs.test testfs 1
       #- __RESTART__
 
   lclient1:
@@ -159,9 +171,6 @@ host:
     profile:
       - prof1
       - prof2net
-    devices:
-      eth0:
-        ipv4.address: 10.123.123.161
     volume:
       - ./CONF:/CONF
       - ./SRC:/SRC
@@ -172,5 +181,5 @@ host:
       # limits.cpu: 4
       security.secureboot: false  # for lustre kernel module
     setup:
-      - bash -x /SCRIPT/setup-lustre-client.sh 10.123.123.151 testfs
+      - bash -x /SCRIPT/setup-lustre-client.sh mgs.test testfs
       #- __RESTART__

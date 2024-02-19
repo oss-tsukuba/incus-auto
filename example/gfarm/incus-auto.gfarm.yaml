@@ -33,6 +33,7 @@ x-gfarm: &x-gfarm
   # envvar:
 
 x-extra: &x-extra
+  group: extra
   image: images:rockylinux/8
   series: rhel
   #image: images:ubuntu/24.04
@@ -56,81 +57,52 @@ host:
       - gfmd1.example.org
     # remote: incus1 #TODO
     # target: incus2 #TODO cluster
-    devices:  # ignored when network-static.*.ipv4.address is defined
-      eth0:
-        ipv4.address: 10.123.123.101
-    # network-static:  # instead of devices:eth0
+    # devices:
+    #   eth0:  # ignored when network-static.*.ipv4.address is defined
+    #     ipv4.address: 10.123.123.101   # unstable (not recommended)
+    # network-static:  # recommended
     #   eth0:
-    #     ipv4.address: 10.123.123.211/24
+    #     ipv4.address: 10.123.123.201/24
     #     ipv4.gateway: 10.123.123.1
     #     dns:
     #     - 8.8.8.8
-    #   eth1:
-    #     ipv4.address: 10.210.210.211/24
     envvar:
       gfmd_cluster: siteA
   gfmd2:
     <<: [*x-gfarm]
     group: gfarm/group_gfmd
-    devices:
-      eth0:
-        ipv4.address: 10.123.123.102
     envvar:
       gfmd_cluster: siteA
   gfmd3:
     <<: [*x-gfarm]
     group: gfarm/group_gfmd
-    devices:
-      eth0:
-        ipv4.address: 10.123.123.103
     envvar:
       gfmd_cluster: siteB
+
   gfsd1:
     <<: [*x-gfarm]
     group: gfarm/group_gfsd
-    devices:
-      eth0:
-        ipv4.address: 10.123.123.111
   gfsd2:
     <<: [*x-gfarm]
     group: gfarm/group_gfsd
-    devices:
-      eth0:
-        ipv4.address: 10.123.123.112
   gfsd3:
     <<: [*x-gfarm]
     group: gfarm/group_gfsd
-    devices:
-      eth0:
-        ipv4.address: 10.123.123.113
   gfsd4:
     <<: [*x-gfarm]
     group: gfarm/group_gfsd
-    devices:
-      eth0:
-        ipv4.address: 10.123.123.114
   gfclient1:
     <<: [*x-gfarm]
     group: gfarm/group_gfclient
-    devices:
-      eth0:
-        ipv4.address: 10.123.123.121
     setup:
       - bash -x /SCRIPT/install-squid.sh
       ### available after `make setup`
       #- bash -x /SCRIPT/setup-gfperf.sh
+
   keycloak:
     <<: [*x-extra]
-    group: extra
-    devices:
-      eth0:
-        ipv4.address: 10.123.123.131
   jwtserver:
     <<: [*x-extra]
-    group: extra
-    devices:
-      eth0:
-        ipv4.address: 10.123.123.132
 
   manage:
     group: control
