@@ -711,8 +711,12 @@ class IncusAuto(CUI):
 
     def gen_etchosts(self):
         hosts = []
+        ls_info = self.incus_ls_info()
         for name, fullname, info in self.name_iter(True):
-            ip = self.conf_ipv4(name)
+            net_if = self.convert_net_if('eth0', info)
+            ip = self.incus_get_ipv4(fullname, net_if, ls_info)
+            if ip is None:
+                ip = self.conf_ipv4(name)
             if ip is None:
                 continue  # skip
             # aliases
