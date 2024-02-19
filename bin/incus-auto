@@ -477,7 +477,21 @@ class IncusAuto(CUI):
             return envvar2
 
     def incus_exec(self, fullname, args, user_is_root=True,
-                   input=None, output=None, ignore_error=False):
+                   input=None, output=None, ignore_error=False, retry=1):
+        for i in range(retry):
+            try:
+                return self._incus_exec(fullname, args,
+                                        user_is_root=user_is_root,
+                                        input=input, output=output,
+                                        ignore_error=ignore_error)
+            except:
+                if i >= retry - 1:
+                    raise
+                self.logger.debug('RETRY: incus exec')
+                time.sleep(1)
+
+    def _incus_exec(self, fullname, args, user_is_root=True,
+                    input=None, output=None, ignore_error=False, retry=1):
         fullargs = ['exec', fullname]
         env = self.get_env(fullname)
         self.logger.debug('envvar: \n' + pformat(env))
@@ -935,7 +949,8 @@ class IncusAuto(CUI):
 
     def growpart(self, fullname):
         self.incus_exec(fullname,
-                        'yum install -y e2fsprogs cloud-utils-growpart gdisk')
+                        'yum install -y e2fsprogs cloud-utils-growpart gdisk',
+                        retry=5)
         mount = self.incus_exec(fullname, 'mount', output=True)
         device = None
         for line in mount.splitlines():
@@ -956,12 +971,13 @@ class IncusAuto(CUI):
         self.incus_exec(fullname, f'hostnamectl set-hostname {name}')
         self.incus_exec(fullname, 'systemctl restart systemd-hostnamed')
         if info['series'] == 'rhel':
-            self.incus_exec(fullname, 'yum install -y openssh-server')
+            self.incus_exec(fullname, 'yum install -y openssh-server', retry=5)
             self.incus_exec(fullname, 'systemctl enable sshd')
             self.incus_exec(fullname, 'systemctl restart sshd')
         elif info['series'] == 'debian':
-            self.incus_exec(fullname, 'apt-get update')
-            self.incus_exec(fullname, 'apt-get install -y openssh-server')
+            self.incus_exec(fullname, 'apt-get update', retry=5)
+            self.incus_exec(fullname, 'apt-get install -y openssh-server',
+                            retry=5)
             self.incus_exec(fullname, 'systemctl enable ssh')
             self.incus_exec(fullname, 'systemctl restart ssh')
 
@@ -1087,7 +1103,7 @@ class IncusAuto(CUI):
             return
 
         if info['series'] == 'rhel':
-            self.incus_exec(fullname, 'yum install -y NetworkManager')
+            self.incus_exec(fullname, 'yum install -y NetworkManager', retry=5)
             self.incus_exec(fullname, 'systemctl enable NetworkManager')
             self.incus_exec(fullname, 'systemctl restart NetworkManager')
             for ifname, param in netstatic.items():
@@ -1184,7 +1200,8 @@ class IncusAuto(CUI):
                 # publish buildimage
                 aliases = info.get('publish-alias', None)
                 if aliases is None:
-                    self.logger.info(f'not published (no publish-alias): {name}')
+                    self.logger.info('not published (no publish-alias): '
+                                     + f'{name}')
                 else:
                     remotes = info.get('publish-remote', None)
 
