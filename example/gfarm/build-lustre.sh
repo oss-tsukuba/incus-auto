@@ -94,8 +94,8 @@ case $TARGET in
         ERR=$?
         $IA restart oss0 &
         $IA restart oss1 &
-        $IA restart lclient &
         wait
+        $IA restart lclient1
         ;;
     *)
         exit 1
