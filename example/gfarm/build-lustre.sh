@@ -13,11 +13,14 @@ LOG2=
 LOG3=
 LOG4=
 
+ERR=
+
 clean() {
     [ -f "$LOG1" ] && rm -f $LOG1
     [ -f "$LOG2" ] && rm -f $LOG2
     [ -f "$LOG3" ] && rm -f $LOG3
     [ -f "$LOG4" ] && rm -f $LOG4
+    echo ERR=$ERR
     return 0
 }
 
@@ -28,9 +31,9 @@ mkt() {
 trap clean EXIT
 
 wp() {
-    t="$1"
+    local t="$1"
     shift
-    ERR=0
+    local rv=0
     for p in "$@"; do
         wait $p || ERR=$?
     done
@@ -42,7 +45,7 @@ wp() {
             cat $L
         fi
     done
-    return $ERR
+    return $v
 }
 
 # SEE ALSO: incus-auto.lustre.yaml
@@ -93,11 +96,11 @@ case $TARGET in
         wp $t $p1 $p2 $p3 $p4
         ERR=$?
         $IA restart oss0 &
-        $p1=$!
+        p1=$!
         $IA restart oss1 &
-        $p2=$!
+        p2=$!
         $IA restart lclient1 &
-        $p3=$!
+        p3=$!
         wait $p1
         wait $p2
         wait $p3
