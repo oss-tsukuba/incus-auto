@@ -75,6 +75,7 @@ Command:
   ls                 list hosts by `incus list` command
   shell              open shell
   exec               execute command
+  wait               wait for startup of hosts
   config             check and show configuration parameters
   ansible-inventory  for ansible-inventory -i -
   inv                alias of ansible-inventory
@@ -602,6 +603,7 @@ class IncusAuto(CUI):
             'ps': self.cmd_ps,
             'shell': self.cmd_shell,
             'exec': self.cmd_exec,
+            'wait': self.cmd_wait,
             'config': self.cmd_config,
             'ansible-inventory': self.cmd_ansible_inventory,
             'inv': self.cmd_ansible_inventory,
@@ -830,6 +832,10 @@ class IncusAuto(CUI):
         for fullname, state in state_dict.items():
             print(f'{fullname:<{fullname_max}} {state:<{state_max}}'
                   + f' {ipv4_dict[fullname]:<{ipv4_max}}')
+
+    def cmd_wait(self):
+        for name, fullname, info in self.name_iter(self.use_all):
+            self.incus_wait_for_wakeup(fullname, info)
 
     def cmd_shell(self):
         for name, fullname, info in self.name_iter(False):
