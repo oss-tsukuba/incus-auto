@@ -18,6 +18,7 @@ clean() {
     [ -f "$LOG2" ] && rm -f $LOG2
     [ -f "$LOG3" ] && rm -f $LOG3
     [ -f "$LOG4" ] && rm -f $LOG4
+    return 0
 }
 
 mkt() {
@@ -26,9 +27,40 @@ mkt() {
 
 trap clean EXIT
 
+wp() {
+    t="$1"
+    shift
+    ERR=0
+    for p in "$@"; do
+        wait $p || ERR=$?
+    done
+    kill -9 $t || true
+    wait || true
+    for L in $LOG1 $LOG2 $LOG3 $LOG4; do
+        if [ -f "$L" ]; then
+            echo "----- $L -----"
+            cat $L
+        fi
+    done
+    return $ERR
+}
+
 # SEE ALSO: incus-auto.lustre.yaml
 
 case $TARGET in
+    test)
+        LOG1=$(mkt IMG-lserver)
+        LOG2=$(mkt IMG-lclient)
+
+        (sleep 5; echo sleep 5) > $LOG1 2>&1 &
+        p1=$!
+        (sleep 6; echo sleep 6; exit 3) > $LOG2 2>&1 &
+        p2=$!
+        tail -f $LOG1 $LOG2 &
+        t=$!
+        wp $t $p1 $p2
+        ERR=$?
+        ;;
     build)
         LOG1=$(mkt IMG-lserver)
         LOG2=$(mkt IMG-lclient)
@@ -39,11 +71,8 @@ case $TARGET in
         p2=$!
         tail -f $LOG1 $LOG2 &
         t=$!
-        ERR=0
-        wait $p1 $p2 || ERR=$?
-        cat $LOG1 $LOG2
-        kill -9 $t || true
-        wait || true
+        wp $t $p1 $p2
+        ERR=$?
         ;;
     launch)
         LOG1=$(mkt mgs)
@@ -61,18 +90,19 @@ case $TARGET in
         p4=$!
         tail -f $LOG1 $LOG2 $LOG3 $LOG4 &
         t=$!
-        ERR=0
-        wait $p1 $p2 $p3 $p4 || ERR=$?
-        cat $LOG1 $LOG2 $LOG3 $LOG4
-        kill -9 $t || true
-        wait || true
+        wp $t $p1 $p2 $p3 $p4
+        ERR=$?
         $IA restart oss0 &
         $IA restart oss1 &
-        wait || true
-        $IA restart lclient
+        $IA restart lclient &
+        wait
+        ;;
+    *)
+        exit 1
         ;;
 esac
 
 if [ $ERR -ne 0 ]; then
     exit $ERR
 fi
+exit 0
