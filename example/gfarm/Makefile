@@ -40,6 +40,7 @@ launch-gfarm:
 update-etchosts-gfarm:
 	$(IAGF) update-etchosts -a
 setup-gfarm:
+	$(IAGF) exec manage -- bash /SCRIPT/get-ready.sh all
 	make ansible-init
 	$(IAGF) exec manage -- bash /SCRIPT/setup-gfarm-by-ansible.sh gfarm
 reinstall-gfarm:
@@ -76,6 +77,7 @@ start-lustre-hsm:
 
 wait-all:
 	$(IAALL) wait -a
+	$(IAGF) exec manage -- bash /SCRIPT/get-ready.sh all
 setup-gfarm-all:
 	make update-etchosts-all
 	make ansible-init

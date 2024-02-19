@@ -80,11 +80,25 @@ INSTALL_RPM() {
 }
 
 REGPATH_usrlocalbin() {
-    profile=/etc/profile.d/usrlocalbin.sh
+    local profile=/etc/profile.d/usrlocalbin.sh
     if [ ! -f $profile ]; then
         cat <<EOF | SUDO tee $profile
 export PATH=$PATH:/usr/local/bin
 EOF
     fi
     source $profile
+}
+
+ANSIBLE_LIMIT() {
+    local TARGET="$1"
+    local LIMIT=
+    case $TARGET in
+        gfarm)
+            LIMIT="--limit control:gfarm:extra:!lustre"
+            ;;
+        lustre)
+            LIMIT="--limit lustre"
+            ;;
+    esac
+    echo $LIMIT
 }

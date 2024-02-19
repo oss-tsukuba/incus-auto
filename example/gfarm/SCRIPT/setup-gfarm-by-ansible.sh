@@ -8,19 +8,9 @@ source /SCRIPT/lib.sh
 TARGET="$1"
 shift
 
-cd /CONF
-
 # ex. --extra-vars gfarm_install=yes
 EXTRA=
 
-LIMIT=
-case $TARGET in
-    gfarm)
-        LIMIT="--limit control:gfarm:extra:!lustre"
-        ;;
-    lustre)
-        LIMIT="--limit lustre"
-        ;;
-esac
+LIMIT=$(ANSIBLE_LIMIT "$TARGET")
 
-ansible-playbook $EXTRA -i $INV $LIMIT playbook-gfarm.yaml -vv "$@"
+ansible-playbook $EXTRA -i $INV $LIMIT /CONF/playbook-gfarm.yaml -vv "$@"
