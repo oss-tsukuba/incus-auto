@@ -48,6 +48,5 @@ if [ $e2 -ne 0 ]; then
     exit $e2
 fi
 
-make wait-all
 make setup-gfarm-all
 #make setup-gfperf
