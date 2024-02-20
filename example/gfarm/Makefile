@@ -40,8 +40,9 @@ launch-gfarm:
 update-etchosts-gfarm:
 	$(IAGF) update-etchosts -a
 setup-gfarm:
-	$(IAGF) exec manage -- bash /SCRIPT/get-ready.sh all
+	$(IAGF) wait -a
 	make ansible-init
+	$(IAGF) exec manage -- bash /SCRIPT/get-ready.sh gfarm
 	$(IAGF) exec manage -- bash /SCRIPT/setup-gfarm-by-ansible.sh gfarm
 reinstall-gfarm:
 	$(IAGF) exec manage -- bash /SCRIPT/reinstall-gfarm-by-ansible.sh
@@ -75,12 +76,11 @@ start-lustre-hsm:
 	$(IALS) exec mgs --root -- lctl get_param $(MDTNAME).hsm_control
 	$(IALS) exec lclient1 -- bash /SCRIPT/hsm-start.sh
 
-wait-all:
-	$(IAALL) wait -a
-	$(IAGF) exec manage -- bash /SCRIPT/get-ready.sh all
 setup-gfarm-all:
+	$(IAALL) wait -a
 	make update-etchosts-all
 	make ansible-init
+	$(IAGF) exec manage -- bash /SCRIPT/get-ready.sh all
 	$(IAGF) exec manage -- bash /SCRIPT/setup-gfarm-by-ansible.sh all
 
 down:
@@ -107,7 +107,6 @@ REBUILD-ALL:
 	make launch-gfarm
 	make build-lustre
 	make launch-lustre
-	make wait-all
 	make setup-gfarm-all
 	make setup-gfperf
 

@@ -30,7 +30,7 @@ config:
     prof1: # with project name
       description: "gfarm profile1"
       config:
-        limits.memory: 2GB
+        limits.memory: 1GB
         limits.cpu: 6
         # NOTE: same as "idmap: true"
         # raw.idmap: both 1000 0
