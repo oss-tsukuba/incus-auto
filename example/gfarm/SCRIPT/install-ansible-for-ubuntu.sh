@@ -2,9 +2,9 @@
 
 source /SCRIPT/lib.sh
 
-SUDO apt-get update
-SUDO apt-get install -y software-properties-common
+APTGET update
+APTGET install -y software-properties-common
 SUDO add-apt-repository -y --update ppa:ansible/ansible
-SUDO apt-get install -y ansible
+APTGET install -y ansible
 
 echo DONE "$0"

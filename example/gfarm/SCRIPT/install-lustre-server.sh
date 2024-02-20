@@ -28,11 +28,11 @@ gpgcheck=0
 EOF
 
 install_lustre_yum() {
-    SUDO yum --nogpgcheck --enablerepo=lustre-server install -y \
+    DNF --nogpgcheck --enablerepo=lustre-server install -y \
 	 --skip-broken \
 	 kmod-lustre kmod-lustre-osd-ldiskfs lustre-osd-ldiskfs-mount \
 	 lustre lustre-resource-agents
-    SUDO yum --nogpgcheck --disablerepo=* \
+    DNF --nogpgcheck --disablerepo=* \
 	 --enablerepo=e2fsprogs-wc install -y \
 	 e2fsprogs
 }

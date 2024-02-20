@@ -17,6 +17,7 @@ SSH_CONFIG_DST="${SSHDIR}/config"
 
 OPENSSL_PACKAGE_NAME=
 MAKE_NUM_JOBS=4
+RETRY_CMD=5
 
 # override
 CONFIG_OVERRIDE=${CONF_DIR}/config.sh
@@ -35,19 +36,38 @@ IS_ID_LIKE_DEBIAN() {
     return 1
 }
 
-SUDO_INITIALIZED=false
 PRESERVE_ENV="http_proxy,https_proxy"
 
+if IS_ID_LIKE_DEBIAN; then
+    export DEBIAN_FRONTEND=noninteractive
+    PRESERVE_ENV+=",DEBIAN_FRONTEND"
+fi
+
+SUDO_CMD="sudo --preserve-env=${PRESERVE_ENV}"
+
 SUDO() {
-    if ! $SUDO_INITIALIZED; then
-        if IS_ID_LIKE_DEBIAN; then
-            export DEBIAN_FRONTEND=noninteractive
-            PRESERVE_ENV+=",DEBIAN_FRONTEND"
-        fi
-        SUDO_INITIALIZED=true
-    fi
-    sudo --preserve-env=${PRESERVE_ENV} "$@"
+    $SUDO_CMD "$@"
 }
+
+_retry_cmd() {
+    local rv=1
+    for i in $(seq $RETRY_CMD); do
+        if "$@"; then
+            return 0
+        fi
+        rv=$?
+    done
+    return $rv
+}
+
+DNF() {
+    _retry_cmd $SUDO_CMD dnf "$@"
+}
+
+APTGET() {
+    _retry_cmd $SUDO_CMD apt-get "$@"
+}
+
 
 DONE() {
     echo "DONE: $@"

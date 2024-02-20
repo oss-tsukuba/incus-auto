@@ -4,7 +4,7 @@ source /SCRIPT/lib.sh
 source /SCRIPT/install-lustre-common.sh
 
 # for developer
-SUDO yum install -y \
+DNF install -y \
      less \
      emacs-nox \
      vim
@@ -28,9 +28,9 @@ gpgcheck=0
 EOF
 
 install_lustre_yum() {
-    SUDO yum --nogpgcheck --enablerepo=e2fsprogs-wc upgrade -y \
+    DNF --nogpgcheck --enablerepo=e2fsprogs-wc upgrade -y \
          e2fsprogs
-    SUDO yum --nogpgcheck --enablerepo=lustre-client install -y \
+    DNF --nogpgcheck --enablerepo=lustre-client install -y \
          kmod-lustre-client lustre-client \
          lustre-client-devel  # for HSM
 }

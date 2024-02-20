@@ -11,7 +11,7 @@ GFPERF_DB_DIR=/var/www/gfperf_db
 GFARM2FS_MNTDIR=/mnt/_gfperf
 GFARM_WORKDIR=/home/_gfperf
 
-SUDO apt-get install -y \
+APTGET install -y \
      apache2 \
      ruby \
      ruby-sqlite3 \

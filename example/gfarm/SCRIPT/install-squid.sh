@@ -2,7 +2,7 @@
 
 source /SCRIPT/lib.sh
 
-SUDO apt-get install -y squid
+APTGET install -y squid
 
 SQUID_CONF=/etc/squid/squid.conf
 

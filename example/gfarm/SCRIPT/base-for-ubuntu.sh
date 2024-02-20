@@ -4,8 +4,8 @@
 
 source /SCRIPT/lib.sh
 
-SUDO apt-get update
-SUDO apt-get install -y \
+APTGET update
+APTGET install -y \
 	emacs-nox \
 	vim
 

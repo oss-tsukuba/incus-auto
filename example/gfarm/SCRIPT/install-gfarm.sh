@@ -37,13 +37,13 @@ done
 ###################################################################
 
 install_package_debian() {
-    # base package
-    SUDO apt-get install -y \
+    # for install-gfarm.sh
+    APTGET install -y \
 	 rsync
 
     # for developer
-    SUDO apt-get update
-    SUDO apt-get install -y \
+    APTGET update
+    APTGET install -y \
 	 git \
 	 less \
 	 emacs-nox \
@@ -52,7 +52,7 @@ install_package_debian() {
 	 valgrind
 
     # for Gfarm (from INSTALL.en)
-    SUDO apt-get install -y \
+    APTGET install -y \
 	 libssl-dev \
 	 libpq-dev \
 	 libsasl2-dev \
@@ -72,11 +72,11 @@ install_package_debian() {
 	 golang
 
     # to build gfarm
-    SUDO apt-get install -y \
+    APTGET install -y \
 	 make
 
     # for scitokens-cpp
-    SUDO apt-get install -y \
+    APTGET install -y \
 	 g++ \
 	 cmake \
 	 libcurl4-openssl-dev \
@@ -84,18 +84,18 @@ install_package_debian() {
 	 libsqlite3-dev
 
     # for GSI environment
-    SUDO apt-get install -y \
+    APTGET install -y \
 	 globus-gsi-cert-utils-progs \
 	 myproxy
 }
 
 install_package_rhel() {
     # base package
-    SUDO dnf install -y \
+    DNF install -y \
 	 rsync
 
     # for developer
-    SUDO dnf install -y \
+    DNF install -y \
 	 git \
 	 less \
 	 emacs-nox \
@@ -104,8 +104,8 @@ install_package_rhel() {
 	 valgrind
 
     # for Gfarm (from INSTALL.en)
-    SUDO dnf install -y epel-release
-    SUDO dnf install -y \
+    DNF install -y epel-release
+    DNF install -y \
 	 openssl-devel \
 	 postgresql-devel \
 	 cyrus-sasl-devel \
@@ -120,11 +120,11 @@ install_package_rhel() {
 	 golang
 
     # to build gfarm
-    SUDO dnf install -y \
+    DNF install -y \
 	 make
 
     # for scitokens-cpp
-    SUDO dnf install -y \
+    DNF install -y \
 	 gcc-c++ \
 	 cmake \
 	 libcurl-devel \
@@ -132,23 +132,23 @@ install_package_rhel() {
 	 sqlite-devel
 
     # for cyrus-sasl-xoauth2-idp
-    SUDO dnf install -y \
+    DNF install -y \
 	 libtool
 
 
     # for GSI environment
-    SUDO dnf install -y \
+    DNF install -y \
 	 globus-gsi-cert-utils-progs \
 	 myproxy
 }
 
 clean_package_debian() {
-    SUDO apt autoclean
-    SUDO apt-get autoremove
+    APTGET autoclean
+    APTGET autoremove
 }
 
 clean_package_rhel() {
-    SUDO yum clean all
+    DNF clean all
 }
 
 for id in $ID_LIKE; do  # ID_LIKE from /etc/os-release
