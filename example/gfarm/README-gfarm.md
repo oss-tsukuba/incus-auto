@@ -1,33 +1,33 @@
 # Gfarm on Incus
 
-- see incus-auto.yaml
-- (optional) create incus-auto.override.yaml to override incus-auto.yaml
-- see parameters of SCRIPT/lib.sh
-- (optional) create CONF/config.sh to override parameters
-- install incus
-- install pigz
-- run `mkdir /mnt/diskX/incus-mypool`
-- run `incus storage create mypool dir source=/mnt/diskX/incus-mypool`
-- run `incus config set images.compression_algorithm pigz`
-- run `./git-clone-pull.sh`
-- run `make init`
-- run `make build-gfarm`
-- run `make launch-gfarm`
-- run `make setup-gfarm`
-- run `make gfclient`
-  - or run `make` (login to the manage container) and `ssh gfclient1`
-- enjoy Gfarm operations ...
+- See incus-auto.yaml, incus-auto.gfarm.yaml and incus-auto.lustre.yaml
+- (Optional) Create incus-auto.override.yaml to override incus-auto.yaml
+- See parameters of SCRIPT/lib.sh
+- (Optional) Create CONF/config.sh to override parameters
+- Install incus
+- Install pigz
+- Run `mkdir /mnt/diskX/incus-mypool`
+- Run `incus storage create mypool dir source=/mnt/diskX/incus-mypool`
+- Run `incus config set images.compression_algorithm pigz`
+- Run `./git-clone-pull.sh`
+- Run `make init`
+- Run `make build-gfarm`
+- Run `make launch-gfarm`
+- Run `make setup-gfarm`
+- Run `make gfclient`
+  - or Run `make` (login to the manage container) and `ssh gfclient1`
+- Enjoy Gfarm operations ...
 - ctrl-d (exit from gfclient1)
 - ctrl-d (exit from manage)
 
 ## Lustre HSM for Gfarm
 
-- run `make build-lustre`
-- run `make launch-lustre`
-- run `make setup-gfarm-all`
+- Run `make build-lustre`
+- Run `make launch-lustre`
+- Run `make setup-gfarm-all`
 - (Another terminal) run `make start-lustre-hsm` (foregroud, ctrl-c to stop)
-- run `make lclient` and `cd /mnt/lustre` (Please wait for automount)
-- enjoy Lustre operations ...
+- Run `make lclient` and `cd /mnt/lustre` (Please wait for automount)
+- Enjoy Lustre operations ...
   - sudo mkdir tmp
   - sudo chmod 1777 tmp
   - ...
@@ -40,5 +40,5 @@
 
 ## Good-bye
 
-- run `make down` to remove only containers
-- run `make CLEAN` to destroy the environemnt
+- Run `make down` to remove only containers
+- Run `make CLEAN` to destroy the environemnt
