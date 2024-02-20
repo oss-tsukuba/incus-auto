@@ -24,6 +24,7 @@
 
 - run `make build-lustre`
 - run `make launch-lustre`
+- run `make setup-gfarm-all`
 - (Another terminal) run `make start-lustre-hsm` (foregroud, ctrl-c to stop)
 - run `make lclient` and `cd /mnt/lustre` (Please wait for automount)
 - enjoy Lustre operations ...
