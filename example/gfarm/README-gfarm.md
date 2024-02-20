@@ -6,8 +6,10 @@
 - (Optional) Create CONF/config.sh to override parameters
 - Install incus
 - Install pigz
-- Run `mkdir /mnt/diskX/incus-mypool`
-- Run `incus storage create mypool dir source=/mnt/diskX/incus-mypool`
+- Create `mypool` of storage pool
+  - (Example)
+  - Run `mkdir /mnt/diskX/incus-mypool`
+  - Run `incus storage create mypool dir source=/mnt/diskX/incus-mypool`
 - Run `incus config set images.compression_algorithm pigz`
 - Run `./git-clone-pull.sh`
 - Run `make init`
