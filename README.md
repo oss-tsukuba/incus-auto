@@ -80,3 +80,11 @@ See:
 ```
 incus-auto -h
 ```
+
+## Incus mirror servers
+
+- https://discuss.linuxcontainers.org/t/image-server-infrastructure/16647
+- https://status.images.linuxcontainers.org/
+- download images directly from the primary server
+  - `incus remote rename images images-orig`
+  - `incus remote add images https://ca.images.linuxcontainers.org/ --protocol simplestreams`
