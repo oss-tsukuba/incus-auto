@@ -461,18 +461,18 @@ class IncusAuto(CUI):
 
     def get_env(self, fullname):
         name = self.fullname_to_shortname(fullname)
-        envvar1 = self.conf('/config/envvar').copy()
+        envvar1 = self.conf('/config/envvar')
         if self.control_buildimage:
             envvar2 = self.conf(f'/buildimage/{name}/envvar')
         else:
             envvar2 = self.conf(f'/host/{name}/envvar')
         if envvar1 is not None:  # dict
+            e_copy = envvar1.copy()
             if envvar2 is not None:
-                # update envvar1
-                self.deep_update(envvar1, envvar2, override=True)
-                return envvar1
+                self.deep_update(e_copy, envvar2, override=True)
+                return e_copy
             else:
-                return envvar1
+                return e_copy
         else:
             return envvar2
 
