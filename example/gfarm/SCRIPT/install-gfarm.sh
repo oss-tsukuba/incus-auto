@@ -143,12 +143,12 @@ install_package_rhel() {
 }
 
 clean_package_debian() {
-    APTGET autoclean
-    APTGET autoremove
+    APTGET autoclean -y
+    APTGET autoremove -y
 }
 
 clean_package_rhel() {
-    DNF clean all
+    DNF clean -y all
 }
 
 for id in $ID_LIKE; do  # ID_LIKE from /etc/os-release
