@@ -88,3 +88,10 @@ incus-auto -h
 - download images directly from the primary server
   - `incus remote rename images images-orig`
   - `incus remote add images https://ca.images.linuxcontainers.org/ --protocol simplestreams`
+
+## Firewall
+
+- Incus
+  - https://linuxcontainers.org/incus/docs/main/howto/network_bridge_firewalld/
+- LXD
+  - https://documentation.ubuntu.com/lxd/en/latest/howto/network_bridge_firewalld/
