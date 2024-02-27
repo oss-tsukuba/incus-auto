@@ -1,0 +1,49 @@
+config:
+  project: ocigf
+  idmap: true
+  #user: admin  # NOTE: default
+  #uid: 1000  # NOTE: default
+  #ssh_authorized_keys: ssh_authorized_keys  # NOTE: default
+  ssh_authorized_keys: sample-id_ecdsa.pub
+  network:
+    ocigf:
+      description: "OCI terraform gfarm net"
+      config:
+        ipv4.address: 10.198.8.1/24
+        ipv4.dhcp.ranges: 10.198.8.101-10.198.8.200
+        ipv4.nat: true
+  profile:
+    prof:
+      description: "OCI terraform gfarm profile"
+      config:
+        limits.memory: 2GB
+        limits.cpu: 4
+      devices:
+        root:
+          type: disk
+          path: /
+          pool: mypool
+          size: 5GB
+        SCRIPT:
+          type: disk
+          source: ./SCRIPT  # NOTE: convert to absolute path
+          path: /SCRIPT
+        eth0:
+          network: ocigf
+          type: nic
+
+buildimage:
+
+host:
+  tf:
+    image: images:ubuntu/22.04
+    series: debian
+    profile:
+      - prof
+    devices:
+      eth0:
+        ipv4.address: 10.198.8.101  # NOTE: for ipv4.dhcp=true
+    volume:
+      - ./CONF:/CONF
+    setup:
+      - bash -x /SCRIPT/install-terraform.sh

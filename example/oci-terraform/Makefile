@@ -1,11 +1,13 @@
-IA = incus-auto
+IA = ../../bin/incus-auto
 
 manage:
 	$(IA) shell tf
+ps:
+	$(IA) ps
 init:
 	$(IA) init
-build:
-	$(IA) build -a
+# build:
+# 	$(IA) build -a
 create:
 	$(IA) launch -a
 # setup:
