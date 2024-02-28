@@ -10,38 +10,47 @@ make
 
 In incus container
 
-TODO /SCRIPT/setup-oci-api.sh
-- oepnssl genrsa
-- register the pubkey to https://cloud.oracle.com/identity/domains/my-profile/api-keys
-- ssh-keygen
+- See and run `/SCRIPT/setup-oci-api.sh`
+  - oepnssl genrsa
+  - register the pubkey to https://cloud.oracle.com/identity/domains/my-profile/api-keys
+  - ssh-keygen
+
+## Init
+
+Create `/CONF/provider.tf`
 
 ```
 cd /CONF
+cp provider.tf.sample provider.tf
+vi provider.tf
 terraform init
 ```
 
-## Required parameters
+## Plan
 
-Sample: CONF/terraform.tfvars.sample
-Valiables(overridable): CONF/variables.tf
+### terraform.tfvars
 
-- 
+Create `terraform.tfvars` file to set parameters
 
+- Sample: CONF/terraform.tfvars.sample
+- Valiables: CONF/variables.tf
+  - required variables
+  - overridable variables
 
-## terraform plan
-
-### Enter parameters interactively if -var-file is not specified
+Confirm parameters
 
 ```
 terraform plan
 ```
 
-### Set parameters in *.tfvars file
+## Apply
 
 ```
-terraform plan -var-file=ANY_FILENAME.tfvars
+terraform apply
 ```
 
-## terraform apply
+## Destroy
 
-## terraform destroy
+```
+terraform destroy
+```

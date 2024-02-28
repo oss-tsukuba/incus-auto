@@ -92,9 +92,72 @@ variable "gfclient_disk_vpus" {
   default     = 10
 }
 
-# OCID from https://cloud.oracle.com/tenancy
+# https://docs.oracle.com/ja-jp/iaas/Content/Compute/References/computeshapes.htm#flexible
+variable "gfmd_shape" {
+  description = "from https://docs.oracle.com/ja-jp/iaas/Content/Compute/References/computeshapes.htm#flexible"
+  type        = string
+  # ARM processor
+  default     = "VM.Standard.A1.Flex"
+}
+
+variable "gfsd_shape" {
+  description = "from https://docs.oracle.com/ja-jp/iaas/Content/Compute/References/computeshapes.htm#flexible"
+  type        = string
+  # ARM processor
+  default     = "VM.Standard.A1.Flex"
+}
+
+variable "gfclient_shape" {
+  description = "from https://docs.oracle.com/ja-jp/iaas/Content/Compute/References/computeshapes.htm#flexible"
+  type        = string
+  # ARM processor
+  default     = "VM.Standard.A1.Flex"
+}
+
+# from https://docs.oracle.com/en-us/iaas/images/
+# default source_id for all instance
+variable "source_id" {
+  description = "from https://docs.oracle.com/en-us/iaas/images/"
+  type        = string
+
+  # for ARM processor
+  # Oracle-Linux-8.9-aarch64-2024.01.26-0
+  # https://docs.oracle.com/iaas/images/image/b2b2f4cb-515b-49e0-b08c-1fb07be8da5d/
+  # ap-tokyo-1
+  # default     = "ocid1.image.oc1.ap-tokyo-1.aaaaaaaaeu6r3tmcbrhc2msuvchzbg2zksa5ypuarj2r75v7tnhonq6ih3oq"
+
+  # Oracle-Linux-9.3-aarch64-2024.01.26-0
+  # https://docs.oracle.com/en-us/iaas/images/image/374162b8-944e-4c4e-9587-e055f65e6ead/
+  # ap-tokyo-1
+  default     = "ocid1.image.oc1.ap-tokyo-1.aaaaaaaakoj4yfoziwsrfzxk7n5aq2qp3habdji67366mon22rkni6fxd3bq"
+}
+
+# overridable
+variable "gfmd_source_id" {
+  description = "override source_id"
+  type        = string
+  default     = ""
+}
+
+# overridable
+variable "gfsd_source_id" {
+  description = "override source_id"
+  type        = string
+  default     = ""
+}
+
+# overridable
+variable "gfclinet_source_id" {
+  description = "override source_id"
+  type        = string
+  default     = ""
+}
+
+# Availability domain from https://cloud.oracle.com/compute/instances/create
+# and Cancel (not create instance on Web UI)
+# ex. pIoR:AP-TOKYO-1-AD-1
 variable "availability_domain" {
-  description = "OCID of availability_domain (root compartment) from https://cloud.oracle.com/tenancy"
+  description = "Availability domain from https://cloud.oracle.com/compute/instances/create"
   type        = string
   # required
 }
@@ -114,30 +177,8 @@ variable "subnet_id" {
   # required
 }
 
-# OCID from https://cloud.oracle.com/identity/domains/my-profile
-variable "user_ocid" {
-  description = "OCID of user_ocid from https://cloud.oracle.com/identity/domains/my-profile"
-  type        = string
-  # required
-}
-
-# private key from https://cloud.oracle.com/identity/domains/my-profile/api-keys
-variable "private_key_path" {
-  description = "path of generated private key for API from https://cloud.oracle.com/identity/domains/my-profile/api-keys"
-  type        = string
-  # required
-}
-
-# fingerprint from https://cloud.oracle.com/identity/domains/my-profile/api-keys
-variable "fingerprint" {
-  description = "fingerprint of API key from https://cloud.oracle.com/identity/domains/my-profile/api-keys"
-  type        = string
-  # required
-}
-
-# region ID from https://cloud.oracle.com/regions
-variable "region" {
-  description = "region ID from https://cloud.oracle.com/regions"
+variable "ssh_authorized_keys" {
+  description = "path of a authorized_keys-file (ssh public keys) to login instances"
   type        = string
   # required
 }

@@ -7,4 +7,5 @@
 /CONF/.terraform/
 /CONF/terraform.tfstate
 /CONF/terraform.tfstate.backup
-/CONF/my.tfvars
+/CONF/provider.tf
+/CONF/terraform.tfvars

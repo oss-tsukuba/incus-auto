@@ -1,0 +1,16 @@
+provider "oci" {
+  # OCID of availability_domain (root compartment) from https://cloud.oracle.com/tenancy
+  tenancy_ocid = "ocid1.tenancy.oc1..aaaaaaaa"
+
+  # OCID of user_ocid from https://cloud.oracle.com/identity/domains/my-profile
+  user_ocid = "ocid1.user.oc1..aaaaaaaa"
+
+  # path of generated private key for API from https://cloud.oracle.com/identity/domains/my-profile/api-keys
+  private_key_path = "/CONF/admin_private.pem"
+
+  # fingerprint of API key from https://cloud.oracle.com/identity/domains/my-profile/api-keys
+  fingerprint = "72:ed:fc:9a:cb:b1:5a:54:36:d7:e9:6b:53:81:58:a2"
+
+  # region ID from https://cloud.oracle.com/regions
+  region = "ap-tokyo-1"
+}
