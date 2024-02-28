@@ -15,6 +15,16 @@ In incus container
   - register the pubkey to https://cloud.oracle.com/identity/domains/my-profile/api-keys
   - ssh-keygen
 
+## Ingress rule
+
+- https://cloud.oracle.com/networking/vcns
+- -> Select VCN
+- -> Security Lists
+- -> Default Security List or Create Security List
+- -> Add Ingress Rules
+  - (gfmd port)
+  - (gfsd port)
+
 ## Init
 
 Create `/CONF/provider.tf`
