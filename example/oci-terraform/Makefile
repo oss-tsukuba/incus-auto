@@ -10,9 +10,21 @@ init:
 # 	$(IA) build -a
 create:
 	$(IA) launch -a
+ssh-keygen:
+	ssh-keygen -t ecdsa -f CONF/id_ecdsa
+print-etchosts:
+	@$(IA) exec tf -- bash /SCRIPT/print-etchosts.sh
+print-sshconfig:
+	@$(IA) exec tf -- bash /SCRIPT/print-sshconfig.sh
+print-ansible-inventory:
+	@$(IA) exec tf -- bash /SCRIPT/print-ansible-inventory.sh
+ansible-init:
+	$(IA) exec tf -- bash /SCRIPT/setup-ansible.sh
+ansible-ping:
+	$(IA) exec tf -- bash /SCRIPT/ansible-ping.sh
+
 # setup:
-# 	make update-etchosts
-# 	$(IA) exec manage -- bash /SCRIPT/setup-gfarm-by-ansible.sh
+# 	$(IA) exec tf -- bash /SCRIPT/setup-gfarm-by-ansible.sh
 # reset-gfarm: #TODO
 # 	$(IA) exec manage -- bash /SCRIPT/reset-gfarm-by-ansible.sh
 # reinstall-gfarm:

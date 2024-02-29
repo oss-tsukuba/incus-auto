@@ -147,10 +147,30 @@ variable "gfsd_source_id" {
 }
 
 # overridable
-variable "gfclinet_source_id" {
+variable "gfclient_source_id" {
   description = "override source_id"
   type        = string
   default     = ""
+}
+
+# Oracle Linux, etc.: opc
+# Ubuntu: ubuntu
+variable "gfmd_admin_user" {
+  description = "admin username: (ex. opc, ubuntu) "
+  type        = string
+  default     = "opc"
+}
+
+variable "gfsd_admin_user" {
+  description = "admin username: (ex. opc, ubuntu) "
+  type        = string
+  default     = "opc"
+}
+
+variable "gfclient_admin_user" {
+  description = "admin username: (ex. opc, ubuntu) "
+  type        = string
+  default     = "opc"
 }
 
 # Availability domain from https://cloud.oracle.com/compute/instances/create

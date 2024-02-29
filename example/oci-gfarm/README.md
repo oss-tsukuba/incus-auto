@@ -2,14 +2,17 @@
 
 ## Start terraform client by incus-auto
 
+#TODO make ssh-keygen
+
 ```
 make init
 make create
-make
+make  #TODO not in container
 ```
 
 In incus container
 
+#TODO "make oci-setup" target
 - See and run `/SCRIPT/setup-oci-api.sh`
   - oepnssl genrsa
   - register the pubkey to https://cloud.oracle.com/identity/domains/my-profile/api-keys
@@ -27,7 +30,7 @@ In incus container
 
 ## Init
 
-Create `/CONF/provider.tf`
+Create `CONF/provider.tf`
 
 ```
 cd /CONF
@@ -57,10 +60,24 @@ terraform plan
 
 ```
 terraform apply
+...
+  Enter a value: yes
+```
+
+## Setup Gfarm
+
+```
+exit  # from container
+
+make ansible-inventory
+make ansible-init
+make set
 ```
 
 ## Destroy
 
 ```
 terraform destroy
+...
+  Enter a value: yes
 ```

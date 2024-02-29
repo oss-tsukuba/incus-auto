@@ -1,4 +1,6 @@
 /incus-auto.override.yaml
+/CONF/id_ecdsa
+/CONF/id_ecdsa.pub
 /CONF/admin_public.pem
 /CONF/admin_private.pem
 /CONF/sshkey
@@ -9,3 +11,5 @@
 /CONF/terraform.tfstate.backup
 /CONF/provider.tf
 /CONF/terraform.tfvars
+/CONF/tmp-inventory.yaml
+/CONF/tmp-known_hosts

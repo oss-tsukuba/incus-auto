@@ -13,4 +13,7 @@ EXTRA=
 
 LIMIT=$(ANSIBLE_LIMIT "$TARGET")
 
+ANSIBLE_CONFIG=/CONF/ansible.cfg
+export ANSIBLE_CONFIG
+
 ansible-playbook $EXTRA -i $INV $LIMIT /CONF/playbook-gfarm.yaml -vv "$@"

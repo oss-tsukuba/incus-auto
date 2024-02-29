@@ -4,9 +4,9 @@ config:
   #user: admin  # NOTE: default
   #uid: 1000  # NOTE: default
   #ssh_authorized_keys: ssh_authorized_keys  # NOTE: default
-  ssh_authorized_keys: sample-id_ecdsa.pub
+  ssh_authorized_keys: CONF/id_ecdsa.pub
   network:
-    ocigf:
+    ocigf: # fullname
       description: "OCI terraform gfarm net"
       config:
         ipv4.address: 10.198.8.1/24
