@@ -2,7 +2,7 @@
 availability_domain = "pIoR:AP-TOKYO-1-AD-1"
 compartment_id = "ocid1.tenancy.oc1..aaaaaaaa"
 subnet_id = "ocid1.subnet.oc1.ap-tokyo-1.aaaaaaaa"
-ssh_authorized_keys = "/CONF/sshkey.pub"
+ssh_authorized_keys = "/CONF/id_ecdsa.pub"
 
 # override
 #gfmd_ocpus = 2

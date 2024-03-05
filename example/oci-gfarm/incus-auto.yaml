@@ -13,7 +13,7 @@ config:
         ipv4.dhcp.ranges: 10.198.8.101-10.198.8.200
         ipv4.nat: true
   profile:
-    prof:
+    prof:  # ocigf-prof
       description: "OCI terraform gfarm profile"
       config:
         limits.memory: 2GB
@@ -24,16 +24,12 @@ config:
           path: /
           pool: mypool
           size: 5GB
-        SCRIPT:
-          type: disk
-          source: ./SCRIPT  # NOTE: convert to absolute path
-          path: /SCRIPT
         eth0:
           network: ocigf
           type: nic
 
-buildimage:
-
+# TODO rename: manage
+# TODO rockylinux/9 ?
 host:
   tf:
     image: images:ubuntu/22.04
@@ -44,6 +40,8 @@ host:
       eth0:
         ipv4.address: 10.198.8.101  # NOTE: for ipv4.dhcp=true
     volume:
+      - ./SCRIPT:/SCRIPT
       - ./CONF:/CONF
+      - ./SRC:/SRC
     setup:
       - bash -x /SCRIPT/install-terraform.sh

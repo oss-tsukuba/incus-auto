@@ -34,7 +34,7 @@ cat $PUBKEY
 
 
 # SSH 公開鍵
-cd /CONF
-if [ ! -f sshkey ]; then
-    ssh-keygen -t rsa -N "" -b 2048 -C sshkey -f sshkey
-fi
+# cd /CONF
+# if [ ! -f sshkey ]; then
+#     ssh-keygen -t rsa -N "" -b 2048 -C sshkey -f sshkey
+# fi

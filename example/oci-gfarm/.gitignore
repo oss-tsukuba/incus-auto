@@ -13,3 +13,8 @@
 /CONF/terraform.tfvars
 /CONF/tmp-inventory.yaml
 /CONF/tmp-known_hosts
+/CONF/tmp-ssh_config
+/SRC/gfarm
+/SRC/gfarm-gridftp-dsi
+/SRC/lustre-release
+/SRC/nextcloud-gfarm

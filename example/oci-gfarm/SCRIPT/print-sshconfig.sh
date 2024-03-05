@@ -5,8 +5,7 @@ set -eu
 
 cd /CONF
 
-#TODO /CONF/id_ecdsa
-SSH_PRIVKEY=/CONF/sshkey
+SSH_PRIVKEY=/CONF/id_ecdsa
 
 TFOUT=$(terraform output -json)
 
@@ -22,13 +21,13 @@ instance_list() {
 public_ip() {
     local group=$1
     local inst=$2
-    echo $TFOUT | jq .host.value.${group}.${inst}.public_ip -r
+    echo $TFOUT | jq '.host.value.'${group}'["'${inst}'"].public_ip' -r
 }
 
 user() {
     local group=$1
     local inst=$2
-    echo $TFOUT | jq .host.value.${group}.${inst}.user -r
+    echo $TFOUT | jq '.host.value.'${group}'["'${inst}'"].user' -r
 }
 
 cat <<EOF

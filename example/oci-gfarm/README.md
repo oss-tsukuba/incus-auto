@@ -25,8 +25,10 @@ In incus container
 - -> Security Lists
 - -> Default Security List or Create Security List
 - -> Add Ingress Rules
-  - (gfmd port)
-  - (gfsd port)
+  - source 10.0.0.0/8, TCP, All, All
+    - インスタンス間通信を許可
+  - (gfmd port) # TODO
+  - (gfsd port) # TODO
 
 ## Init
 
@@ -35,7 +37,7 @@ Create `CONF/provider.tf`
 ```
 cd /CONF
 cp provider.tf.sample provider.tf
-vi provider.tf
+vi provider.tf  # edit
 terraform init
 ```
 
@@ -80,4 +82,12 @@ make set
 terraform destroy
 ...
   Enter a value: yes
+
+exit
+make CLEAN
 ```
+
+## TODO
+
+- ssh パスフレーズ再設定
+- 

@@ -1,6 +1,7 @@
 output "detail" {
   value = {
-    for inst in concat(oci_core_instance.instance_gfmd,
+    for inst in concat([oci_core_instance.instance_manage],
+                       oci_core_instance.instance_gfmd,
                        oci_core_instance.instance_gfsd,
                        oci_core_instance.instance_gfclient) :
       inst.display_name => {
@@ -19,10 +20,19 @@ output "detail" {
 
 output "host" {
   value = {
+    "manage" = {
+      for inst in concat([oci_core_instance.instance_manage]) :
+        inst.display_name => {
+          "public_ip" = inst.public_ip
+          "private_ip" = inst.private_ip
+          "user" = var.manage_admin_user
+        }
+    }
     "gfmd" = {
       for inst in concat(oci_core_instance.instance_gfmd) :
         inst.display_name => {
           "public_ip" = inst.public_ip
+          "private_ip" = inst.private_ip
           "user" = var.gfmd_admin_user
         }
     }
@@ -30,6 +40,7 @@ output "host" {
       for inst in concat(oci_core_instance.instance_gfsd) :
         inst.display_name => {
           "public_ip" = inst.public_ip
+          "private_ip" = inst.private_ip
           "user" = var.gfsd_admin_user
         }
     }
@@ -37,6 +48,7 @@ output "host" {
       for inst in concat(oci_core_instance.instance_gfclient) :
         inst.display_name => {
           "public_ip" = inst.public_ip
+          "private_ip" = inst.private_ip
           "user" = var.gfclient_admin_user
         }
     }

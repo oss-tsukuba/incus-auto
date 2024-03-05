@@ -1,3 +1,15 @@
+variable "timezone" {
+  description = "Timezone"
+  type        = string
+  default     = "Asia/Tokyo"
+}
+
+variable "admin_user" {
+  description = "Admin user"
+  type        = string
+  default     = "gfarmsys"
+}
+
 variable "gfmd_num" {
   description = "Number of gfmd"
   type        = number
@@ -13,7 +25,7 @@ variable "gfsd_num" {
 variable "gfclient_num" {
   description = "Number of gfarm client"
   type        = number
-  default     = 1
+  default     = 2
 }
 
 # https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/core_instance#ocpus
@@ -114,6 +126,13 @@ variable "gfclient_shape" {
   default     = "VM.Standard.A1.Flex"
 }
 
+variable "manage_shape" {
+  description = "from https://docs.oracle.com/ja-jp/iaas/Content/Compute/References/computeshapes.htm#flexible"
+  type        = string
+  # ARM processor
+  default     = "VM.Standard.A1.Flex"
+}
+
 # from https://docs.oracle.com/en-us/iaas/images/
 # default source_id for all instance
 variable "source_id" {
@@ -130,6 +149,16 @@ variable "source_id" {
   # https://docs.oracle.com/en-us/iaas/images/image/374162b8-944e-4c4e-9587-e055f65e6ead/
   # ap-tokyo-1
   default     = "ocid1.image.oc1.ap-tokyo-1.aaaaaaaakoj4yfoziwsrfzxk7n5aq2qp3habdji67366mon22rkni6fxd3bq"
+}
+
+# overridable
+variable "manage_source_id" {
+  description = "override source_id"
+  type        = string
+  # Canonical-Ubuntu-22.04-aarch64-2024.01.12-0
+  # https://docs.oracle.com/en-us/iaas/images/image/75c27c16-e357-44a6-8003-6da76f2f139d/
+  # ap-tokyo-1
+  default     = "ocid1.image.oc1.ap-tokyo-1.aaaaaaaavo7svqug5ulgyw4zq4mcfn2glflxxtaahuyoejf4purtgu2urk4q"
 }
 
 # overridable
@@ -171,6 +200,12 @@ variable "gfclient_admin_user" {
   description = "admin username: (ex. opc, ubuntu) "
   type        = string
   default     = "opc"
+}
+
+variable "manage_admin_user" {
+  description = "admin username: (ex. opc, ubuntu) "
+  type        = string
+  default     = "ubuntu"
 }
 
 # Availability domain from https://cloud.oracle.com/compute/instances/create

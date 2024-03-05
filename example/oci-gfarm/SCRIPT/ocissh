@@ -2,17 +2,6 @@
 
 set -eu
 
-CONFIG=
-
-clean() {
-    [ -n "$CONFIG" ] && rm -f $CONFIG || true
-    return 0
-}
-
-trap clean EXIT
-
-CONFIG=$(mktemp)
-
-bash /SCRIPT/print-sshconfig.sh > $CONFIG
+CONFIG=/CONF/tmp-ssh_config
 
 ssh -F $CONFIG "$@"

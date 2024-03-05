@@ -19,21 +19,21 @@ instance_list() {
 public_ip() {
     local group=$1
     local inst=$2
-    echo $TFOUT | jq .host.value.${group}.${inst}.public_ip -r
+    echo $TFOUT | jq '.host.value.'${group}'["'${inst}'"].public_ip' -r
 }
 
 user() {
     local group=$1
     local inst=$2
-    echo $TFOUT | jq .host.value.${group}.${inst}.user -r
+    echo $TFOUT | jq '.host.value.'${group}'["'${inst}'"].user' -r
 }
 
-#TODO /CONF/id_ecdsa
 cat <<EOF
 all:
   vars:
+    ansible_user: admin
     known_hosts_file: /CONF/tmp-known_hosts
-    ansible_ssh_private_key_file: /CONF/sshkey
+    ansible_ssh_private_key_file: /CONF/id_ecdsa
     ansible_ssh_common_args: "-o UserKnownHostsFile={{ known_hosts_file }}"
 EOF
 

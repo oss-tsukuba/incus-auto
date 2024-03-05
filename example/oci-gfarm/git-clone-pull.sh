@@ -1,0 +1,1 @@
+../gfarm/git-clone-pull.sh
