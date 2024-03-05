@@ -31,7 +31,6 @@ user() {
 cat <<EOF
 all:
   vars:
-    ansible_user: admin
     known_hosts_file: /CONF/tmp-known_hosts
     ansible_ssh_private_key_file: /CONF/id_ecdsa
     ansible_ssh_common_args: "-o UserKnownHostsFile={{ known_hosts_file }}"

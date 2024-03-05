@@ -37,10 +37,11 @@ EOF
 
 for group in $(group_list); do
     for inst in $(instance_list $group); do
+        shortname=$(echo $inst | cut -d. -f 1)
         public_ip=$(public_ip $group $inst)
         user=$(user $group $inst)
         cat <<EOF
-Host ${inst}
+Host ${shortname} ${inst}
 HostName ${public_ip}
 User ${user}
 IdentityFile ${SSH_PRIVKEY}

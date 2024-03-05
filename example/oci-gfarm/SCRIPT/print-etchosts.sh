@@ -20,5 +20,6 @@ for inst in $(instance_list); do
     # ex. inst=manage["manage.example.org"]
     group=$(echo $inst | cut -d\[ -f 1)
     name=$(echo $inst | sed 's/'$group'\["//; s/"\]//')
-    printf "%-16s %s\n" $(public_ip $inst) $name
+    shortname=$(echo $name | cut -d. -f 1)
+    printf "%-16s   %s %s\n" $(public_ip $inst) $name $shortname
 done

@@ -1,3 +1,35 @@
+# OCID of availability_domain (root compartment) from https://cloud.oracle.com/tenancy
+variable "tenancy_ocid" {
+  description = "tenancy_ocid"
+  type        = string
+}
+
+# OCID of user_ocid from https://cloud.oracle.com/identity/domains/my-profile
+variable "user_ocid" {
+  description = "user_ocid"
+  type        = string
+}
+
+# path of generated private key for API from https://cloud.oracle.com/identity/domains/my-profile/api-keys
+variable "private_key_path" {
+  description = "private_key_path"
+  type        = string
+}
+
+# fingerprint of API key from https://cloud.oracle.com/identity/domains/my-profile/api-keys
+variable "fingerprint" {
+  description = "fingerprint of API key"
+  type        = string
+}
+
+# region ID from https://cloud.oracle.com/regions
+variable "region" {
+  description = "region ID from https://cloud.oracle.com/regions"
+  type        = string
+}
+
+#####################################
+
 variable "timezone" {
   description = "Timezone"
   type        = string
@@ -186,26 +218,6 @@ variable "gfclient_source_id" {
   description = "override source_id"
   type        = string
   default     = ""
-}
-
-# Oracle Linux, etc.: opc
-# Ubuntu: ubuntu
-variable "gfmd_admin_user" {
-  description = "admin username: (ex. opc, ubuntu) "
-  type        = string
-  default     = "opc"
-}
-
-variable "gfsd_admin_user" {
-  description = "admin username: (ex. opc, ubuntu) "
-  type        = string
-  default     = "opc"
-}
-
-variable "gfclient_admin_user" {
-  description = "admin username: (ex. opc, ubuntu) "
-  type        = string
-  default     = "opc"
 }
 
 # Availability domain from https://cloud.oracle.com/compute/instances/create

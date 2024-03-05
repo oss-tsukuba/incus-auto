@@ -1,4 +1,6 @@
 IA = ../../bin/incus-auto
+TFEXEC = $(IA) exec tf --
+TFBASH = $(TFEXEC) bash
 
 manage:
 	$(IA) shell tf
@@ -15,16 +17,19 @@ create:
 ssh-keygen:
 	ssh-keygen -t ecdsa -f CONF/id_ecdsa
 print-etchosts:
-	@$(IA) exec tf -- bash /SCRIPT/print-etchosts.sh
+	@$(TFBASH) /SCRIPT/print-etchosts.sh
 print-sshconfig:
-	@$(IA) exec tf -- bash /SCRIPT/print-sshconfig.sh
+	@$(TFBASH) /SCRIPT/print-sshconfig.sh
 print-ansible-inventory:
-	@$(IA) exec tf -- bash /SCRIPT/print-ansible-inventory.sh
+	@$(TFBASH) /SCRIPT/print-ansible-inventory.sh
 
 sshkeyscan-update:
-	$(IA) exec tf -- bash /SCRIPT/print-ssh-keyscan.sh > CONF/tmp-known_hosts
+	$(TFBASH) /SCRIPT/print-ssh-keyscan.sh > CONF/tmp-known_hosts
 sshconfig-update:
-	$(IA) exec tf -- bash /SCRIPT/print-sshconfig.sh > CONF/tmp-ssh_config
+	$(TFBASH) /SCRIPT/print-sshconfig.sh > CONF/tmp-ssh_config
+
+#TODO terraform-init:
+#	$(IA) exec tf -- bash /SCRIPT/terraform.sh init --upgrade
 
 #TODO sync-ansible:
 

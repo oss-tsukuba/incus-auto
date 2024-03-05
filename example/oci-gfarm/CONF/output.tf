@@ -20,37 +20,38 @@ output "detail" {
 
 output "host" {
   value = {
+    # groups
     "manage" = {
       for inst in concat([oci_core_instance.instance_manage]) :
-        inst.display_name => {
+        "${inst.display_name}.${var.domain}" => {
           "public_ip" = inst.public_ip
           "private_ip" = inst.private_ip
           "user" = var.admin_user
-          "subnet_domain_name" = data.oci_core_subnet.gfarm_subnet.subnet_domain_name
+          #"subnet_domain_name" = data.oci_core_subnet.gfarm_subnet.subnet_domain_name
         }
     }
     "gfmd" = {
       for inst in concat(oci_core_instance.instance_gfmd) :
-        inst.display_name => {
+        "${inst.display_name}.${var.domain}" => {
           "public_ip" = inst.public_ip
           "private_ip" = inst.private_ip
-          "user" = var.gfmd_admin_user
+          "user" = var.admin_user
         }
     }
     "gfsd" = {
       for inst in concat(oci_core_instance.instance_gfsd) :
-        inst.display_name => {
+        "${inst.display_name}.${var.domain}" => {
           "public_ip" = inst.public_ip
           "private_ip" = inst.private_ip
-          "user" = var.gfsd_admin_user
+          "user" = var.admin_user
         }
     }
     "gfclient" = {
       for inst in concat(oci_core_instance.instance_gfclient) :
-        inst.display_name => {
+        "${inst.display_name}.${var.domain}" => {
           "public_ip" = inst.public_ip
           "private_ip" = inst.private_ip
-          "user" = var.gfclient_admin_user
+          "user" = var.admin_user
         }
     }
   }
