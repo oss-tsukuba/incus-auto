@@ -4,6 +4,12 @@ variable "timezone" {
   default     = "Asia/Tokyo"
 }
 
+variable "domain" {
+  description = "Domain name"
+  type        = string
+  default     = "example.org"
+}
+
 variable "admin_user" {
   description = "Admin user"
   type        = string
@@ -202,12 +208,6 @@ variable "gfclient_admin_user" {
   default     = "opc"
 }
 
-variable "manage_admin_user" {
-  description = "admin username: (ex. opc, ubuntu) "
-  type        = string
-  default     = "ubuntu"
-}
-
 # Availability domain from https://cloud.oracle.com/compute/instances/create
 # and Cancel (not create instance on Web UI)
 # ex. pIoR:AP-TOKYO-1-AD-1
@@ -225,9 +225,23 @@ variable "compartment_id" {
   default = ""
 }
 
-# OCID from https://cloud.oracle.com/networking/vcns
+# OCID of VCN from https://cloud.oracle.com/networking/vcns
+variable "vcn_id" {
+  description = "OCID of VCN from https://cloud.oracle.com/networking/vcns"
+  type        = string
+  # required
+}
+
+# OCID of subnet from https://cloud.oracle.com/networking/vcns
 variable "subnet_id" {
-  description = "OCID of subnet_id from https://cloud.oracle.com/networking/vcns"
+  description = "OCID of subnet from https://cloud.oracle.com/networking/vcns"
+  type        = string
+  # required
+}
+
+# OCID from https://cloud.oracle.com/dns/views
+variable "view_id" {
+  description = "OCID from https://cloud.oracle.com/dns/views"
   type        = string
   # required
 }

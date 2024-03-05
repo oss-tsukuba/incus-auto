@@ -20,5 +20,6 @@ data "template_file" "cloud-init_manage" {
     admin_user = var.admin_user
     timezone = var.timezone
     ssh_authorized_keys = file(var.ssh_authorized_keys)
+    subnet_domain_name = data.oci_core_subnet.gfarm_subnet.subnet_domain_name
   }
 }

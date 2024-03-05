@@ -25,7 +25,8 @@ output "host" {
         inst.display_name => {
           "public_ip" = inst.public_ip
           "private_ip" = inst.private_ip
-          "user" = var.manage_admin_user
+          "user" = var.admin_user
+          "subnet_domain_name" = data.oci_core_subnet.gfarm_subnet.subnet_domain_name
         }
     }
     "gfmd" = {
