@@ -1,4 +1,4 @@
-# Gfarm for OCI managed by terraform
+# Gfarm on OCI managed by terraform
 
 ## Start terraform client by incus-auto
 
@@ -32,12 +32,8 @@ In incus container
 
 ## Init
 
-Create `CONF/provider.tf`
-
 ```
 cd /CONF
-cp provider.tf.sample provider.tf
-vi provider.tf  # edit
 terraform init
 ```
 
@@ -89,5 +85,4 @@ make CLEAN
 
 ## TODO
 
-- ssh パスフレーズ再設定
-- 
+- backup gfarm-terraform-oci
