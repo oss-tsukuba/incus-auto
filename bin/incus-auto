@@ -755,8 +755,8 @@ class IncusAuto(CUI):
             self.logger.debug(ystr)
             str_input = StringIO(ystr)
             self.incus(f'profile edit {fullname}', input=str_input)
-            self.logger.info(f'profile: "{fullname}" created')
             self.incus(f'profile show {fullname}')
+            self.logger.info(f'profile: "{fullname}" created')
 
     def cmd_destroy(self):
         # delete buildimages
