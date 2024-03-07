@@ -2,6 +2,6 @@
 
 set -eu
 
-CONFIG=/CONF/tmp-ssh_config
+CONFIG=./tmp-ssh_config
 
 ssh -F $CONFIG "$@"

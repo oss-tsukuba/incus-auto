@@ -3,8 +3,6 @@
 set -eu
 #set -x
 
-cd /CONF
-
 TFOUT=$(terraform output -json)
 
 instance_list() {

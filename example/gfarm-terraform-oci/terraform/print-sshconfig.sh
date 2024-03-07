@@ -3,9 +3,7 @@
 set -eu
 #set -x
 
-cd /CONF
-
-SSH_PRIVKEY=/CONF/id_ecdsa
+SSH_PRIVKEY=./id_ecdsa
 
 TFOUT=$(terraform output -json)
 
@@ -31,7 +29,7 @@ user() {
 }
 
 cat <<EOF
-UserKnownHostsFile /CONF/tmp-known_hosts
+UserKnownHostsFile ./tmp-ssh_known_hosts
 
 EOF
 

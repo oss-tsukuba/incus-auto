@@ -32,7 +32,9 @@ config:
       config:
         limits.memory: 1GB
         limits.cpu: 6
-        # NOTE: same as "idmap: true"
+        ### NOTE: same as "idmap: true"
+        # raw.idmap: uid 1000 0
+        ### Examples:
         # raw.idmap: both 1000 0
         # raw.idmap: |
         #   gid 1000 0

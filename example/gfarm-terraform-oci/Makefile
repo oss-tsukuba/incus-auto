@@ -2,20 +2,19 @@ IA = ../../bin/incus-auto
 TFEXEC = $(IA) exec tf --
 TFBASH = $(TFEXEC) bash
 
-manage:
+shell:
 	$(IA) shell tf
 ps:
 	$(IA) ps
-init:
-	$(IA) init
-# build:
-# 	$(IA) build -a
-create:
-	$(IA) launch -a
-#TODO api-keygen:
-#	bash SCRIPT/setup-oci-api.sh
 ssh-keygen:
-	ssh-keygen -t ecdsa -f CONF/id_ecdsa
+	ssh-keygen -t ecdsa -f terraform/id_ecdsa -N ""
+incus-init:
+	$(IA) init
+incus-create:
+	$(IA) launch -a
+
+
+
 print-etchosts:
 	@$(TFBASH) /SCRIPT/print-etchosts.sh
 print-sshconfig:
@@ -41,8 +40,8 @@ sshconfig-update:
 # ansible-ping:
 # 	$(IA) exec tf -- bash /SCRIPT/ansible-ping.sh
 
-setup:
-	$(IA) exec tf -- bash /SCRIPT/setup-gfarm-by-ansible.sh
+#setup:
+#	$(IA) exec tf -- bash /SCRIPT/setup-gfarm-by-ansible.sh
 # reset-gfarm: #TODO
 # 	$(IA) exec manage -- bash /SCRIPT/reset-gfarm-by-ansible.sh
 # reinstall-gfarm:
@@ -50,14 +49,13 @@ setup:
 # update-etchosts:
 # 	$(IA) update-etchosts -a
 # 	$(IA) exec manage -- bash -x /SCRIPT/setup-ansible.sh
-down:
+
+DOWN:
 	$(IA) stop -a
 	$(IA) delete -a
-CLEAN: down
+CLEAN: DOWN
 	$(IA) destroy
-REBUILD-ALL:
-	make CLEAN
-	make init
-	make build
-	make create
-	make setup
+#TODO REBUILD-ALL:
+# 	make CLEAN
+# 	make incus-init
+# 	make incus-create

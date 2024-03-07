@@ -3,8 +3,6 @@
 set -eu
 #set -x
 
-cd /CONF
-
 TFOUT=$(terraform output -json)
 
 group_list() {
@@ -41,7 +39,7 @@ for group in $(group_list); do
     echo "  hosts:"
     for inst in $(instance_list $group); do
         echo "    ${inst}:"
-        echo "      ansible_host: "$(public_ip $group $inst)
+        #echo "      ansible_host: "$(public_ip $group $inst)
         echo "      ansible_user: "$(user $group $inst)
     done
 done
