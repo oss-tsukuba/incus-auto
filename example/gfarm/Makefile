@@ -1,3 +1,4 @@
+DEBUG = -l debug
 IA = ../../bin/incus-auto
 IAGF = $(IA) -c $(shell ./CONFIG.sh gfarm)
 IALS = $(IA) -c $(shell ./CONFIG.sh lustre)
@@ -36,7 +37,7 @@ show-config-gfarm:
 build-gfarm:
 	$(IAGF) build -a
 launch-gfarm:
-	$(IAGF) launch -a
+	$(IAGF) launch -a $(DEBUG)
 update-etchosts-gfarm:
 	$(IAGF) update-etchosts -a
 setup-gfarm:
@@ -61,7 +62,7 @@ build-lustre:
 build-lustre-para:
 	./build-lustre.sh build
 launch-lustre:
-	$(IALS) launch -a
+	$(IALS) launch -a $(DEBUG)
 launch-lustre-para:
 	./build-lustre.sh launch
 delete-lustre:

@@ -40,5 +40,8 @@ if ! grep -q "$MNTDIR" /etc/fstab; then
 /dev/sdb  ${MNTDIR}   lustre  defaults   0 0
 EOF
     SUDO systemctl daemon-reload
+
+    # before starting mgs
+    # mount.lustre: mount /dev/sdb at /mnt/ost failed: Connection timed out
     #SUDO mount $MNTDIR
 fi

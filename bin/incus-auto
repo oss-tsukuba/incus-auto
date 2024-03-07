@@ -594,7 +594,9 @@ class IncusAuto(CUI):
         for device, params in devices.items():
             if params.get('type') == 'disk':
                 source = params.get('source', None)
-                fullpath = self.convert_fullpath(source)
+                fullpath = None
+                if source is not None and os.path.exists(source):
+                    fullpath = self.convert_fullpath(source)
                 if fullpath is not None:
                     self.logger.debug("source: fullpath=" + str(fullpath))
                     devices[device]['source'] = fullpath
@@ -898,7 +900,7 @@ class IncusAuto(CUI):
             args += ['-d', val]
 
         # NOTE: NOT WORK:
-        # Error: Cannot override config for device "VOLUME_0":
+        # Error: Cannot override config for device "volume_0":
         # Device not found in profile devices
         #
         # volume_list = info.get('volume', None)
@@ -907,7 +909,7 @@ class IncusAuto(CUI):
         #     #   -> -d DEVNAME,type=disk,source=SRC,path=DST
         #     count = 0
         #     for volume_map in volume_list:
-        #         device_name = f'VOLUME_{count}'
+        #         device_name = f'volume_{count}'
         #         kvlist = [device_name]
         #         v = volume_map.split(':')
         #         src = self.convert_fullpath(v[0])
@@ -943,7 +945,7 @@ class IncusAuto(CUI):
         #   -> -d DEVNAME,type=disk,source=SRC,path=DST
         count = 0
         for volume_map in volume_list:
-            device_name = f'VOLUME_{count}'
+            device_name = f'volume_{count}'
             v = volume_map.split(':')  # TODO support "SRC":"DST" ?
             src = self.convert_fullpath(v[0])
             dst = v[1]
@@ -1173,6 +1175,13 @@ class IncusAuto(CUI):
             self.incus_stop(fullname)
             self.mount_volume(fullname, info)
             self.incus(f'start {fullname}')
+
+        for name, fullname, info in self.name_iter(self.use_all):
+            if self.tobool(info['vm']):
+                # VM may fail to mount volumes
+                self.logger.info(f'[STEP-2.B] restart: {name}')
+                self.incus_wait_for_wakeup(fullname, info)
+                self.incus(f'restart {fullname}')
 
         for name, fullname, info in self.name_iter(self.use_all):
             self.logger.info(f'[STEP-3] setup: {name}')
