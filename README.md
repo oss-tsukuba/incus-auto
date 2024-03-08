@@ -2,6 +2,14 @@
 
 incus-auto is automating deployment system by Incus or LXD.
 
+## Requirement
+
+- RAM: 16GB
+- DISK: 100GB
+- Incus
+- (Option) Nested Virtualization
+  - when using VM on VM
+
 ## Usage Summary
 
 - Install Incus
@@ -95,3 +103,20 @@ incus-auto -h
   - https://linuxcontainers.org/incus/docs/main/howto/network_bridge_firewalld/
 - LXD
   - https://documentation.ubuntu.com/lxd/en/latest/howto/network_bridge_firewalld/
+
+## WSL2
+
+- Windows 11
+  - for `nestedVirtualization=true` (default) (.wslconfig)
+  - not work on Windows 10
+- Start Ubuntu on WSL2
+- in Ubuntu
+  - `sudo iptables -P FORWARD ACCEPT`
+  - Edit /etc/wsl.conf
+  ```
+  [boot]
+  systemd=true
+  ```
+- `wsl --shutdown` at Windows Powershell
+- Start Ubuntu on WSL2
+- Install Incus
