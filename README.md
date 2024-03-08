@@ -106,15 +106,56 @@ incus-auto -h
 
 ## WSL2
 
-- Windows 11
-  - for `nestedVirtualization=true` (default) (.wslconfig)
-  - not work on Windows 10
+- When using VM
+  - Windows 11 is required
+    - for `nestedVirtualization=true` (default) (.wslconfig)
+    - not work on Windows 10
+  - `Error: Failed to run: modprobe -b vhost_vsock: exit status 1 (modprobe: FATAL: Module vhost_vsock not found in directory /lib/modules/5.15.146.1-microsoft-standard-WSL2)`
+  - Build custom Linux Kernel (to enable vhost_vsock module)
+    - See: https://gist.github.com/jacky9813/927261020bb1dacc1a7baedef657b732
+    - (my operation log)
+```
+sudo apt update
+sudo apt install git bc build-essential flex bison libssl-dev libelf-dev dwarves
+uname -a
+Linux DVL3-01 5.15.133.1-microsoft-standard-WSL2 #1 SMP Thu Oct 5 21:02:42 UTC 2023 x86_64 x86_64 x86_64 GNU/Linux
+
+# not set .1
+KVER=5.15.133
+wget https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-${KVER}.tar.xz
+tar xf linux-${KVER}.tar.xz
+
+pushd linux-${KVER}
+wget -O arch/x86/configs/config-wsl \
+https://raw.githubusercontent.com/microsoft/WSL2-Linux-Kernel/linux-msft-wsl-5.15.y/arch/x86/configs/config-wsl
+
+# Create a duplicate to modify
+cp arch/x86/configs/config-wsl arch/x86/configs/config-wsl-custom
+
+sudo apt install libncurses-dev
+make KCONFIG_CONFIG=arch/x86/configs/config-wsl-custom menuconfig
+```
+  - Device Drivers -> VHOST drivers -> <M> vhost virtio-vsock driver
+```
+make KCONFIG_CONFIG=arch/x86/configs/config-wsl-custom -j$(nproc)
+sudo make KCONFIG_CONFIG=arch/x86/configs/config-wsl-custom modules_install
+
+mkdir -p /mnt/c/Users/USERNAME/wsl2-kernel
+cp arch/x86/boot/bzImage /mnt/c/Users/USERNAME/wsl2-kernel/bzImage-5.15.133-WSL2-custom
+
+echo vhost_vsock | sudo tee -a /etc/modules
+
+vi  /mnt/c/Users/USERNAME/.wslconfig
+[wsl2]
+kernel=C:\\\\Users\\\\USERNAME\\\\wsl2-kernel\\\\bzImage-5.15.133-WSL2-custom
+```
 - Start Ubuntu on WSL2
 - in Ubuntu
   - `sudo iptables -P FORWARD ACCEPT`
   - Edit /etc/wsl.conf
   ```
   [boot]
+  memory=16GB
   systemd=true
   ```
 - `wsl --shutdown` at Windows Powershell
