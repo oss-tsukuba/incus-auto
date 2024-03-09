@@ -12,7 +12,7 @@
 /terraform/tmp-ssh_config
 /terraform/ansible/tmp-ansible-inventory.yaml
 /terraform/ansible/tmp-ssh_known_hosts
-/terraform/SRC/gfarm
-/terraform/SRC/gfarm-gridftp-dsi
-/terraform/SRC/lustre-release
-/terraform/SRC/nextcloud-gfarm
+/terraform/ansible/SRC/gfarm
+/terraform/ansible/SRC/gfarm-gridftp-dsi
+/terraform/ansible/SRC/nextcloud-gfarm
+/terraform/ansible/SRC/lustre-release

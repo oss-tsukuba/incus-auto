@@ -6,6 +6,12 @@ shell:
 	$(IA) shell tf
 ps:
 	$(IA) ps
+
+git-clone:
+	./terraform/ansible/git-clone-pull.sh
+git-pull:
+	./terraform/ansible/git-clone-pull.sh pull
+
 ssh-keygen:
 	ssh-keygen -t ecdsa -f terraform/id_ecdsa -N ""
 incus-init:
@@ -18,7 +24,8 @@ DOWN:
 	$(IA) delete -a
 CLEAN: DOWN
 	$(IA) destroy
-#TODO REBUILD-ALL:
+
+#REBUILD-ALL:
 # 	make CLEAN
 # 	make incus-init
 # 	make incus-create

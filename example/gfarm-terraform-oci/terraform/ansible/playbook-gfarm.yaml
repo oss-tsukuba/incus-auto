@@ -85,7 +85,7 @@
       become: yes
       become_user: root
       ansible.posix.synchronize:
-        src: "../SRC/"
+        src: "./SRC/"
         dest: "/SRC/"
 
     - name: Install gfarm

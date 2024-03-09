@@ -1,1 +1,1 @@
-../gfarm/git-clone-pull.sh
+terraform/ansible/git-clone-pull.sh
