@@ -8,3 +8,5 @@ ansible-gfarm-install:
 	bash ./ansible-gfarm-install.sh
 ansible-gfarm-setup:
 	bash ./ansible-gfarm-setup.sh
+ansible-gfarm-DESTROY:
+	bash ./ansible-gfarm-unconfig.sh

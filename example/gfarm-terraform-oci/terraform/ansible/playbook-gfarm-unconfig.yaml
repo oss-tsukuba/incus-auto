@@ -1,0 +1,15 @@
+- name: Destroy gfsd
+  hosts: gfsd
+  gather_facts: no
+  tasks:
+    - name: Run unconfig-gfsd
+      shell: /usr/local/etc/unconfig-gfsd.sh -f
+      become: yes
+
+- name: Destroy gfmd
+  hosts: gfmd
+  gather_facts: no
+  tasks:
+    - name: Run unconfig-gfmd
+      shell: /usr/local/etc/unconfig-gfarm.sh -f
+      become: yes
