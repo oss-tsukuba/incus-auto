@@ -595,7 +595,7 @@
     GFMD_CONF: /usr/local/etc/gfmd.conf
     GFARM2_CONF: /usr/local/etc/gfarm2.conf
     GFDUMP_FILE: "{{ SETUP_TMP }}/gfdump_file"
-    SUB_GFMD_LIST: "{{ groups['gfmd'] | reject('equalto', 'gfmd01') | list }}"
+    SUB_GFMD_LIST: "{{ groups['gfmd'] | reject('equalto', 'gfmd01') | map('extract', hostvars, 'ansible_host') | list }}"
     GFSD_LIST: "{{ groups['gfsd'] }}"
     #GFSD_FQDN_LIST: "{{ groups['gfsd'] | map('extract', hostvars, 'ansible_host') | list }}"
   tags: config
