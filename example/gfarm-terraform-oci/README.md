@@ -3,12 +3,14 @@
 ## Overview
 
 - Step 1: Create container to use Terraform by incus-auto
-- Step 2: Create OCI instances by Terraform
+- Step 2: Create OCI (Oracle Cloud) instances by Terraform
 - Step 3: Setup Gfarm environment on OCI instances by Ansible
 
 ## Steps
 
-### host OS
+### Step 1
+
+At host OS:
 
 ```
 make ssh-keygen
@@ -17,11 +19,12 @@ make incus-create
 make shell
 ```
 
-### tf container in Incus and OCI Web Interface
+### Step 2
 
-Prompt: `admin@tf:~$`
+At tf container in Incus and OCI Web Interface:
 
 ```
+### Prompt: admin@tf:~$
 cd ~/terraform-oci
 make ociapi-keygen
 cat ociapi_public.pem
@@ -55,21 +58,21 @@ make update-ansible-inventory
 make send-files
 ```
 
-### gfmanage instance on OCI
+### Step 3
 
-from tf container
-
-Prompt: `gfarmsys@gfmanage:~$`
+At gfmanage instance on OCI:
 
 ```
+### At tf container
 ./ocissh gfmanage
+### Prompt: gfarmsys@gfmanage:~$
 cd ~/terraform-oci/ansible/
 make ansible-init
 make ansible-ping
 make ansible-gfarm-setup
 ```
 
-### gfclient instance on OCI
+### Gfarm client on OCI
 
 from tf container
 
@@ -92,25 +95,26 @@ from tf container
 
 ## Update source code
 
-- On host OS
-  - Edit `terraform/ansible/SRC/gfarm/`
-- On tf container in Incus
+- At host OS
+  - Edit `terraform/ansible/SRC/gfarm/*` files
+- At tf container in Incus
   - `make send-files`
-- On gfmanage on OCI
+  - or `make SYNC-files` to synchronize deleted files
+- At gfmanage on OCI
   - `make ansible-gfarm-setup-all`
   - TODO `make ansible-gfarm-update-source`
 
-## Clear Gfarm all data
+## Clear all Gfarm data
 
-- On gfmanage on OCI
+- At gfmanage on OCI
   - `make ansible-gfarm-DESTROY`
   - `make ansible-gfarm-setup-all`
 
 ## Destroy
 
-- On tf container in Incus
+- At tf container in Incus
   - `make terraform-destroy`
-- On gfmanage on OCI
+- At gfmanage on OCI
   - `make CLEAN`
   - Reusable files (not deleted)
     - terraform/id_ecdsa
