@@ -596,6 +596,7 @@
     GFARM2_CONF: /usr/local/etc/gfarm2.conf
     GFDUMP_FILE: "{{ SETUP_TMP }}/gfdump_file"
     SUB_GFMD_LIST: "{{ groups['gfmd'] | reject('equalto', 'gfmd01') | map('extract', hostvars, 'ansible_host') | list }}"
+    GFMD_FQDN_LIST: "{{ groups['gfmd'] | map('extract', hostvars, 'ansible_host') | list }}"
     GFSD_LIST: "{{ groups['gfsd'] }}"
     #GFSD_FQDN_LIST: "{{ groups['gfsd'] | map('extract', hostvars, 'ansible_host') | list }}"
   tags: config
@@ -655,7 +656,7 @@
 
     - name: set METADB_LIST
       set_fact:
-        METADB_LIST: "{{ groups['gfmd'] | map('regex_replace', '(.+)', '\\1:601') | list | join(' ') }}"
+        METADB_LIST: "{{ GFMD_FQDN_LIST | map('regex_replace', '(.+)', '\\1:601') | list | join(' ') }}"
 
     - name: update gfarm2.conf
       become: yes

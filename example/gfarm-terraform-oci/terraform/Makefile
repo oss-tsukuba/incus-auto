@@ -27,6 +27,8 @@ update-all:
 
 send-files:
 	rsync -e ./ocissh -av ./ gfmanage:terraform-oci/
+SYNC-files-with-delete:
+	rsync -e ./ocissh -av --delete ./ gfmanage:terraform-oci/
 
 ssh-gfmanage:
 	./ocissh manage

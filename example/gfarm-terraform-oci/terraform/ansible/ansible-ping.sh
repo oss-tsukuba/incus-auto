@@ -1,4 +1,4 @@
 #!/bin/bash
 
 source ./ansible-common.sh
-ansible -i $INV all -m ping -f 10
+ansible -i $INV all -m ping

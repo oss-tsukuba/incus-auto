@@ -1,7 +1,7 @@
 INV = tmp-ansible-inventory.yaml
 
 ansible-init:
-	bash ./setup-ansible.sh
+	bash ./ansible-init.sh
 ansible-ping:
 	bash ./ansible-ping.sh
 ansible-gfarm-install:
@@ -9,4 +9,5 @@ ansible-gfarm-install:
 ansible-gfarm-setup:
 	bash ./ansible-gfarm-setup.sh
 ansible-gfarm-DESTROY:
+	@bash ./confirm.sh
 	bash ./ansible-gfarm-unconfig.sh
