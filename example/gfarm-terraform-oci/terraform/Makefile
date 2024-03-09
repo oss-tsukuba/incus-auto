@@ -1,3 +1,6 @@
+ssh-gfmanage:
+	./ocissh gfmanage
+
 ociapi-keygen:
 	bash setup-oci-api.sh
 terraform-init:
@@ -6,6 +9,8 @@ terraform-plan:
 	terraform plan
 terraform-apply:
 	terraform apply
+terraform-destroy:
+	terraform destroy
 
 print-etchosts:
 	@bash ./print-etchosts.sh
@@ -29,6 +34,3 @@ send-files:
 	rsync -e ./ocissh -av ./ gfmanage:terraform-oci/
 SYNC-files-with-delete:
 	rsync -e ./ocissh -av --delete ./ gfmanage:terraform-oci/
-
-ssh-gfmanage:
-	./ocissh manage

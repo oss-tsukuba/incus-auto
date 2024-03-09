@@ -1,88 +1,132 @@
-# Gfarm on OCI managed by terraform
+# Gfarm development environment on OCI managed by Terraform and Ansible
 
-## Start terraform client by incus-auto
+## Overview
 
-#TODO make ssh-keygen
+- Step 1: Create container to use Terraform by incus-auto
+- Step 2: Create OCI instances by Terraform
+- Step 3: Setup Gfarm environment on OCI instances by Ansible
 
-```
-make init
-make create
-make  #TODO not in container
-```
+## Steps
 
-In incus container
-
-#TODO "make oci-setup" target
-- See and run `/SCRIPT/setup-oci-api.sh`
-  - oepnssl genrsa
-  - register the pubkey to https://cloud.oracle.com/identity/domains/my-profile/api-keys
-  - ssh-keygen
-
-## Ingress rule
-
-- https://cloud.oracle.com/networking/vcns
-- -> Select VCN
-- -> Security Lists
-- -> Default Security List or Create Security List
-- -> Add Ingress Rules
-  - source 10.0.0.0/8, TCP, All, All
-    - インスタンス間通信を許可
-  - (gfmd port) # TODO
-  - (gfsd port) # TODO
-
-## Init
+### host OS
 
 ```
-cd /CONF
-terraform init
+make ssh-keygen
+make incus-init
+make incus-create
+make shell
 ```
 
-## Plan
+### tf container in Incus and OCI Web Interface
 
-### terraform.tfvars
-
-Create `terraform.tfvars` file to set parameters
-
-- Sample: CONF/terraform.tfvars.sample
-- Valiables: CONF/variables.tf
-  - required variables
-  - overridable variables
-
-Confirm parameters
+Prompt: `admin@tf:~$`
 
 ```
-terraform plan
+cd ~/terraform-oci
+make ociapi-keygen
+cat ociapi_public.pem
 ```
 
-## Apply
+- Add API key
+  - <https://cloud.oracle.com/identity/domains/my-profile/api-keys>
+  - Paste a public key
+- Create VCN and Create Subnet (if you need)
+  - <https://cloud.oracle.com/networking/vcns>
+- Update Ingress Rules (in Security Lists)
+  - TCP Source=10.0.0.0/8 (for each OCI instances)
+  - UCP Source=10.0.0.0/8 (for each OCI instances)
+  - TCP Source=???.???.???.???/?? DestPort=22 (if you need) (for sshd)
+  - TCP Source=???.???.???.???/?? DestPort=600 (if you need) (for gfsd)
+  - UDP Source=???.???.???.???/?? DestPort=600 (if you need) (for gfsd)
+  - TCP Source=???.???.???.???/?? DestPort=601 (if you need) (for gfmd)
+- Create `terraform.tfvars` file to set parameters
+  - Sample: `terraform.tfvars.sample`
+  - Valiables: `variables.tf`
+    - required variables
+    - overridable variables
 
 ```
-terraform apply
-...
-  Enter a value: yes
+make terraform-init
+make terraform-plan
+make terrarorm-apply
+make update-ssh_known_hosts
+make update-ssh_config
+make update-ansible-inventory
+make send-files
 ```
 
-## Setup Gfarm
+### gfmanage instance on OCI
+
+from tf container
+
+Prompt: `gfarmsys@gfmanage:~$`
 
 ```
-exit  # from container
-
-make ansible-inventory
+./ocissh gfmanage
+cd ~/terraform-oci/ansible/
 make ansible-init
-make set
+make ansible-ping
+make ansible-gfarm-setup
 ```
+
+### gfclient instance on OCI
+
+from tf container
+
+```
+./ocissh gfclient01
+```
+
+```
+[gfarmsys@gfclient01 ~]$ gfmdhost -l
++ master -     m siteA        gfmd01.example.org 601
++ slave  async c siteB        gfmd02.example.org 601
++ slave  async c siteB        gfmd03.example.org 601
+
+[gfarmsys@gfclient01 ~]$ gfhost -lv
+0.01/0.18/0.39 s aarch64 1 gfsd01.example.org 600 0(10.0.1.120)
+0.01/0.30/0.57 s aarch64 1 gfsd02.example.org 600 0(10.0.1.146)
+0.01/0.29/0.59 s aarch64 1 gfsd03.example.org 600 0(10.0.1.202)
+0.03/0.36/0.63 s aarch64 1 gfsd04.example.org 600 0(10.0.1.43)
+```
+
+## Update source code
+
+- On host OS
+  - Edit `terraform/ansible/SRC/gfarm/`
+- On tf container in Incus
+  - `make send-files`
+- On gfmanage on OCI
+  - `make ansible-gfarm-setup-all`
+  - TODO `make ansible-gfarm-update-source`
+
+## Clear Gfarm all data
+
+- On gfmanage on OCI
+  - `make ansible-gfarm-DESTROY`
+  - `make ansible-gfarm-setup-all`
 
 ## Destroy
 
-```
-terraform destroy
-...
-  Enter a value: yes
-
-exit
-make CLEAN
-```
+- On tf container in Incus
+  - `make terraform-destroy`
+- On gfmanage on OCI
+  - `make CLEAN`
+  - Reusable files (not deleted)
+    - terraform/id_ecdsa
+    - terraform/id_ecdsa.pub
+    - terraform/ociapi_public.pem
+    - terraform/ociapi_private.pem
+    - terraform/terraform.tfvars
+    - terraform/.terraform
 
 ## TODO
 
-- backup gfarm-terraform-oci
+- make backup
+  - ../gfarm-terraform-oci.tar.gz
+- make TEST-ALL
+- make ansible-gfarm-update-source
+- make ansible-gfarm-update-user
+- Add hosts
+- Add user
+- Change authentication type
