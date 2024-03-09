@@ -1,6 +1,13 @@
 #!/bin/bash
 
-source /SRC/lib.sh
+set -eu
+#set -x
+
+source /etc/os-release
+
+MAKE_NUM_JOBS=4
+RETRY_CMD_NUM=5
+OPENSSL_PACKAGE_NAME=
 
 BUILD_CACHE=false
 USE_CACHE=false
@@ -36,7 +43,72 @@ done
 
 ###################################################################
 
+IS_ID_LIKE_DEBIAN() {
+    for id in $ID_LIKE; do  # ID_LIKE from /etc/os-release
+        case $id in
+            debian)
+                return 0
+                ;;
+        esac
+    done
+    return 1
+}
+
+PRESERVE_ENV="http_proxy,https_proxy"
+
+if IS_ID_LIKE_DEBIAN; then
+    export DEBIAN_FRONTEND=noninteractive
+    PRESERVE_ENV+=",DEBIAN_FRONTEND"
+fi
+
+SUDO_CMD="sudo --preserve-env=${PRESERVE_ENV}"
+
+SUDO() {
+    set -eu
+    $SUDO_CMD "$@"
+}
+
+_retry_cmd() {
+    local rv=1
+    for i in $(seq $RETRY_CMD_NUM); do
+        if "$@"; then
+            return 0
+        fi
+        rv=$?
+    done
+    return $rv
+}
+
+DNF_REPOS=
+
+DNF() {
+    set -eu
+    _retry_cmd $SUDO_CMD dnf $DNF_REPOS "$@"
+}
+
+APTGET() {
+    set -eu
+    _retry_cmd $SUDO_CMD apt-get "$@"
+}
+
+REGPATH_usrlocalbin() {
+    local profile=/etc/profile.d/usrlocalbin.sh
+    if [ ! -f $profile ]; then
+        cat <<EOF | SUDO tee $profile
+export PATH=$PATH:/usr/local/bin
+EOF
+    fi
+    source $profile
+}
+
+DONE() {
+    echo "DONE: $@"
+}
+
+###################################################################
+
 install_package_debian() {
+    set -eu
     # for install-gfarm.sh
     APTGET install -y \
 	 rsync
@@ -90,6 +162,7 @@ install_package_debian() {
 }
 
 install_package_rhel() {
+    set -eu
     # base package
     DNF install -y \
 	 rsync
@@ -135,7 +208,6 @@ install_package_rhel() {
     DNF install -y \
 	 libtool
 
-
     # for GSI environment
     DNF install -y \
 	 globus-gsi-cert-utils-progs \
@@ -158,14 +230,28 @@ for id in $ID_LIKE; do  # ID_LIKE from /etc/os-release
             clean_package=clean_package_debian
             break
             ;;
-        rhel)
+        rhel|fedora)
             install_package=install_package_rhel
             clean_package=clean_package_rhel
             REGPATH_usrlocalbin
             break
             ;;
+        *)
+            echo >&2 "Error: not supported: ID_LIKE=$ID_LIKE"
+            exit 1
+            ;;
     esac
 done
+
+case $ID in
+    ol)
+        case $VERSION in
+            9.*)
+                DNF_REPOS="--enablerepo=ol9_codeready_builder"
+                ;;
+        esac
+        ;;
+esac
 
 ###################################################################
 if $UPDATE_PACKAGE; then
@@ -197,8 +283,8 @@ if [ -n "${OPENSSL_PACKAGE_NAME}" ]; then
     WITH_OPENSSL_OPT="--with-openssl=${OPENSSL_PACKAGE_NAME}"
 fi
 GFARM_OPT="--with-globus=/usr --enable-xmlattr ${WITH_OPENSSL_OPT}"
-$DISTCLEAN && (test -f Makefile && make distclean || true)
-$DISTCLEAN && ./configure $GFARM_OPT
+$DISTCLEAN && ([ -f Makefile ] && make distclean || true)
+[ -f Makefile ] || ./configure $GFARM_OPT
 make -j $MAKE_NUM_JOBS
 
 if $INSTALL_MANPAGE; then
@@ -217,8 +303,8 @@ SUDO useradd -m _gfarmmd || true
 # install gfarm2fs
 cd $GFARM_WORKDIR
 cd gfarm2fs
-$DISTCLEAN && (test -f Makefile && make distclean || true)
-$DISTCLEAN && ./configure --with-gfarm=/usr/local
+$DISTCLEAN && ([ -f Makefile ] && make distclean || true)
+[ -f Makefile ] || ./configure --with-gfarm=/usr/local
 make -j $MAKE_NUM_JOBS
 SUDO make install
 if [ ! -f /sbin/mount.gfarm2fs ]; then
@@ -265,8 +351,9 @@ sasl_libdir=$(pkg-config --variable=libdir libsasl2)
      -f ${scitokens_prefix}/include/scitokens/scitokens.h ]
 # NOTE: this installs to /usr/lib64/sasl2/ instead of
 # /usr/local/lib64/sasl2/
-$DISTCLEAN && ./autogen.sh
-$DISTCLEAN && ./configure --libdir="${sasl_libdir}"
+$DISTCLEAN && make distclean || true
+[ -f Makefile ] || ./autogen.sh
+[ -f config.log ] || ./configure --libdir="${sasl_libdir}"
 make -j $MAKE_NUM_JOBS
 SUDO make install
 

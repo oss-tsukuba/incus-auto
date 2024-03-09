@@ -3,7 +3,7 @@
 set -eu
 set -x
 
-sudo apt install -y gnupg bash-completion make jq
+sudo apt install -y gnupg bash-completion make jq rsync
 
 KEYRING=${HOME}/hashicorp-archive-keyring.gpg
 wget -O- https://apt.releases.hashicorp.com/gpg \

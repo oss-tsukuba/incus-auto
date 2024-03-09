@@ -29,17 +29,19 @@ user() {
 cat <<EOF
 all:
   vars:
-    known_hosts_file: /CONF/tmp-known_hosts
-    ansible_ssh_private_key_file: /CONF/id_ecdsa
+    known_hosts_file: ./tmp-known_hosts
+    ansible_ssh_private_key_file: ../id_ecdsa
     ansible_ssh_common_args: "-o UserKnownHostsFile={{ known_hosts_file }}"
 EOF
 
 for group in $(group_list); do
     echo "${group}:"
     echo "  hosts:"
-    for inst in $(instance_list $group); do
-        echo "    ${inst}:"
-        #echo "      ansible_host: "$(public_ip $group $inst)
-        echo "      ansible_user: "$(user $group $inst)
+    for name in $(instance_list $group); do
+        shortname=$(echo $name | cut -d. -f 1)
+        echo "    ${shortname}:"
+        #echo "      ansible_host: "$(public_ip $group $name)
+        echo "      ansible_host: ${name}"
+        echo "      ansible_user: "$(user $group $name)
     done
 done

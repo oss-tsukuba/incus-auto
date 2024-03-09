@@ -1,5 +1,5 @@
 ---
-- name: Prepare
+- name: Base for all
   hosts: all
   tags:
     - gsi_ca
@@ -23,9 +23,13 @@
     DIGEST: sha256
     SIGN_WORKDIR: "{{ SETUP_TMP }}/ca_sign"
     CA_DIR: /var/lib/globus/simple_ca
-    gfarm_install: no
+    gfarm_install: yes
     TIME_ZONE: "Asia/Tokyo"
   tasks:
+    - name: Set timezone
+      community.general.timezone:
+        name: "{{ TIME_ZONE }}"
+      become: true
     - name: Install rsync
       become: yes
       become_user: root
@@ -41,10 +45,31 @@
         mode: "0700"
         owner: "{{ SYS_USER }}"
         group: "{{ SYS_USER }}"
-    - name: Set timezone
-      community.general.timezone:
-        name: "{{ TIME_ZONE }}"
-      become: true
+    - name: Add secure_path to sudoers
+      become: yes
+      become_user: root
+      lineinfile:
+        path: /etc/sudoers
+        regexp: '^Defaults[[:space:]]+secure_path'
+        line: 'Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin'
+        state: present
+
+- name: Base for Gfarm hosts
+  hosts: gfmd gfsd gfclient
+  tags:
+    - gsi_ca gfarm
+  gather_facts: false
+  tasks:
+    - name: Disable SELinux
+      become: yes
+      ansible.posix.selinux:
+        state: disabled
+      #notify: Reboot if SELinux is disabled
+      tags: selinux
+  # handlers:
+  #   - name: Reboot if SELinux is disabled
+  #     reboot:
+  #     when: ansible_selinux.status == "disabled"
 
 ######################################################################
 - name: Gfarm environemnt
@@ -56,11 +81,11 @@
     <<: [*common_variables]
   # TODO rsync and distclean?
   tasks:
-    - name: Upload install-gfarm.sh
+    - name: Upload source code
       become: yes
       become_user: root
-      synchronize:
-        src: "/SRC/"
+      ansible.posix.synchronize:
+        src: "../SRC/"
         dest: "/SRC/"
 
     - name: Install gfarm
@@ -77,7 +102,7 @@
 
 ######################################################################
 - name: Setup SASL for servers
-  hosts: group_gfmd, group_gfsd
+  hosts: gfmd gfsd
   gather_facts: no
   #vars: *common_variables
   tasks:
@@ -102,7 +127,7 @@
     #  shell: cat "{{ pkgconfig_out.stdout_lines[0] }}/sasl2/gfarm.conf"
 
 - name: Setup SASL for all hosts
-  hosts: gfarm
+  hosts: gfmd gfsd gfclient
   gather_facts: no
   tasks:
     - name: Run pkg-config
@@ -142,7 +167,7 @@
 
 ######################################################################
 - name: Create .gfarm_shared_key
-  hosts: gfmd1
+  hosts: gfmd01
   gather_facts: no
   vars: *common_variables
   tasks:
@@ -161,11 +186,11 @@
       loop: "{{ ALL_USERS }}"
 
 - name: Copy .gfarm_shared_key to servers
-  hosts: group_gfmd:group_gfsd:!gfmd1
+  hosts: gfmd:gfsd:!gfmd01
   gather_facts: no
   vars: *common_variables
   tasks:
-    - name: Copy keys
+    - name: Copy keys for servers
       become: yes
       become_user: root
       copy:
@@ -177,11 +202,11 @@
       loop: "{{ ALL_USERS }}"
 
 - name: Copy .gfarm_shared_key to clients
-  hosts: group_gfclient
+  hosts: gfclient
   gather_facts: no
   vars: *common_variables
   tasks:
-    - name: Copy keys
+    - name: Copy keys for servers
       become: yes
       become_user: root
       copy:
@@ -194,7 +219,7 @@
 
 ######################################################################
 - name: Build CA environment for GSI
-  hosts: manage
+  hosts: gfmanage
   gather_facts: no
   vars: *common_variables
   tags: gsi_ca
@@ -206,16 +231,18 @@
         name: globus-simple-ca
         state: present
     - name: Initialize CA
-      shell: bash -x /SCRIPT/setup-globus-simple-ca.sh
+      shell: bash -x /SRC/setup-globus-simple-ca.sh
       register: ca_result
     - name: set fact
       set_fact:
         gsi_ca_hash: "{{ ca_result.stdout }}"
+    - name: debug
+      debug:
+        var: gsi_ca_hash
     - name: id
       become: yes
       become_user: root
       command: id
-
     - name: Copy cacert.pem
       become: yes
       become_user: root
@@ -224,7 +251,6 @@
         DEST="{{ SYS_HOME }}/cacert.pem"
         cp -f "{{ CA_DIR }}/cacert.pem" "$DEST"
         chown "{{ SYS_USER }}:{{ SYS_USER }}" "$DEST"
-
     - name: patch for grid-ca-sign
       become: yes
       become_user: root
@@ -240,18 +266,17 @@
         sed -i -e '/^\s*req_subj=/{N;d;}' $CMD
         sed -i -e '/^\s*# find signed cert/ i\        req_subj="$(sed -e "s|subject= *|/|" -e "s|,|/|g" < "${subj_tmp_output}")"' $CMD
 
-- name: Request GSI server certificates
-  #hosts: group_gfmd group_gfsd  #TODO jwtserver keycloak
-  hosts: gfarm
+- name: Install CA
+  hosts: gfmd gfsd gfclient
   gather_facts: no
   vars:
     <<: [*common_variables]
-    CA_HASH: "{{ hostvars['manage']['gsi_ca_hash'] }}"
+    CA_HASH: "{{ hostvars['gfmanage']['gsi_ca_hash'] }}"
   tags: gsi_ca
   tasks:
     - name: debug
       debug:
-        var: gsi_ca_hash
+        var: CA_HASH
     - name: mkdir
       become: yes
       become_user: root
@@ -261,19 +286,26 @@
     - name: sync
       become: yes
       become_user: root
-      synchronize:
+      ansible.posix.synchronize:
         src: "{{ CERTDIR }}/"
         dest: "{{ CERTDIR }}/"
     - name: grid-default-ca
       become: yes
       become_user: root
       shell: grid-default-ca -ca {{ CA_HASH }}
-
-    - name: patch for grid-cert-requiest
+    - name: patch for grid-cert-request
       become: yes
       become_user: root
       command: sed -i 's/:\/var\/adm\/wtmp:\/var\/log\/messages//' /usr/bin/grid-cert-request
 
+- name: Request GSI server certificates
+  hosts: gfmd gfsd  #TODO jwtserver keycloak
+  gather_facts: no
+  vars:
+    <<: [*common_variables]
+    CA_HASH: "{{ hostvars['gfmanage']['gsi_ca_hash'] }}"
+  tags: gsi_ca
+  tasks:
     - name: Check the existence of hostcert
       become: yes
       become_user: root
@@ -284,7 +316,7 @@
     - name: hostcert request
       become: yes
       become_user: root
-      shell: yes | grid-cert-request -host {{ inventory_hostname }}
+      shell: yes | grid-cert-request -host {{ ansible_host }}
       when: not hostcert_stat.stat.exists
 
     - name: Check the existence of gfsdcert
@@ -297,12 +329,12 @@
     - name: gfsdcert request
       become: yes
       become_user: root
-      shell: yes | grid-cert-request -service {{ SERVICE }} -host {{ inventory_hostname }}
+      shell: yes | grid-cert-request -service {{ SERVICE }} -host {{ ansible_host }}
       when: not gfsdcert_stat.stat.exists
 
     - name: Create local SIGN_WORKDIR
       file:
-        path: "{{ SIGN_WORKDIR }}/{{ inventory_hostname }}"
+        path: "{{ SIGN_WORKDIR }}/{{ ansible_host }}"
         state: directory
       delegate_to: localhost
 
@@ -311,7 +343,7 @@
       become_user: root
       fetch:
         src: "{{ GSDIR }}/hostcert_request.pem"
-        dest: "{{ SIGN_WORKDIR }}/{{ inventory_hostname }}/"
+        dest: "{{ SIGN_WORKDIR }}/{{ ansible_host }}/"
         flat: yes
 
     - name: fetch gfsdcert request
@@ -319,11 +351,11 @@
       become_user: root
       fetch:
         src: "{{ GSDIR }}/{{ SERVICE }}/{{ SERVICE }}cert_request.pem"
-        dest: "{{ SIGN_WORKDIR }}/{{ inventory_hostname }}/"
+        dest: "{{ SIGN_WORKDIR }}/{{ ansible_host }}/"
         flat: yes
 
 - name: Sign and copy certificates for servers
-  hosts: gfarm
+  hosts: gfmd gfsd
   gather_facts: no
   vars:
     <<: [*common_variables]
@@ -334,8 +366,8 @@
       become: yes
       become_user: root
       shell: |
-        OUT="{{ SIGN_WORKDIR }}/{{ inventory_hostname }}/{{ item }}.pem"
-        [ -f $OUT ] || cat /CONF/ca-password.txt | grid-ca-sign -in {{ SIGN_WORKDIR }}/{{ inventory_hostname }}/{{ item }}_request.pem -out $OUT -passin stdin -md {{ DIGEST }}
+        OUT="{{ SIGN_WORKDIR }}/{{ ansible_host }}/{{ item }}.pem"
+        [ -f $OUT ] || cat ./ca-password.txt | grid-ca-sign -in {{ SIGN_WORKDIR }}/{{ ansible_host }}/{{ item }}_request.pem -out $OUT -passin stdin -md {{ DIGEST }}
       loop:
         - hostcert
         - "{{ SERVICE }}cert"
@@ -345,14 +377,14 @@
       become: yes
       become_user: root
       copy:
-        src: "{{ SIGN_WORKDIR }}/{{ inventory_hostname }}/hostcert.pem"
+        src: "{{ SIGN_WORKDIR }}/{{ ansible_host }}/hostcert.pem"
         dest: "{{ GSDIR }}/"
 
     - name: Copy gfsd certificate
       become: yes
       become_user: root
       copy:
-        src: "{{ SIGN_WORKDIR }}/{{ inventory_hostname }}/{{ SERVICE }}cert.pem"
+        src: "{{ SIGN_WORKDIR }}/{{ ansible_host }}/{{ SERVICE }}cert.pem"
         dest: "{{ GSDIR }}/{{ SERVICE }}/"
 
     - name: chown gfsd key for _gfarmfs
@@ -365,12 +397,12 @@
         group: _gfarmfs
 
 - name: Create GSI clinet certificates
-  hosts: gfclient1
+  hosts: gfclient01
   tags: gsi_ca
   gather_facts: no
   vars:
     <<: [*common_variables]
-    CA_HASH: "{{ hostvars['manage']['gsi_ca_hash'] }}"
+    CA_HASH: "{{ hostvars['gfmanage']['gsi_ca_hash'] }}"
   tasks:
     - name: Request usercert
       become: yes
@@ -404,7 +436,7 @@
         OUT="{{ SIGN_WORKDIR }}/usercert-{{ item }}.pem"
         cmp -s $IN $TMP && exit 0
         mv -f $TMP $IN
-        grid-ca-sign -in $IN -out $OUT -passin pass:$(cat /CONF/ca-password.txt) -md {{ DIGEST }}
+        grid-ca-sign -in $IN -out $OUT -passin pass:$(cat ./ca-password.txt) -md {{ DIGEST }}
       loop: "{{ USERS }}"
       delegate_to: localhost
 
@@ -429,7 +461,7 @@
     #     - "{{ USERS }}"
     #     - [ "usercert.pem", "usercert_request.pem", "userkey.pem"]
 
-    - name: Fetch .globus to manage
+    - name: Fetch .globus to gfmanage
       become: yes
       become_user: root
       fetch:
@@ -449,7 +481,7 @@
       run_once: yes
 
 - name: Synchronize .globus
-  hosts: gfarm
+  hosts: gfmd gfsd gfclient
   tags: gsi_ca
   gather_facts: no
   vars:
@@ -458,7 +490,7 @@
     - name: synchronize .globus
       become: yes
       become_user: root
-      synchronize:
+      ansible.posix.synchronize:
         src: "{{ SETUP_TMP }}/dot_globus/{{ item }}/"
         dest: "/home/{{ item }}/.globus/"
       loop: "{{ USERS }}"
@@ -474,9 +506,9 @@
 
 
 ######################################################################
-- name: Setup TLS environment
-  hosts: gfarm
-  gather_facts: yes  # for ansible_os_family
+- name: Setup TLS environment for server
+  hosts: gfmd gfsd
+  gather_facts: no
   vars:
     <<: [*common_variables]
   tags: tls
@@ -504,11 +536,17 @@
         - ["gfsd/gfsdcert.pem", "certs/gfsd.crt"]
         - ["gfsd/gfsdkey.pem", "certs/gfsd.key"]
 
+- name: Setup TLS environment for all
+  hosts: gfmd gfsd gfclient
+  gather_facts: yes  # for ansible_os_family
+  vars:
+    <<: [*common_variables]
+  tags: tls
+  tasks:
     - name: Copy cacert.pem to hosts
       copy:
         src: "{{ SYS_HOME }}/cacert.pem"
         dest: "{{ SYS_HOME }}/cacert.pem"
-
     - name: GSI CA to TLS
       become: yes
       become_user: root
@@ -533,7 +571,7 @@
 
 ######################################################################
 - name: DN of gfarmsys user
-  hosts: gfclient1 gfmd1
+  hosts: gfclient01 gfmd01
   gather_facts: no
   vars:
     <<: [*common_variables]
@@ -547,20 +585,19 @@
       changed_when: false
 
 - name: config-gfarm
-  hosts: group_gfmd
+  hosts: gfmd
   gather_facts: no
   vars: &gfmd_variables
     <<: [*common_variables]
-    DN: "{{ hostvars['gfclient1']['proxyinfo']['stdout_lines'][0] }}"
+    DN: "{{ hostvars['gfclient01']['proxyinfo']['stdout_lines'][0] }}"
     # TODO -h hostname ?
-    CONFIG_OPTION: "-A {{ SYS_USER }} -r -X -d sha1 -a gsi -D {{ DN }}"
+    CONFIG_OPTION: "-A {{ SYS_USER }} -r -X -d sha1 -a gsi -D {{ DN }} -h {{ ansible_host }}"
     GFMD_CONF: /usr/local/etc/gfmd.conf
     GFARM2_CONF: /usr/local/etc/gfarm2.conf
     GFDUMP_FILE: "{{ SETUP_TMP }}/gfdump_file"
-    SUB_GFMD_LIST: "{{ groups['group_gfmd'] | reject('equalto', 'gfmd1') | list }}"
-    GFSD_LIST: "{{ groups['group_gfsd'] }}"
-    #HOST_PREFIX: "gfarm-"   #TODO remove??
-    HOST_PREFIX: ""
+    SUB_GFMD_LIST: "{{ groups['gfmd'] | reject('equalto', 'gfmd01') | list }}"
+    GFSD_LIST: "{{ groups['gfsd'] }}"
+    #GFSD_FQDN_LIST: "{{ groups['gfsd'] | map('extract', hostvars, 'ansible_host') | list }}"
   tags: config
   tasks:
     - name: config-gfarm
@@ -601,8 +638,8 @@
         state: started
         enabled: yes
 
-- name: Setup gfmd1
-  hosts: gfmd1
+- name: Setup gfmd01
+  hosts: gfmd01
   gather_facts: no
   vars:
     <<: [*gfmd_variables]
@@ -618,7 +655,7 @@
 
     - name: set METADB_LIST
       set_fact:
-        METADB_LIST: "{{ groups['group_gfmd'] | map('regex_replace', '(.+)', '\\1:601') | list | join(' ') }}"
+        METADB_LIST: "{{ groups['gfmd'] | map('regex_replace', '(.+)', '\\1:601') | list | join(' ') }}"
 
     - name: update gfarm2.conf
       become: yes
@@ -644,20 +681,25 @@
         flat: yes
 
     - name: main metadata server
-      # TODO use "{{ ansible_host | default(inventory_hostname) }}"
-      # TODO remove {{ HOST_PREFIX }}
-      command: gfmdhost -m {{ HOST_PREFIX }}gfmd1 -C {{ hostvars['gfmd1']['gfmd_cluster'] }}
+      command: gfmdhost -m "{{ ansible_host }}" -C siteA
 
     - name: sub metadata servers
       shell: |
         set -e
-        # TODO remove {{ HOST_PREFIX }}
-        GFMD={{ HOST_PREFIX }}{{ item }}
+        GFMD={{ item }}
         EXIST=$(gfmdhost -l | awk '{print $6}' | grep ^${GFMD}\$) || true
+        case "{{ ansible_host }}" in
+          gfmd02.*)
+            SITE=siteA
+            ;;
+          *)
+            SITE=siteB
+            ;;
+        esac
         if [ -n "$EXIST" ]; then
-          gfmdhost -m $GFMD -C {{ hostvars[item]['gfmd_cluster'] }}
+          gfmdhost -m $GFMD -C "$SITE"
         else
-          gfmdhost -c $GFMD -C {{ hostvars[item]['gfmd_cluster'] }}
+          gfmdhost -c $GFMD -C "$SITE"
         fi
       loop: "{{ SUB_GFMD_LIST }}"
 
@@ -677,8 +719,8 @@
         dest: "{{ GFDUMP_FILE }}"
         flat: yes
 
-- name: setup gfmd2...
-  hosts: group_gfmd:!gfmd1
+- name: setup gfmd02...
+  hosts: gfmd:!gfmd01
   gather_facts: no
   vars:
     <<: [*gfmd_variables]
@@ -694,7 +736,7 @@
       command: gfdump.postgresql -r -f "{{ GFDUMP_FILE }}"
 
 - name: Synchronize gfarm2.conf
-  hosts: gfarm
+  hosts: gfmd gfsd gfclient
   gather_facts: yes
   vars:
     <<: [*gfmd_variables]
@@ -703,12 +745,12 @@
     - name: Synchronize gfarm2.conf
       become: yes
       become_user: root
-      synchronize:
+      ansible.posix.synchronize:
         src: "{{ SETUP_TMP }}/gfarm2.conf"
         dest: "{{ GFARM2_CONF }}"
 
 - name: config-gfsd
-  hosts: group_gfsd
+  hosts: gfsd
   gather_facts: no
   vars:
     <<: [*gfmd_variables]
@@ -719,11 +761,10 @@
       become_user: root
       shell: |
         set -e
-        #TODO
-        GFSD={{ HOST_PREFIX }}{{ inventory_hostname }}
+        GFSD={{ ansible_host }}
         EXIST=$(sudo -u {{ SYS_USER }} gfhost | grep ^${GFSD}\$) || true
         if [ ! -n "$EXIST" ]; then
-          config-gfsd
+          config-gfsd -h $GFSD
           echo "INIT"
         fi
         exit 0
@@ -736,7 +777,7 @@
         arch: "{{ ansible_architecture }}"
 
 - name: register gfsd
-  hosts: gfmd1
+  hosts: gfmd01
   gather_facts: no
   vars:
     <<: [*gfmd_variables]
@@ -746,8 +787,7 @@
       # TODO config-gfsd -h -l
       shell: |
         set -e
-        # TODO remove {{ HOST_PREFIX }}
-        GFSD={{ HOST_PREFIX }}{{ item }}
+        GFSD={{ hostvars[item]['ansible_host'] }}
         EXIST=$(gfhost -l | awk '{print $5}' | grep ^${GFSD}\$) || true
         ARCH={{ hostvars[item]['arch'] }}
         if [ ! -n "$EXIST" ]; then
@@ -762,7 +802,7 @@
       loop: "{{ GFSD_LIST }}"
 
 - name: start gfsd
-  hosts: group_gfsd
+  hosts: gfsd
   gather_facts: no
   vars:
     <<: [*gfmd_variables]

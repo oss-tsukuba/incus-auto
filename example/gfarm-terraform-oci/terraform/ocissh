@@ -4,4 +4,4 @@ set -eu
 
 CONFIG=./tmp-ssh_config
 
-ssh -F $CONFIG "$@"
+ssh -o ControlMaster=auto -o ControlPersist=600s -F $CONFIG "$@"

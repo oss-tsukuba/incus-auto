@@ -1,9 +1,0 @@
----
-- name: Run ssh-keyscan on inventory hosts
-  hosts: all
-  gather_facts: false
-
-  tasks:
-    - name: Run ssh-keyscan
-      raw: bash /SCRIPT/ssh-keyscan-update.sh {{ hostvars[inventory_hostname]['known_hosts_file'] }} {{ hostvars[inventory_hostname]['ansible_host'] | default(inventory_hostname) }}
-      delegate_to: localhost

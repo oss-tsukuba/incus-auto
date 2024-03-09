@@ -8,10 +8,11 @@
 /terraform/terraform.tfvars
 /terraform/ociapi_public.pem
 /terraform/ociapi_private.pem
-/terraform/tmp-ansible-inventory.yaml
 /terraform/tmp-ssh_known_hosts
 /terraform/tmp-ssh_config
-/SRC/gfarm
-/SRC/gfarm-gridftp-dsi
-/SRC/lustre-release
-/SRC/nextcloud-gfarm
+/terraform/ansible/tmp-ansible-inventory.yaml
+/terraform/ansible/tmp-ssh_known_hosts
+/terraform/SRC/gfarm
+/terraform/SRC/gfarm-gridftp-dsi
+/terraform/SRC/lustre-release
+/terraform/SRC/nextcloud-gfarm

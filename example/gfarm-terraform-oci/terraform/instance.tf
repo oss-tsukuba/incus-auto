@@ -1,7 +1,13 @@
 # https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/core_instance
 
 resource "oci_core_instance" "instance_manage" {
-    display_name       = "manage"
+    display_name       = "gfmanage"
+    create_vnic_details {
+        #hostname_label = "gfmanage.${var.domain}"
+        #assign_private_dns_record = true
+        assign_public_ip = true
+        subnet_id = var.subnet_id
+    }
     availability_domain = var.availability_domain
     compartment_id = var.compartment_id
     shape = var.manage_shape
@@ -15,10 +21,6 @@ resource "oci_core_instance" "instance_manage" {
         boot_volume_size_in_gbs = null  # default
         boot_volume_vpus_per_gb = null  # default
     }
-    create_vnic_details {
-        assign_public_ip = true
-        subnet_id = var.subnet_id
-    }
     metadata = {
         ssh_authorized_keys = file(var.ssh_authorized_keys)
         user_data           = base64encode(data.template_file.cloud-init_manage.rendered)
@@ -29,6 +31,12 @@ resource "oci_core_instance" "instance_manage" {
 resource "oci_core_instance" "instance_gfmd" {
     count = var.gfmd_num
     display_name       = "${format("gfmd%02d", count.index + 1)}"
+    create_vnic_details {
+        #hostname_label     = "${format("gfmd%02d", count.index + 1)}.${var.domain}"
+        #assign_private_dns_record = true
+        assign_public_ip = true
+        subnet_id = var.subnet_id
+    }
     availability_domain = var.availability_domain
     compartment_id = var.compartment_id
     shape = var.gfmd_shape
@@ -42,10 +50,6 @@ resource "oci_core_instance" "instance_gfmd" {
         boot_volume_size_in_gbs = var.gfmd_disk
         boot_volume_vpus_per_gb = var.gfmd_disk_vpus
     }
-    create_vnic_details {
-        assign_public_ip = true
-        subnet_id = var.subnet_id
-    }
     metadata = {
         ssh_authorized_keys = file(var.ssh_authorized_keys)
         user_data           = base64encode(data.template_file.cloud-init_gfarm-ol9.rendered)
@@ -56,6 +60,12 @@ resource "oci_core_instance" "instance_gfmd" {
 resource "oci_core_instance" "instance_gfsd" {
     count = var.gfsd_num
     display_name       = "${format("gfsd%02d", count.index + 1)}"
+    create_vnic_details {
+        #hostname_label     = "${format("gfsd%02d", count.index + 1)}.${var.domain}"
+        #assign_private_dns_record = true
+        assign_public_ip = true
+        subnet_id = var.subnet_id
+    }
     availability_domain = var.availability_domain
     compartment_id = var.compartment_id
     shape = var.gfsd_shape
@@ -69,10 +79,6 @@ resource "oci_core_instance" "instance_gfsd" {
         boot_volume_size_in_gbs = var.gfsd_disk
         boot_volume_vpus_per_gb = var.gfsd_disk_vpus
     }
-    create_vnic_details {
-        assign_public_ip = true
-        subnet_id = var.subnet_id
-    }
     metadata = {
         ssh_authorized_keys = file(var.ssh_authorized_keys)
         user_data           = base64encode(data.template_file.cloud-init_gfarm-ol9.rendered)
@@ -83,6 +89,12 @@ resource "oci_core_instance" "instance_gfsd" {
 resource "oci_core_instance" "instance_gfclient" {
     count = var.gfclient_num
     display_name       = "${format("gfclient%02d", count.index + 1)}"
+    create_vnic_details {
+        #hostname_label     = "${format("gfclient%02d", count.index + 1)}.${var.domain}"
+        #assign_private_dns_record = true
+        assign_public_ip = true
+        subnet_id = var.subnet_id
+    }
     availability_domain = var.availability_domain
     compartment_id = var.compartment_id
     shape = var.gfclient_shape
@@ -95,10 +107,6 @@ resource "oci_core_instance" "instance_gfclient" {
         source_type = "image"
         boot_volume_size_in_gbs = var.gfclient_disk
         boot_volume_vpus_per_gb = var.gfclient_disk_vpus
-    }
-    create_vnic_details {
-        assign_public_ip = true
-        subnet_id = var.subnet_id
     }
     metadata = {
         ssh_authorized_keys = file(var.ssh_authorized_keys)
@@ -134,6 +142,7 @@ resource "oci_dns_zone" "gfarm_zone" {
 #     rdata = oci_core_instance.instance_gfsd[count.index].private_ip
 # }
 
+###### concat version ######################
 # resource "terraform_data" "all_instance" {
 #     depends_on = [
 #       oci_core_instance.instance_manage,
@@ -165,6 +174,7 @@ resource "oci_dns_zone" "gfarm_zone" {
 #     view_id = var.view_id
 # }
 
+###### normal version ######################
 resource "oci_dns_rrset" "manage_dns_record" {
     domain = "${oci_core_instance.instance_manage.display_name}.${var.domain}"
     rtype = "A"
