@@ -663,6 +663,7 @@
       blockinfile:
         path: "{{ GFARM2_CONF }}"
         block: |
+          client_digest_check enable
           metadb_server_list {{ METADB_LIST }}
           auth enable sharedsecret *
           #auth enable gsi_auth *
