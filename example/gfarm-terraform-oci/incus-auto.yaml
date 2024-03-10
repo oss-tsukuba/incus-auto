@@ -1,8 +1,7 @@
 config:
   project: gfarm-oci
   idmap: true
-  #user: admin  # NOTE: default
-  #uid: 1000  # NOTE: default
+  user: gfarmsys  # NOTE: default=admin
   ssh_authorized_keys: terraform/id_ecdsa.pub
   network:
     gfarm-oci: # fullname
@@ -39,5 +38,5 @@ host:
     volume:
       - ./terraform:/TF
     setup:
-      - sudo ln -sf /TF /home/admin/terraform-oci
+      - sudo ln -sf /TF /home/gfarmsys/terraform-oci
       - bash -x /TF/install-terraform.sh

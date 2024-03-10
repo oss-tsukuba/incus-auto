@@ -13,6 +13,7 @@
 At host OS:
 
 ```
+make git-clone
 make ssh-keygen
 make incus-init
 make incus-create
@@ -24,7 +25,7 @@ make shell
 At tf container in Incus and OCI Web Interface:
 
 ```
-### Prompt: admin@tf:~$
+### Prompt: gfarmsys@tf:~$
 cd ~/terraform-oci
 make ociapi-keygen
 cat ociapi_public.pem
@@ -35,6 +36,7 @@ cat ociapi_public.pem
   - Paste a public key
 - Create VCN and Create Subnet (if you need)
   - <https://cloud.oracle.com/networking/vcns>
+  - Subnet example: 10.0.1.0/24
 - Update Ingress Rules (in Security Lists)
   - TCP Source=10.0.0.0/8 (for each OCI instances)
   - UCP Source=10.0.0.0/8 (for each OCI instances)
@@ -73,13 +75,19 @@ make ansible-gfarm-install
 make ansible-gfarm-setup
 ```
 
-### Gfarm client on OCI
+### SSH to OCI
 
-from tf container
+At tf container:
 
-```
-./ocissh gfclient01
-```
+- ./ocissh gfmanage
+  - management host (Ansible, CA)
+- ./ocissh gfclient01
+- ./ocissh gfmd1
+- ./ocissh gfsd01
+
+### Access Gfarm from client
+
+#### At gfclient01 on OCI (Oracle Linux)
 
 ```
 [gfarmsys@gfclient01 ~]$ gfmdhost -l
@@ -88,15 +96,35 @@ from tf container
 + slave  async c siteB        gfmd3.example.org 601
 
 [gfarmsys@gfclient01 ~]$ gfhost -lv
-0.01/0.18/0.39 s aarch64 1 gfsd01.example.org 600 0(10.0.1.120)
-0.01/0.30/0.57 s aarch64 1 gfsd02.example.org 600 0(10.0.1.146)
-0.01/0.29/0.59 s aarch64 1 gfsd03.example.org 600 0(10.0.1.202)
-0.03/0.36/0.63 s aarch64 1 gfsd04.example.org 600 0(10.0.1.43)
+0.01/0.18/0.39 T aarch64 1 gfsd01.example.org 600 0(10.0.1.120)
+0.01/0.30/0.57 T aarch64 1 gfsd02.example.org 600 0(10.0.1.146)
+0.01/0.29/0.59 T aarch64 1 gfsd03.example.org 600 0(10.0.1.202)
+0.03/0.36/0.63 T aarch64 1 gfsd04.example.org 600 0(10.0.1.43)
+```
+
+#### At gfmanage on OCI (Ubuntu)
+
+```
+gfarmsys@gfmanage:~/terraform-oci/ansible$ make gfarm-config-init
+gfarmsys@gfmanage:~/terraform-oci/ansible$ gfhost -lv
+```
+
+#### At tf container (access Gfarm via Internet) (Ubuntu)
+
+```
+make gfarm-install
+make gfarm-config-fetch
+make update-etchosts-for-gfarm
+```
+
+```
+gfarmsys@tf:~/terraform-oci$ gfhost -lv
 ```
 
 ## Update source code
 
 - At host OS
+  - make git-pull
   - Edit `terraform/ansible/SRC/gfarm/*` files
 - At tf container in Incus
   - `make send-files`
@@ -129,8 +157,6 @@ from tf container
 
 - make backup
   - ../gfarm-terraform-oci.tar.gz
-- make TEST-ALL
-- make ansible-gfarm-update-user
 - Add hosts
-- Add user
+- Add users
 - Change authentication type

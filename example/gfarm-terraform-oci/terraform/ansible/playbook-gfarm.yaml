@@ -505,9 +505,9 @@
 
 
 ######################################################################
-- name: Setup TLS environment for server
-  hosts: gfmd gfsd
-  gather_facts: no
+- name: Setup TLS environment for all hosts
+  hosts: all
+  gather_facts: yes
   vars:
     <<: [*common_variables]
   tags: tls
@@ -521,8 +521,7 @@
       loop:
         - certs
         - private
-
-    - name: Symlink for certificates and keys
+    - name: Symlink for GSI CA to use TLS for Gfarm
       become: yes
       become_user: root
       file:
@@ -531,22 +530,11 @@
         state: link
       loop:  # [src, dest]
         - ["certificates", "certs/gfarm"]
-        - ["hostcert.pem", "private/gfmd.key"]
-        - ["gfsd/gfsdcert.pem", "certs/gfsd.crt"]
-        - ["gfsd/gfsdkey.pem", "certs/gfsd.key"]
-
-- name: Setup TLS environment for all
-  hosts: gfmd gfsd gfclient
-  gather_facts: yes  # for ansible_os_family
-  vars:
-    <<: [*common_variables]
-  tags: tls
-  tasks:
     - name: Copy cacert.pem to hosts
       copy:
         src: "{{ SYS_HOME }}/cacert.pem"
         dest: "{{ SYS_HOME }}/cacert.pem"
-    - name: GSI CA to TLS
+    - name: copy CA for TLS
       become: yes
       become_user: root
       block:
@@ -567,6 +555,25 @@
           when: ansible_os_family == "RHEL"
           # args:
           #   executable: /bin/bash
+
+- name: Setup TLS environment for servers
+  hosts: gfmd gfsd
+  gather_facts: no
+  vars:
+    <<: [*common_variables]
+  tags: tls
+  tasks:
+    - name: Symlink for certificates and keys
+      become: yes
+      become_user: root
+      file:
+        src: "{{ GSDIR }}/{{ item.0 }}"
+        dest: "{{ TLSDIR }}/{{ item.1 }}"
+        state: link
+      loop:  # [src, dest]
+        - ["hostcert.pem", "private/gfmd.key"]
+        - ["gfsd/gfsdcert.pem", "certs/gfsd.crt"]
+        - ["gfsd/gfsdkey.pem", "certs/gfsd.key"]
 
 ######################################################################
 - name: DN of gfarmsys user
@@ -590,7 +597,7 @@
     <<: [*common_variables]
     DN: "{{ hostvars['gfclient01']['proxyinfo']['stdout_lines'][0] }}"
     # TODO -h hostname ?
-    CONFIG_OPTION: "-A {{ SYS_USER }} -r -X -d sha1 -a gsi -D {{ DN }} -h {{ ansible_host }}"
+    CONFIG_OPTION: "-A {{ SYS_USER }} -r -X -d sha1 -a tls_client_certificate -D {{ DN }} -h {{ ansible_host }}"
     GFMD_CONF: /usr/local/etc/gfmd.conf
     GFARM2_CONF: /usr/local/etc/gfarm2.conf
     GFDUMP_FILE: "{{ SETUP_TMP }}/gfdump_file"
@@ -623,7 +630,8 @@
         block: |
           auth enable sharedsecret *
           auth enable gsi_auth *
-          auth enable tls_client_certificate *
+          auth enable gsi *
+          #auth enable tls_client_certificate *
           auth enable tls_sharedsecret *
           auth enable sasl *
           auth enable sasl_auth *
@@ -666,13 +674,15 @@
           client_digest_check enable
           metadb_server_list {{ METADB_LIST }}
           auth enable sharedsecret *
-          #auth enable gsi_auth *
-          #auth enable tls_client_certificate *
-          #auth enable tls_sharedsecret *
-          #auth enable sasl *
-          #auth enable sasl_auth *
-          #auth enable kerberos *
-          #auth enable kerberos_auth *
+          auth enable gsi_auth *
+          auth enable gsi *
+          auth enable tls_client_certificate *
+          auth enable tls_sharedsecret *
+          auth enable sasl *
+          auth enable sasl_auth *
+          auth enable kerberos *
+          auth enable kerberos_auth *
+          auth_trial_order tls_client_certificate sharedsecret
           #auth_trial_order sharedsecret gsi_auth
 
     - name: backup gfarm2.conf
@@ -738,7 +748,7 @@
 
 - name: Synchronize gfarm2.conf
   hosts: gfmd gfsd gfclient
-  gather_facts: yes
+  gather_facts: no
   vars:
     <<: [*gfmd_variables]
   tags: config

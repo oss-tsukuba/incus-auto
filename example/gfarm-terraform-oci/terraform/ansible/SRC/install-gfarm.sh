@@ -5,6 +5,8 @@ set -eu
 
 source /etc/os-release
 
+BASE_SRCDIR=$(realpath $(dirname $0))
+
 MAKE_NUM_JOBS=4
 RETRY_CMD_NUM=5
 OPENSSL_PACKAGE_NAME=
@@ -259,7 +261,7 @@ if $UPDATE_PACKAGE; then
 fi
 
 ###################################################################
-GFARM_SRCDIR=/SRC/gfarm
+GFARM_SRCDIR=${BASE_SRCDIR}/gfarm
 GFARM_WORKDIR=${HOME}/gfarm
 CACHE_DIR=/CACHE/${ID}/gfarm  # ID from /etc/os-release
 
