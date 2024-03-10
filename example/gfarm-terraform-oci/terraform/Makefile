@@ -20,6 +20,7 @@ print-ansible-inventory:
 	@bash ./print-ansible-inventory.sh
 
 update-ssh_known_hosts:
+	@bash ./ansible/confirm.sh
 	bash ./print-ssh-keyscan.sh > ./tmp-ssh_known_hosts
 update-ssh_config:
 	bash ./print-sshconfig.sh > ./tmp-ssh_config

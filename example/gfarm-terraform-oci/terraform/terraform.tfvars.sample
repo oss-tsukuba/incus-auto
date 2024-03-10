@@ -8,7 +8,6 @@ fingerprint = "72:ed:fc:9a:cb:b1:5a:54:36:d7:e9:6b:53:81:58:a2"
 region = "ap-tokyo-1"
 
 # Required for instance.tf
-availability_domain = "pIoR:AP-TOKYO-1-AD-1"
 compartment_id = "ocid1.tenancy.oc1..aaaaaaaa"
 vcn_id = "ocid1.vcn.oc1.ap-tokyo-1.amaaaaaa"
 subnet_id = "ocid1.subnet.oc1.ap-tokyo-1.aaaaaaaa"

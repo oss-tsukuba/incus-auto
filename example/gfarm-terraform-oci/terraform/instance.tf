@@ -1,5 +1,13 @@
-# https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/core_instance
+# https://registry.terraform.io/providers/oracle/oci/latest/docs/data-sources/identity_availability_domains
+data "oci_identity_availability_domains" "ads" {
+    compartment_id = var.compartment_id
+}
 
+locals {
+    ad = var.availability_domain != "" ? var.availability_domain : data.oci_identity_availability_domains.ads.availability_domains[0].name
+}
+
+# https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/core_instance
 resource "oci_core_instance" "instance_manage" {
     display_name       = "gfmanage"
     create_vnic_details {
@@ -8,7 +16,7 @@ resource "oci_core_instance" "instance_manage" {
         assign_public_ip = true
         subnet_id = var.subnet_id
     }
-    availability_domain = var.availability_domain
+    availability_domain = local.ad
     compartment_id = var.compartment_id
     shape = var.manage_shape
     shape_config {
@@ -30,14 +38,14 @@ resource "oci_core_instance" "instance_manage" {
 
 resource "oci_core_instance" "instance_gfmd" {
     count = var.gfmd_num
-    display_name       = "${format("gfmd%02d", count.index + 1)}"
+    display_name       = "${format("gfmd%01d", count.index + 1)}"
     create_vnic_details {
-        #hostname_label     = "${format("gfmd%02d", count.index + 1)}.${var.domain}"
+        #hostname_label     = "${format("gfmd%01d", count.index + 1)}.${var.domain}"
         #assign_private_dns_record = true
         assign_public_ip = true
         subnet_id = var.subnet_id
     }
-    availability_domain = var.availability_domain
+    availability_domain = local.ad
     compartment_id = var.compartment_id
     shape = var.gfmd_shape
     shape_config {
@@ -66,7 +74,7 @@ resource "oci_core_instance" "instance_gfsd" {
         assign_public_ip = true
         subnet_id = var.subnet_id
     }
-    availability_domain = var.availability_domain
+    availability_domain = local.ad
     compartment_id = var.compartment_id
     shape = var.gfsd_shape
     shape_config {
@@ -95,7 +103,7 @@ resource "oci_core_instance" "instance_gfclient" {
         assign_public_ip = true
         subnet_id = var.subnet_id
     }
-    availability_domain = var.availability_domain
+    availability_domain = local.ad
     compartment_id = var.compartment_id
     shape = var.gfclient_shape
     shape_config {
@@ -129,111 +137,6 @@ resource "oci_dns_zone" "gfarm_zone" {
     view_id = var.view_id
 }
 
-# Deprecated. Use oci_dns_rrset instead.
-# https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/dns_record
-# resource "oci_dns_record" "gfsd_dns_record" {
-#     count = length(oci_core_instance.instance_gfsd)
-#
-#     zone_name_or_id = oci_dns_zone.gfarm_zone.id
-#     domain = "${oci_core_instance.instance_gfsd[count.index].display_name}.${var.domain}"
-#     rtype = "A"
-#
-#     compartment_id = var.compartment_id
-#     rdata = oci_core_instance.instance_gfsd[count.index].private_ip
-# }
-
-###### concat version ######################
-# resource "terraform_data" "all_instance" {
-#     depends_on = [
-#       oci_core_instance.instance_manage,
-#       oci_core_instance.instance_gfmd,
-#       oci_core_instance.instance_gfsd,
-#       oci_core_instance.instance_gfclient,
-#     ]
-#     input = concat([oci_core_instance.instance_manage],
-#                    oci_core_instance.instance_gfmd,
-#                    oci_core_instance.instance_gfsd,
-#                    oci_core_instance.instance_gfclient)
-# }
-
-# https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/dns_rrset
-#
-# dirty plan...
-# resource "oci_dns_rrset" "gfarm_dns_record" {
-#     count = length(terraform_data.all_instance.output)
-#     domain = "${terraform_data.all_instance.output[count.index].display_name}.${var.domain}"
-#     rtype = "A"
-#     zone_name_or_id = oci_dns_zone.gfarm_zone.id
-#     compartment_id = var.compartment_id
-#     items {
-#         domain = "${terraform_data.all_instance.output[count.index].display_name}.${var.domain}"
-#         rdata = terraform_data.all_instance.output[count.index].private_ip
-#         rtype = "A"
-#         ttl = 3600
-#     }
-#     view_id = var.view_id
-# }
-
-###### normal version ######################
-resource "oci_dns_rrset" "manage_dns_record" {
-    domain = "${oci_core_instance.instance_manage.display_name}.${var.domain}"
-    rtype = "A"
-    zone_name_or_id = oci_dns_zone.gfarm_zone.id
-    compartment_id = var.compartment_id
-    items {
-        domain = "${oci_core_instance.instance_manage.display_name}.${var.domain}"
-        rdata = oci_core_instance.instance_manage.private_ip
-        rtype = "A"
-        ttl = 3600
-    }
-    view_id = var.view_id
-}
-
-resource "oci_dns_rrset" "gfmd_dns_record" {
-    count = length(oci_core_instance.instance_gfmd)
-    domain = "${oci_core_instance.instance_gfmd[count.index].display_name}.${var.domain}"
-    rtype = "A"
-    zone_name_or_id = oci_dns_zone.gfarm_zone.id
-    compartment_id = var.compartment_id
-    items {
-        domain = "${oci_core_instance.instance_gfmd[count.index].display_name}.${var.domain}"
-        rdata = oci_core_instance.instance_gfmd[count.index].private_ip
-        rtype = "A"
-        ttl = 3600
-    }
-    view_id = var.view_id
-}
-
-resource "oci_dns_rrset" "gfsd_dns_record" {
-    count = length(oci_core_instance.instance_gfsd)
-    domain = "${oci_core_instance.instance_gfsd[count.index].display_name}.${var.domain}"
-    rtype = "A"
-    zone_name_or_id = oci_dns_zone.gfarm_zone.id
-    compartment_id = var.compartment_id
-    items {
-        domain = "${oci_core_instance.instance_gfsd[count.index].display_name}.${var.domain}"
-        rdata = oci_core_instance.instance_gfsd[count.index].private_ip
-        rtype = "A"
-        ttl = 3600
-    }
-    view_id = var.view_id
-}
-
-resource "oci_dns_rrset" "gfclient_dns_record" {
-    count = length(oci_core_instance.instance_gfclient)
-    domain = "${oci_core_instance.instance_gfclient[count.index].display_name}.${var.domain}"
-    rtype = "A"
-    zone_name_or_id = oci_dns_zone.gfarm_zone.id
-    compartment_id = var.compartment_id
-    items {
-        domain = "${oci_core_instance.instance_gfclient[count.index].display_name}.${var.domain}"
-        rdata = oci_core_instance.instance_gfclient[count.index].private_ip
-        rtype = "A"
-        ttl = 3600
-    }
-    view_id = var.view_id
-}
-
 # https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/core_dhcp_options
 resource "oci_core_dhcp_options" "gfarm_dhcp_options" {
     compartment_id = var.compartment_id
@@ -247,4 +150,28 @@ resource "oci_core_dhcp_options" "gfarm_dhcp_options" {
     }
     vcn_id = var.vcn_id
     display_name = "gfarm_dhcp"
+}
+
+locals {
+    all_instances = concat(
+                    [oci_core_instance.instance_manage],
+                    oci_core_instance.instance_gfmd,
+                    oci_core_instance.instance_gfsd,
+                    oci_core_instance.instance_gfclient)
+}
+
+# https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/dns_rrset
+resource "oci_dns_rrset" "gfarm_dns_record" {
+    count = length(local.all_instances)
+    domain = "${local.all_instances[count.index].display_name}.${var.domain}"
+    rtype = "A"
+    zone_name_or_id = oci_dns_zone.gfarm_zone.id
+    compartment_id = var.compartment_id
+    items {
+        domain = "${local.all_instances[count.index].display_name}.${var.domain}"
+        rdata = local.all_instances[count.index].private_ip
+        rtype = "A"
+        ttl = 3600
+    }
+    view_id = var.view_id
 }

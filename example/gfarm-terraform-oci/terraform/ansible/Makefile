@@ -1,6 +1,10 @@
 INV = tmp-ansible-inventory.yaml
 
+all:
+	@true
+
 ansible-init:
+	@bash ./confirm.sh
 	bash ./ansible-init.sh
 ansible-ping:
 	bash ./ansible-ping.sh

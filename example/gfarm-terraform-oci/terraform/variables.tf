@@ -63,7 +63,7 @@ variable "gfsd_num" {
 variable "gfclient_num" {
   description = "Number of gfarm client"
   type        = number
-  default     = 2
+  default     = 1
 }
 
 # https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/core_instance#ocpus
@@ -223,10 +223,11 @@ variable "gfclient_source_id" {
 # Availability domain from https://cloud.oracle.com/compute/instances/create
 # and Cancel (not create instance on Web UI)
 # ex. pIoR:AP-TOKYO-1-AD-1
+# overridable
 variable "availability_domain" {
   description = "Availability domain from https://cloud.oracle.com/compute/instances/create"
   type        = string
-  # required
+  default     = ""
 }
 
 # OCID from https://cloud.oracle.com/tenancy

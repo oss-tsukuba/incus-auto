@@ -30,6 +30,7 @@ user() {
 
 cat <<EOF
 UserKnownHostsFile ./tmp-ssh_known_hosts
+ServerAliveInterval 60
 
 EOF
 

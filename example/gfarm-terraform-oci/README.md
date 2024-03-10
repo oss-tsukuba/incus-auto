@@ -82,9 +82,9 @@ from tf container
 
 ```
 [gfarmsys@gfclient01 ~]$ gfmdhost -l
-+ master -     m siteA        gfmd01.example.org 601
-+ slave  async c siteB        gfmd02.example.org 601
-+ slave  async c siteB        gfmd03.example.org 601
++ master -     m siteA        gfmd1.example.org 601
++ slave  async c siteB        gfmd2.example.org 601
++ slave  async c siteB        gfmd3.example.org 601
 
 [gfarmsys@gfclient01 ~]$ gfhost -lv
 0.01/0.18/0.39 s aarch64 1 gfsd01.example.org 600 0(10.0.1.120)
