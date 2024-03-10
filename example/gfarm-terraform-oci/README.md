@@ -69,6 +69,7 @@ At gfmanage instance on OCI:
 cd ~/terraform-oci/ansible/
 make ansible-init
 make ansible-ping
+make ansible-gfarm-install
 make ansible-gfarm-setup
 ```
 
@@ -101,14 +102,14 @@ from tf container
   - `make send-files`
   - or `make SYNC-files` to synchronize deleted files
 - At gfmanage on OCI
-  - `make ansible-gfarm-setup-all`
-  - TODO `make ansible-gfarm-update-source`
+  - `make ansible-gfarm-install`
+  - `make ansible-gfarm-restart`
 
 ## Clear all Gfarm data
 
 - At gfmanage on OCI
   - `make ansible-gfarm-DESTROY`
-  - `make ansible-gfarm-setup-all`
+  - `make ansible-gfarm-setup`
 
 ## Destroy
 
@@ -129,7 +130,6 @@ from tf container
 - make backup
   - ../gfarm-terraform-oci.tar.gz
 - make TEST-ALL
-- make ansible-gfarm-update-source
 - make ansible-gfarm-update-user
 - Add hosts
 - Add user

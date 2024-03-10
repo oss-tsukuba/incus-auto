@@ -74,12 +74,10 @@
 ######################################################################
 - name: Gfarm environemnt
   hosts: all
-  tags:
-    - gfarm
+  tags: install
   gather_facts: false
   vars:
     <<: [*common_variables]
-  # TODO rsync and distclean?
   tasks:
     - name: Upload source code
       become: yes
@@ -87,7 +85,7 @@
       ansible.posix.synchronize:
         src: "./SRC/"
         dest: "/SRC/"
-
+      when: gfarm_install | bool
     - name: Install gfarm
       command: bash /SRC/install-gfarm.sh --no-distclean
       when: gfarm_install | bool
@@ -99,6 +97,7 @@
         state: present
         shell: /bin/bash
       loop: "{{ USERS }}"
+      when: gfarm_install | bool
 
 ######################################################################
 - name: Setup SASL for servers
@@ -814,5 +813,5 @@
       become_user: root
       ansible.builtin.systemd:
         name: gfsd
-        state: restarted
+        state: started
         enabled: yes

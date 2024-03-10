@@ -1,4 +1,4 @@
 #!/bin/bash
 
 source ./ansible-common.sh
-ansible-playbook -i $INV ./playbook-gfarm.yaml -vv "$@"
+ansible-playbook -e "gfarm_install=no" -i $INV ./playbook-gfarm.yaml "$@"

@@ -1,0 +1,21 @@
+- name: Restart gfsd
+  hosts: gfsd
+  gather_facts: no
+  tasks:
+    - name: Restart gfsd
+      become: yes
+      ansible.builtin.systemd:
+        name: gfsd
+        state: restarted
+        enabled: yes
+
+- name: Restart gfmd
+  hosts: gfmd
+  gather_facts: no
+  tasks:
+    - name: Restart gfmd
+      become: yes
+      ansible.builtin.systemd:
+        name: gfmd
+        state: restarted
+        enabled: yes
