@@ -71,6 +71,7 @@ At gfmanage instance on OCI:
 cd ~/terraform-oci/ansible/
 make ansible-init
 make ansible-ping
+make ansible-reboot
 make ansible-gfarm-install
 make ansible-gfarm-setup
 ```
@@ -132,6 +133,7 @@ gfarmsys@tf:~/terraform-oci$ gfhost -lv
 - At gfmanage on OCI
   - `make ansible-gfarm-install`
   - `make ansible-gfarm-restart`
+  - `make gfarm-regress`
 
 ## Clear all Gfarm data
 

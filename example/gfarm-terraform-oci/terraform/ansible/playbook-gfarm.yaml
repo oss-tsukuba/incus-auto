@@ -30,21 +30,6 @@
       community.general.timezone:
         name: "{{ TIME_ZONE }}"
       become: true
-    # - name: Install rsync
-    #   become: yes
-    #   become_user: root
-    #   package:
-    #     name: rsync
-    #     state: present
-    - name: mkdir
-      become: yes
-      become_user: root
-      file:
-        path: "{{ SETUP_TMP }}"
-        state: directory
-        mode: "0700"
-        owner: "{{ SYS_USER }}"
-        group: "{{ SYS_USER }}"
     - name: Add secure_path to sudoers
       become: yes
       become_user: root
@@ -70,6 +55,30 @@
   #   - name: Reboot if SELinux is disabled
   #     reboot:
   #     when: ansible_selinux.status == "disabled"
+
+- name: Base for gfmanage
+  hosts: manage
+  tags:
+    - gsi_ca gfarm
+  gather_facts: false
+  vars:
+    <<: [*common_variables]
+  tasks:
+    # - name: Install rsync
+    #   become: yes
+    #   become_user: root
+    #   package:
+    #     name: rsync
+    #     state: present
+    - name: mkdir SETUP_TMP
+      become: yes
+      become_user: root
+      file:
+        path: "{{ SETUP_TMP }}"
+        state: directory
+        mode: "0700"
+        owner: "{{ SYS_USER }}"
+        group: "{{ SYS_USER }}"
 
 ######################################################################
 - name: Gfarm environemnt
@@ -353,7 +362,7 @@
         dest: "{{ SIGN_WORKDIR }}/{{ ansible_host }}/"
         flat: yes
 
-- name: Sign and copy certificates for servers
+- name: Sign certificate requests for servers
   hosts: gfmd gfsd
   gather_facts: no
   vars:
@@ -361,7 +370,7 @@
   tags: gsi_ca
   serial: 1  # batch size 1 to sign for X.509 serial number
   tasks:
-    - name: Sign requests for servers
+    - name: Sign
       become: yes
       become_user: root
       shell: |
@@ -372,6 +381,13 @@
         - "{{ SERVICE }}cert"
       delegate_to: localhost
 
+- name: Copy certificates for servers
+  hosts: gfmd gfsd
+  gather_facts: no
+  vars:
+    <<: [*common_variables]
+  tags: gsi_ca
+  tasks:
     - name: Copy host certificate
       become: yes
       become_user: root
@@ -628,10 +644,13 @@
       blockinfile:
         path: "{{ GFMD_CONF }}"
         block: |
+          metadb_server_heartbeat_interval 10
+          write_verify enable
+          write_verify_interval 600
           auth enable sharedsecret *
           auth enable gsi_auth *
           auth enable gsi *
-          #auth enable tls_client_certificate *
+          auth enable tls_client_certificate *
           auth enable tls_sharedsecret *
           auth enable sasl *
           auth enable sasl_auth *
@@ -699,8 +718,8 @@
         set -e
         GFMD={{ item }}
         EXIST=$(gfmdhost -l | awk '{print $6}' | grep ^${GFMD}\$) || true
-        case "{{ ansible_host }}" in
-          gfmd02.*)
+        case "$GFMD" in
+          gfmd2.*)
             SITE=siteA
             ;;
           *)
