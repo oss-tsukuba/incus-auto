@@ -18,7 +18,7 @@ resource "oci_core_instance" "instance_manage" {
     }
     availability_domain = local.ad
     compartment_id = var.compartment_id
-    shape = var.manage_shape
+    shape = var.manage_shape != "" ? var.manage_shape : var.shape
     shape_config {
         ocpus                 = 1
         memory_in_gbs         = 2
@@ -47,7 +47,7 @@ resource "oci_core_instance" "instance_gfmd" {
     }
     availability_domain = local.ad
     compartment_id = var.compartment_id
-    shape = var.gfmd_shape
+    shape = var.gfmd_shape != "" ? var.gfmd_shape : var.shape
     shape_config {
         ocpus                 = var.gfmd_ocpus
         memory_in_gbs         = var.gfmd_mem
@@ -60,7 +60,7 @@ resource "oci_core_instance" "instance_gfmd" {
     }
     metadata = {
         ssh_authorized_keys = file(var.ssh_authorized_keys)
-        user_data           = base64encode(data.template_file.cloud-init_gfarm-ol9.rendered)
+        user_data           = base64encode(data.template_file.cloud-init_gfarm-oraclelinux.rendered)
     }
     preserve_boot_volume = false
 }
@@ -76,7 +76,7 @@ resource "oci_core_instance" "instance_gfsd" {
     }
     availability_domain = local.ad
     compartment_id = var.compartment_id
-    shape = var.gfsd_shape
+    shape = var.gfsd_shape != "" ? var.gfsd_shape : var.shape
     shape_config {
         ocpus                 = var.gfsd_ocpus
         memory_in_gbs         = var.gfsd_mem
@@ -89,7 +89,7 @@ resource "oci_core_instance" "instance_gfsd" {
     }
     metadata = {
         ssh_authorized_keys = file(var.ssh_authorized_keys)
-        user_data           = base64encode(data.template_file.cloud-init_gfarm-ol9.rendered)
+        user_data           = base64encode(data.template_file.cloud-init_gfarm-oraclelinux.rendered)
     }
     preserve_boot_volume = false
 }
@@ -105,7 +105,7 @@ resource "oci_core_instance" "instance_gfclient" {
     }
     availability_domain = local.ad
     compartment_id = var.compartment_id
-    shape = var.gfclient_shape
+    shape = var.gfclient_shape != "" ? var.gfclient_shape : var.shape
     shape_config {
         ocpus                 = var.gfclient_ocpus
         memory_in_gbs         = var.gfclient_mem
@@ -118,7 +118,7 @@ resource "oci_core_instance" "instance_gfclient" {
     }
     metadata = {
         ssh_authorized_keys = file(var.ssh_authorized_keys)
-        user_data           = base64encode(data.template_file.cloud-init_gfarm-ol9.rendered)
+        user_data           = base64encode(data.template_file.cloud-init_gfarm-oraclelinux.rendered)
     }
     preserve_boot_volume = false
 }

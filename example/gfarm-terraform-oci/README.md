@@ -69,8 +69,9 @@ At gfmanage instance on OCI:
 ./ocissh gfmanage
 ### Prompt: gfarmsys@gfmanage:~$
 cd ~/terraform-oci/ansible/
+sudo cloud-init status --wait
 make ansible-init
-make ansible-ping
+make ansible-disable-selinux
 make ansible-reboot
 make ansible-gfarm-install
 make ansible-gfarm-setup
@@ -93,7 +94,7 @@ At tf container:
 ```
 [gfarmsys@gfclient01 ~]$ gfmdhost -l
 + master -     m siteA        gfmd1.example.org 601
-+ slave  async c siteB        gfmd2.example.org 601
++ slave  async c siteA        gfmd2.example.org 601
 + slave  async c siteB        gfmd3.example.org 601
 
 [gfarmsys@gfclient01 ~]$ gfhost -lv
@@ -139,12 +140,15 @@ gfarmsys@tf:~/terraform-oci$ gfhost -lv
 
 - At gfmanage on OCI
   - `make ansible-gfarm-DESTROY`
+    - unconfig-gfsd and unconfig-gfarm are called
   - `make ansible-gfarm-setup`
 
-## Destroy
+## Destroy all
 
 - At tf container in Incus
   - `make terraform-destroy`
+    - Input `yes` to remove private DNS
+    - (again) Input `yes` to remove all Instances
 - At gfmanage on OCI
   - `make CLEAN`
   - Reusable files (not deleted)

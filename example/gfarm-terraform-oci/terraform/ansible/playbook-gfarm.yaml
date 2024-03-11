@@ -39,25 +39,8 @@
         line: 'Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin'
         state: present
 
-- name: Base for Gfarm hosts
-  hosts: gfmd gfsd gfclient
-  tags:
-    - gsi_ca gfarm
-  gather_facts: false
-  tasks:
-    - name: Disable SELinux
-      become: yes
-      ansible.posix.selinux:
-        state: disabled
-      #notify: Reboot if SELinux is disabled
-      tags: selinux
-  # handlers:
-  #   - name: Reboot if SELinux is disabled
-  #     reboot:
-  #     when: ansible_selinux.status == "disabled"
-
-- name: Base for gfmanage
-  hosts: manage
+- name: SETUP_TMP directory
+  hosts: manage gfmd
   tags:
     - gsi_ca gfarm
   gather_facts: false

@@ -3,11 +3,16 @@ help:
 
 ansible-init:
 	@bash ./confirm.sh
+	sudo cloud-init status --wait
 	bash ./ansible-init.sh
+	bash ./ansible-cloud-init-wait.sh
 ansible-ping:
 	bash ./ansible-ping.sh
+ansible-disable-selinux:
+	bash ./ansible-disable-selinux.sh
 ansible-reboot:
 	@bash ./confirm.sh
+	bash ./ansible-cloud-init-wait.sh
 	bash ./ansible-reboot.sh
 ansible-gfarm-install:
 	bash ./ansible-gfarm-install.sh

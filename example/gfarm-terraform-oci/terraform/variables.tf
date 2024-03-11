@@ -95,13 +95,13 @@ variable "gfmd_mem" {
 variable "gfsd_mem" {
   description = "memory_in_gbs for gfsd"
   type        = number
-  default     = 2
+  default     = 3
 }
 
 variable "gfclient_mem" {
   description = "memory_in_gbs for gfclient"
   type        = number
-  default     = 2
+  default     = 3
 }
 
 # https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/core_instance#boot_volume_size_in_gbs
@@ -142,26 +142,42 @@ variable "gfclient_disk_vpus" {
   default     = 10
 }
 
-# https://docs.oracle.com/ja-jp/iaas/Content/Compute/References/computeshapes.htm#flexible
+variable "oracle_linux_version" {
+    description = "Oracle Linux Version (OL8, OL9)"
+    type        = string
+    default     = "OL9"
+}
+
+# https://docs.oracle.com/ja-jp/iaas/Content/Compute/References/computeshapes.htm
+variable "shape" {
+  description = "from https://docs.oracle.com/ja-jp/iaas/Content/Compute/References/computeshapes.htm#flexible"
+  type        = string
+  # ARM processor
+  default     = "VM.Standard.A1.Flex"
+}
+
+# individually overridable
 variable "gfmd_shape" {
   description = "from https://docs.oracle.com/ja-jp/iaas/Content/Compute/References/computeshapes.htm#flexible"
   type        = string
   # ARM processor
-  default     = "VM.Standard.A1.Flex"
+  default     = ""
 }
 
+# individually overridable
 variable "gfsd_shape" {
   description = "from https://docs.oracle.com/ja-jp/iaas/Content/Compute/References/computeshapes.htm#flexible"
   type        = string
   # ARM processor
-  default     = "VM.Standard.A1.Flex"
+  default     = ""
 }
 
+# individually overridable
 variable "gfclient_shape" {
   description = "from https://docs.oracle.com/ja-jp/iaas/Content/Compute/References/computeshapes.htm#flexible"
   type        = string
   # ARM processor
-  default     = "VM.Standard.A1.Flex"
+  default     = ""
 }
 
 variable "manage_shape" {
@@ -189,7 +205,7 @@ variable "source_id" {
   default     = "ocid1.image.oc1.ap-tokyo-1.aaaaaaaakoj4yfoziwsrfzxk7n5aq2qp3habdji67366mon22rkni6fxd3bq"
 }
 
-# overridable
+# individually overridable
 variable "manage_source_id" {
   description = "override source_id"
   type        = string
@@ -199,21 +215,21 @@ variable "manage_source_id" {
   default     = "ocid1.image.oc1.ap-tokyo-1.aaaaaaaavo7svqug5ulgyw4zq4mcfn2glflxxtaahuyoejf4purtgu2urk4q"
 }
 
-# overridable
+# individually overridable
 variable "gfmd_source_id" {
   description = "override source_id"
   type        = string
   default     = ""
 }
 
-# overridable
+# individually overridable
 variable "gfsd_source_id" {
   description = "override source_id"
   type        = string
   default     = ""
 }
 
-# overridable
+# individually overridable
 variable "gfclient_source_id" {
   description = "override source_id"
   type        = string

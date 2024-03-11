@@ -1,0 +1,10 @@
+---
+- name: Disable SELinux
+  hosts: gfmd gfsd gfclient
+  gather_facts: false
+  tasks:
+    - name: Disable SELinux
+      become: yes
+      ansible.posix.selinux:
+        state: disabled
+      tags: selinux

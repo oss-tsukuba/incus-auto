@@ -12,6 +12,7 @@ terraform-plan:
 terraform-apply:
 	terraform apply
 terraform-destroy:
+	terraform destroy -target oci_dns_rrset.gfarm_dns_record
 	terraform destroy
 
 print-etchosts:
