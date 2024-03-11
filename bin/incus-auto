@@ -416,9 +416,9 @@ class IncusAuto(CUI):
             return max_dep
 
         def custom_key(name):
-            self.logger.debug(f'depend_name_sort: {name}: start')
+            #self.logger.debug(f'depend_name_sort: {name}: start')
             dep = depth(name, 0)
-            self.logger.debug(f'depend_name_sort: {name}: result={dep}')
+            #self.logger.debug(f'depend_name_sort: {name}: result={dep}')
             return dep
 
         return sorted(d.keys(), key=custom_key)
@@ -941,8 +941,6 @@ class IncusAuto(CUI):
 
         if self.tobool(info['vm']):
             args += ['--vm']
-        else:  # container
-            args += ['-c', 'security.nesting=true']
         self.incus(args)
 
     def mount_volume(self, fullname, info):
