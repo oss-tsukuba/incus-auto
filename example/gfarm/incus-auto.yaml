@@ -1,5 +1,6 @@
 config:
   #incus_command: incus  # NOTE: default
+  #TODO default_pool: mypool  # replace __DEFAULT__
   project: gfarm  # namespace
   idmap: true  # false|true(your host UID)/any host UID| to container user
   #user: admin  # NOTE: default

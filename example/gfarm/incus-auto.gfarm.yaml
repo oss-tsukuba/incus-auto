@@ -79,19 +79,19 @@ host:
     envvar:
       gfmd_cluster: siteB
 
-  gfsd1:
+  gfsd01:
     <<: [*x-gfarm]
     group: gfarm/group_gfsd
-  gfsd2:
+  gfsd02:
     <<: [*x-gfarm]
     group: gfarm/group_gfsd
-  gfsd3:
+  gfsd03:
     <<: [*x-gfarm]
     group: gfarm/group_gfsd
-  gfsd4:
+  gfsd04:
     <<: [*x-gfarm]
     group: gfarm/group_gfsd
-  gfclient1:
+  gfclient01:
     <<: [*x-gfarm]
     group: gfarm/group_gfclient
     setup:
@@ -99,12 +99,12 @@ host:
       ### available after `make setup`
       #- bash -x /SCRIPT/setup-gfperf.sh
 
-  keycloak:
-    <<: [*x-extra]
-  jwtserver:
-    <<: [*x-extra]
+  # keycloak:
+  #   <<: [*x-extra]
+  # jwtserver:
+  #   <<: [*x-extra]
 
-  manage:
+  gfmanage:
     group: control
     image: images:ubuntu/22.04
     #image: images:ubuntu/24.04

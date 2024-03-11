@@ -187,7 +187,7 @@
 
 ######################################################################
 - name: Build CA environment for GSI
-  hosts: manage
+  hosts: gfmanage
   gather_facts: no
   vars: *common_variables
   tags: gsi_ca
@@ -239,7 +239,7 @@
   gather_facts: no
   vars:
     <<: [*common_variables]
-    CA_HASH: "{{ hostvars['manage']['gsi_ca_hash'] }}"
+    CA_HASH: "{{ hostvars['gfmanage']['gsi_ca_hash'] }}"
   tags: gsi_ca
   tasks:
     - name: debug
@@ -358,12 +358,12 @@
         group: _gfarmfs
 
 - name: Create GSI clinet certificates
-  hosts: gfclient1
+  hosts: gfclient01
   tags: gsi_ca
   gather_facts: no
   vars:
     <<: [*common_variables]
-    CA_HASH: "{{ hostvars['manage']['gsi_ca_hash'] }}"
+    CA_HASH: "{{ hostvars['gfmanage']['gsi_ca_hash'] }}"
   tasks:
     - name: Request usercert
       become: yes
@@ -371,11 +371,13 @@
       shell: |
         set -e
         u={{ item }}
-        CERT=/home/$u/.globus/usercert.pem
+        DIR=/home/$u/.globus
+        CERT=${DIR}/usercert.pem
         [ -f $CERT ] && exit 0
-        REQ=/home/$u/.globus/usercert_request.pem
+        REQ=${DIR}/usercert_request.pem
         rm -f $REQ
-        sudo -u {{ item }} grid-cert-request -cn $u -nopw
+        [ -d $DIR ] && sudo chown -R $u $DIR
+        sudo -u $u grid-cert-request -cn $u -nopw
       loop: "{{ USERS }}"
 
     - name: fetch usercert requests
@@ -422,7 +424,7 @@
     #     - "{{ USERS }}"
     #     - [ "usercert.pem", "usercert_request.pem", "userkey.pem"]
 
-    - name: Fetch .globus to manage
+    - name: Fetch .globus to gfmanage
       become: yes
       become_user: root
       fetch:
@@ -526,7 +528,7 @@
 
 ######################################################################
 - name: DN of gfarmsys user
-  hosts: gfclient1 gfmd1
+  hosts: gfclient01 gfmd1
   gather_facts: no
   vars:
     <<: [*common_variables]
@@ -544,7 +546,7 @@
   gather_facts: no
   vars: &gfmd_variables
     <<: [*common_variables]
-    DN: "{{ hostvars['gfclient1']['proxyinfo']['stdout_lines'][0] }}"
+    DN: "{{ hostvars['gfclient01']['proxyinfo']['stdout_lines'][0] }}"
     # TODO -h hostname ?
     CONFIG_OPTION: "-A {{ SYS_USER }} -r -X -d sha1 -a gsi -D {{ DN }}"
     GFMD_CONF: /usr/local/etc/gfmd.conf

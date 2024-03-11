@@ -8,8 +8,8 @@ FSNAME = testfs
 MDTNAME = mdt.$(FSNAME)-MDT0000
 INV = CACHE/tmp-inventory.yaml  # SEE ALSO: SCRIPT/lib.sh
 
-manage:
-	$(IAGF) shell manage
+gfmanage:
+	$(IAGF) shell gfmanage
 gfclient:
 	$(IAGF) shell gfclient1
 lclient:
@@ -27,7 +27,7 @@ gen-inventory:
 	$(IAALL) ansible-inventory > $(INV)
 ansible-init:
 	make gen-inventory
-	$(IAALL) exec manage -- bash -x /SCRIPT/setup-ansible.sh
+	$(IAALL) exec gfmanage -- bash -x /SCRIPT/setup-ansible.sh
 
 init:
 	$(IAGF) init
@@ -43,12 +43,12 @@ update-etchosts-gfarm:
 setup-gfarm:
 	$(IAGF) wait -a
 	make ansible-init
-	$(IAGF) exec manage -- bash /SCRIPT/get-ready.sh gfarm
-	$(IAGF) exec manage -- bash /SCRIPT/setup-gfarm-by-ansible.sh gfarm
+	$(IAGF) exec gfmanage -- bash /SCRIPT/get-ready.sh gfarm
+	$(IAGF) exec gfmanage -- bash /SCRIPT/setup-gfarm-by-ansible.sh gfarm
 reinstall-gfarm:
-	$(IAGF) exec manage -- bash /SCRIPT/reinstall-gfarm-by-ansible.sh
+	$(IAGF) exec gfmanage -- bash /SCRIPT/reinstall-gfarm-by-ansible.sh
 #TODO reset-gfarm:
-# 	$(IAGF) exec manage -- bash /SCRIPT/reset-gfarm-by-ansible.sh
+# 	$(IAGF) exec gfmanage -- bash /SCRIPT/reset-gfarm-by-ansible.sh
 setup-gfperf:
 	$(IAGF) exec gfclient1 -- bash /SCRIPT/setup-gfperf.sh
 delete-gfarm:
@@ -81,8 +81,8 @@ setup-gfarm-all:
 	$(IAALL) wait -a
 	make update-etchosts-all
 	make ansible-init
-	$(IAGF) exec manage -- bash /SCRIPT/get-ready.sh all
-	$(IAGF) exec manage -- bash /SCRIPT/setup-gfarm-by-ansible.sh all
+	$(IAGF) exec gfmanage -- bash /SCRIPT/get-ready.sh all
+	$(IAGF) exec gfmanage -- bash /SCRIPT/setup-gfarm-by-ansible.sh all
 
 down:
 	$(IAALL) stop -a -f
