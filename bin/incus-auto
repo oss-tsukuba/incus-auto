@@ -338,6 +338,7 @@ class IncusAuto(CUI):
         config_defaults = {
             'config': {
                 'incus_command': 'incus',
+                'default_pool': 'default',
                 'idmap': False,
                 'user': 'admin',  # main guest user
                 'uid': 2000,
@@ -416,9 +417,9 @@ class IncusAuto(CUI):
             return max_dep
 
         def custom_key(name):
-            #self.logger.debug(f'depend_name_sort: {name}: start')
+            # self.logger.debug(f'depend_name_sort: {name}: start')
             dep = depth(name, 0)
-            #self.logger.debug(f'depend_name_sort: {name}: result={dep}')
+            # self.logger.debug(f'depend_name_sort: {name}: result={dep}')
             return dep
 
         return sorted(d.keys(), key=custom_key)
@@ -484,7 +485,7 @@ class IncusAuto(CUI):
                                         user_is_root=user_is_root,
                                         input=input, output=output,
                                         ignore_error=ignore_error)
-            except:
+            except Exception:
                 if i >= retry - 1:
                     raise
                 self.logger.debug('RETRY: incus exec')
@@ -590,16 +591,28 @@ class IncusAuto(CUI):
             return path
         return os.path.join(self.basedir, path)
 
+    def convert_default_pool(self, pool):
+        if pool == '__DEFAULT__':
+            return self.conf('/config/default_pool')
+        else:
+            return pool
+
     def convert_disk_source(self, devices):
+        # SEE ALSO: mount_volume()
         for device, params in devices.items():
             if params.get('type') == 'disk':
                 source = params.get('source', None)
                 fullpath = None
+                # to ignore "agent:config, etc."
                 if source is not None and os.path.exists(source):
                     fullpath = self.convert_fullpath(source)
                 if fullpath is not None:
                     self.logger.debug("source: fullpath=" + str(fullpath))
                     devices[device]['source'] = fullpath
+                pool = params.get('pool')
+                if pool is not None:
+                    # SEE ALSO: create_block_device()
+                    devices[device]['pool'] = self.convert_default_pool(pool)
         return devices
 
     def incus_each(self, cmd, args=[], build=False, ignore_error=False):
@@ -944,6 +957,7 @@ class IncusAuto(CUI):
         self.incus(args)
 
     def mount_volume(self, fullname, info):
+        # SEE ALSO: convert_disk_source()
         volume_list = info.get('volume', None)
         if volume_list is None:
             return
@@ -952,7 +966,7 @@ class IncusAuto(CUI):
         count = 0
         for volume_map in volume_list:
             device_name = f'volume_{count}'
-            v = volume_map.split(':')  # TODO support "SRC":"DST" ?
+            v = volume_map.split(':')
             src = self.convert_fullpath(v[0])
             dst = v[1]
             self.incus(['config', 'device', 'add', fullname,
@@ -1157,8 +1171,11 @@ class IncusAuto(CUI):
             return
         for bdname, params in bd.items():
             pool = params['pool']  # MUST
+            # SEE ALSO: convert_disk_source()
+            pool = self.convert_default_pool(pool)
             size = params['size']  # MUST
             if self.tobool(params.get('create', False)):  # default: False
+                # True : re-create
                 self.incus(f'storage volume delete {pool} {bdname}',
                            ignore_error=True)
                 self.incus(f'storage volume create {pool} {bdname} '

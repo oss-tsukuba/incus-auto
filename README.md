@@ -24,7 +24,7 @@ incus-auto is automating deployment system by Incus or LXD.
 - Install incus-auto
   - Example:
     - `install -m 755 bin/incus-auto /usr/local/bin/`
-- Prepare storage pool
+- Create storage pool when using other than "default" pool
   - <https://linuxcontainers.org/incus/docs/main/howto/storage_pools/>
   - Example:
     - `mkdir /mnt/disk2/incus-mypool`
@@ -32,8 +32,8 @@ incus-auto is automating deployment system by Incus or LXD.
 - Prepare remote server if needed
 - Create `incus-auto.yaml`
   - Define config (profile, network, disk, ...)
-  - (Optional) Define buildimage
-  - Define host
+  - (Optional) Define `buildimage`
+  - Define `host`
   - Example: `./example/gfarm/incus-auto.*yaml`
     - Detail: `./example/gfarm/README-gfarm.md`
 - (Recommendation) Install apt-cacher-ng and set http_proxy to accelerate
