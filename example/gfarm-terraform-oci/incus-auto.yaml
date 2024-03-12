@@ -1,5 +1,5 @@
 config:
-  project: gfarm-oci
+  project: gfarmOCI
   idmap: true
   user: gfarmsys  # NOTE: default=admin
   ssh_authorized_keys: terraform/id_ecdsa.pub
@@ -20,7 +20,7 @@ config:
         root:
           type: disk
           path: /
-          pool: mypool
+          pool: __DEFAULT__
           size: 5GB
         eth0:
           network: gfarm-oci
