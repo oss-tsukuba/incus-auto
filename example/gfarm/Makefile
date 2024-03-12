@@ -11,9 +11,17 @@ INV = CACHE/tmp-inventory.yaml  # SEE ALSO: SCRIPT/lib.sh
 gfmanage:
 	$(IAGF) shell gfmanage
 gfclient:
-	$(IAGF) shell gfclient1
+	$(IAGF) shell gfclient01
 lclient:
 	$(IALS) shell lclient1
+
+flake8:
+	flake8 $(IA)
+
+git-clone:
+	./git-clone-pull.sh
+git-pull:
+	./git-clone-pull.sh pull
 
 ps:
 	@$(IAALL) ps
@@ -50,7 +58,7 @@ reinstall-gfarm:
 #TODO reset-gfarm:
 # 	$(IAGF) exec gfmanage -- bash /SCRIPT/reset-gfarm-by-ansible.sh
 setup-gfperf:
-	$(IAGF) exec gfclient1 -- bash /SCRIPT/setup-gfperf.sh
+	$(IAGF) exec gfclient01 -- bash /SCRIPT/setup-gfperf.sh
 delete-gfarm:
 	$(IAGF) stop -a -f
 	$(IAGF) delete -a

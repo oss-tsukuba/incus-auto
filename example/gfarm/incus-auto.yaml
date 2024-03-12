@@ -1,6 +1,6 @@
 config:
   #incus_command: incus  # NOTE: default
-  #TODO default_pool: mypool  # replace __DEFAULT__
+  #default_pool: default  # replace __DEFAULT__ of pool in devices and block-device
   project: gfarm  # namespace
   idmap: true  # false|true(your host UID)/any host UID| to container user
   #user: admin  # NOTE: default
@@ -13,7 +13,7 @@ config:
   #   http_proxy: http://...
   #   https_proxy: http://...
   network:
-    gfarm1: # witout project name
+    gfarm1: # fullname (without project name)
       description: "gfarm net1"
       config:
         ipv4.address: 10.123.123.1/24
@@ -28,7 +28,7 @@ config:
         ipv6.nat: false
         ipv6.address: none
   profile:
-    prof1: # with project name
+    prof1: # convert to {project name}-{profile name}
       description: "gfarm profile1"
       config:
         limits.memory: 1GB
@@ -44,7 +44,7 @@ config:
         root:
           type: disk
           path: /
-          pool: mypool
+          pool: __DEFAULT__
           size: 5GB
         SCRIPT:
           type: disk
