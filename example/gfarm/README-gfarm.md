@@ -25,17 +25,27 @@
 - Run `make build-lustre`
 - Run `make launch-lustre`
 - Run `make setup-gfarm-all`
-- (Another terminal) run `make start-lustre-hsm` (foregroud, ctrl-c to stop)
+- (Another terminal) run `make start-lustre-hsm`
+  - foregroud
+  - ctrl-c to stop
 - Run `make lclient` and `cd /mnt/lustre` (Please wait for automount)
 - Enjoy Lustre operations ...
   - sudo mkdir tmp
   - sudo chmod 1777 tmp
-  - ...
+  - (file creation, Lustre operations, etc. ...)
+    - (ex. sudo lfs setstripe -c 2 .)
   - sudo lfs hsm_archive FILENAME
+  - sudo lfs hsm_state FILENAME
+    - exists archived
+  - find /tmp/gfarmsys/LustreHSM/shadow/
   - sudo lfs hsm_release FILENAME
+  - sudo lfs hsm_state FILENAME
+    - released exists archived
   - sudo lfs hsm_restore FILENAME
+    - exists archived
   - sudo lfs hsm_remove FILENAME
-  - sudo lfs setstripe -c 2 .
+    - file: (0x00000000),
+  - Details: <https://doc.lustre.org/lustre_manual.xhtml#hsm_introduction>
 - ctrl-d (exit from lclient1)
 
 ## Good-bye

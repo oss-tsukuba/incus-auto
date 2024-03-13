@@ -4,12 +4,15 @@ source /SCRIPT/lib.sh
 
 MNT_LUSTRE=/mnt/lustre
 HSM_ROOT=/tmp/gfarmsys/LustreHSM
-LUSTRE_SRC=/SRC/lustre-release
+LUSTRE_SRC_ORIG=/SRC/lustre-release
+LUSTRE_SRC=~/lustre-release
 HSM_POSIX_DIR=${LUSTRE_SRC}/hsm-posix
 HSMTOOL=${HSM_POSIX_DIR}/lhsmtool_posix
 
 #DAEMON=--daemon
 DAEMON=
+
+rsync -av --delete $LUSTRE_SRC_ORIG/ $LUSTRE_SRC/
 
 if [ ! -e "$HSM_POSIX_DIR" ]; then
     cat <<EOF
