@@ -26,7 +26,7 @@ At tf container in Incus and OCI Web Interface:
 
 ```
 ### Prompt: gfarmsys@tf:~$
-cd ~/terraform-oci
+cd ~/terraform
 make ociapi-keygen
 cat ociapi_public.pem
 ```
@@ -68,7 +68,7 @@ At gfmanage instance on OCI:
 ### At tf container
 ./ocissh gfmanage
 ### Prompt: gfarmsys@gfmanage:~$
-cd ~/terraform-oci/ansible/
+cd ~/terraform/ansible/
 sudo cloud-init status --wait
 make ansible-init
 make ansible-disable-selinux
@@ -107,8 +107,8 @@ At tf container:
 #### At gfmanage on OCI (Ubuntu)
 
 ```
-gfarmsys@gfmanage:~/terraform-oci/ansible$ make gfarm-config-init
-gfarmsys@gfmanage:~/terraform-oci/ansible$ gfhost -lv
+gfarmsys@gfmanage:~/terraform/ansible$ make gfarm-config-init
+gfarmsys@gfmanage:~/terraform/ansible$ gfhost -lv
 ```
 
 #### At tf container (access Gfarm via Internet) (Ubuntu)
@@ -120,7 +120,7 @@ make update-etchosts-for-gfarm
 ```
 
 ```
-gfarmsys@tf:~/terraform-oci$ gfhost -lv
+gfarmsys@tf:~/terraform$ gfhost -lv
 ```
 
 ## Update source code

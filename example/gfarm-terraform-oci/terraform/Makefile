@@ -49,6 +49,6 @@ update-etchosts-for-gfarm:
 	bash ./update-etchosts.sh
 
 send-files:
-	$(RSYNC) ./ gfmanage:terraform-oci/
+	$(RSYNC) ./ gfmanage:terraform/
 SYNC-files-with-delete:
-	$(RSYNC) --delete ./ gfmanage:terraform-oci/
+	$(RSYNC) --delete ./ gfmanage:terraform/

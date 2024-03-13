@@ -4,17 +4,17 @@ config:
   user: gfarmsys  # NOTE: default=admin
   ssh_authorized_keys: terraform/id_ecdsa.pub
   network:
-    gfarm-oci: # fullname
+    gfarmoci: # fullname
       description: "network for terraform Gfarm on OCI"
       config:
         ipv4.address: 10.198.8.1/24
         ipv4.dhcp.ranges: 10.198.8.101-10.198.8.200
         ipv4.nat: true
   profile:
-    prof1:  # gfarm-oci-prof1
+    prof1:  # gfarmOCI-prof1
       description: "OCI terraform gfarm profile"
       config:
-        limits.memory: 2GB
+        limits.memory: 1GB
         limits.cpu: 4
       devices:
         root:
@@ -23,7 +23,7 @@ config:
           pool: __DEFAULT__
           size: 5GB
         eth0:
-          network: gfarm-oci
+          network: gfarmoci
           type: nic
 
 host:
@@ -32,11 +32,11 @@ host:
     series: debian
     profile:
       - prof1
-    devices:
-      #eth0:
-      #  ipv4.address: 10.198.8.101  # NOTE: for ipv4.dhcp=true
+    # devices:
+    #   eth0:
+    #     ipv4.address: 10.198.8.101  # NOTE: for ipv4.dhcp=true
     volume:
       - ./terraform:/TF
     setup:
-      - sudo ln -sf /TF /home/gfarmsys/terraform-oci
+      - sudo ln -sf /TF /home/gfarmsys/terraform
       - bash -x /TF/install-terraform.sh
