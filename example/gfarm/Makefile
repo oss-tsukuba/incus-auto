@@ -63,6 +63,11 @@ delete-gfarm:
 	$(IAGF) stop -a -f
 	$(IAGF) delete -a
 
+send-ssh-privkey:
+	$(IAGF) exec gfmanage -- bash /SCRIPT/ansible-send-ssh-privkey.sh
+regress:
+	$(IAGF) exec gfclient01 -- bash /SCRIPT/gfarm-regress.sh
+
 show-config-lustre:
 	$(IALS) config
 build-lustre:

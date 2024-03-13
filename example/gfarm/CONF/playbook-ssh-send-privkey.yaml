@@ -1,0 +1,15 @@
+---
+- name: Distribute SSH Private Key and known_hosts
+  hosts: all:!gfmanage
+  gather_facts: false
+  tasks:
+    - name: Send SSH private key
+      copy:
+        src: /home/{{ ansible_user }}/.ssh/id_ecdsa
+        dest: /home/{{ ansible_user }}/.ssh/id_ecdsa
+        mode: 0600
+    - name: Send SSH known_hosts
+      copy:
+        src: /home/{{ ansible_user }}/.ssh/known_hosts
+        dest: /home/{{ ansible_user }}/.ssh/known_hosts
+        mode: 0600

@@ -14,9 +14,12 @@
 - Run `make build-gfarm`
 - Run `make launch-gfarm`
 - Run `make setup-gfarm`
+- Regression test:
+  - Run `make send-ssh-privkey`
+  - Run `make gfarm-regress`
 - Run `make gfclient`
   - or Run `make` (login to the manage container) and `ssh gfclient01`
-- Enjoy Gfarm operations ...
+  - Enjoy Gfarm operations ...
 - ctrl-d (exit from gfclient01)
 - ctrl-d (exit from manage)
 
