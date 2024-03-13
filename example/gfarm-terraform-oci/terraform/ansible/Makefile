@@ -10,6 +10,8 @@ ansible-ping:
 	bash ./ansible-ping.sh
 ansible-disable-selinux:
 	bash ./ansible-disable-selinux.sh
+ansible-dnf-update:
+	bash ./ansible-dnf-update.sh
 ansible-reboot:
 	@bash ./confirm.sh
 	bash ./ansible-cloud-init-wait.sh

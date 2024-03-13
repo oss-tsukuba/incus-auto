@@ -12,8 +12,9 @@ terraform-plan:
 terraform-apply:
 	terraform apply
 terraform-destroy:
-	terraform destroy -target oci_dns_rrset.gfarm_dns_record
-	terraform destroy
+	@bash ./ansible/confirm.sh
+	terraform destroy -target oci_dns_rrset.gfarm_dns_record -auto-approve
+	terraform destroy -auto-approve
 
 print-etchosts:
 	@bash ./print-etchosts.sh

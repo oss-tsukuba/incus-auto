@@ -123,6 +123,11 @@ make update-etchosts-for-gfarm
 gfarmsys@tf:~/terraform$ gfhost -lv
 ```
 
+## Update RPM
+
+- At gfmanage on OCI
+  - `make ansible-dnf-update`
+
 ## Update source code
 
 - At host OS
@@ -147,8 +152,6 @@ gfarmsys@tf:~/terraform$ gfhost -lv
 
 - At tf container in Incus
   - `make terraform-destroy`
-    - Input `yes` to remove private DNS
-    - (again) Input `yes` to remove all Instances
 - At gfmanage on OCI
   - `make CLEAN`
   - Reusable files (not deleted)
