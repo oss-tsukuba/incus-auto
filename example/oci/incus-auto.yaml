@@ -24,10 +24,6 @@ config:
           path: /
           pool: __DEFAULT__
           size: 5GB
-        SCRIPT:
-          type: disk
-          source: ./SCRIPT  # NOTE: convert to absolute path
-          path: /SCRIPT
         eth0:
           network: ocitf
           type: nic
@@ -47,4 +43,4 @@ host:
       - ./terraform:/TF
     setup:
       - sudo ln -sf /TF /home/admin/terraform
-      - bash -x /SCRIPT/install-terraform.sh
+      - bash -x /TF/install-terraform.sh
