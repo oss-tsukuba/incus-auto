@@ -5,11 +5,14 @@ set -x
 
 # SEE: https://oracle-japan.github.io/ocitutorials/intermediates/terraform/
 
-PUBKEY=/CONF/admin_public.pem
-PRIVKEY=/CONF/admin_private.pem
+PUBKEY=./ociapi_public.pem
+PRIVKEY=./ociapi_private.pem
 
 if [ -f $PRIVKEY ]; then
-    cat $PUBKEY
+    # check
+    cat $PUBKEY > /dev/null
+    cat $PRIVKEY > /dev/null
+    echo Existing: $PUBKEY $PRIVKEY
     exit 0
 fi
 
@@ -29,12 +32,4 @@ openssl rsa -pubout -in $PRIVKEY -out $PUBKEY
 cat $PUBKEY
 
 # 6. アイデンティティ -> 自分のプロファイル -> APIキー -> 公開キーの追加
-
 # 7. 公開キーの貼付け -> EGIN PUBLIC KEYおよびEND PUBLIC KEYの行を含む値を貼り付け -> 追加
-
-
-# SSH 公開鍵
-cd /CONF
-if [ ! -f sshkey ]; then
-    ssh-keygen -t rsa -N "" -b 2048 -C sshkey -f sshkey
-fi

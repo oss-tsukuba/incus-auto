@@ -1,0 +1,11 @@
+/incus-auto.override.yaml
+/terraform/ociapi_public.pem
+/terraform/ociapi_private.pem
+/terraform/id_ecdsa
+/terraform/id_ecdsa.pub
+/terraform/terraform.tfvars
+/terraform/.terraform.lock.hcl
+/terraform/.terraform/
+/terraform/terraform.tfstate
+/terraform/terraform.tfstate.backup
+/terraform/tmp-known_hosts

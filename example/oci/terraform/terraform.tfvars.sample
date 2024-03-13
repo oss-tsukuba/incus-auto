@@ -1,0 +1,13 @@
+# For details: variables.tf
+
+# Required for provider.tf
+tenancy_ocid = "ocid1.tenancy.oc1..aaaaaaaa"
+user_ocid = "ocid1.user.oc1..aaaaaaaa"
+private_key_path = "ociapi_private.pem"
+fingerprint = "72:ed:fc:9a:cb:b1:5a:54:36:d7:e9:6b:53:81:58:a2"
+region = "ap-tokyo-1"
+
+# Required for instance.tf
+compartment_id = "ocid1.tenancy.oc1..aaaaaaaa"
+subnet_id = "ocid1.subnet.oc1.ap-tokyo-1.aaaaaaaas"
+ssh_authorized_keys = "id_ecdsa.pub"

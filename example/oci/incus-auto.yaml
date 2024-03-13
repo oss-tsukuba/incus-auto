@@ -1,10 +1,10 @@
 config:
-  project: ocitf
+  project: ocitf-example
   idmap: true
   #user: admin  # NOTE: default
-  #uid: 1000  # NOTE: default
+  uid: 2000
   #ssh_authorized_keys: ssh_authorized_keys  # NOTE: default
-  ssh_authorized_keys: sample-id_ecdsa.pub
+  ssh_authorized_keys: terraform/id_ecdsa.pub
   network:
     ocitf:
       description: "OCI terraform gfarm net"
@@ -16,13 +16,13 @@ config:
     profile:
       description: "OCI terraform gfarm profile"
       config:
-        limits.memory: 2GB
-        limits.cpu: 4
+        limits.memory: 1GB
+        limits.cpu: 2
       devices:
         root:
           type: disk
           path: /
-          pool: mypool
+          pool: __DEFAULT__
           size: 5GB
         SCRIPT:
           type: disk
@@ -32,7 +32,7 @@ config:
           network: ocitf
           type: nic
 
-buildimage:
+#buildimage:
 
 host:
   tf:
@@ -44,6 +44,7 @@ host:
       eth0:
         ipv4.address: 10.199.9.101  # NOTE: for ipv4.dhcp=true
     volume:
-      - ./CONF:/CONF
+      - ./terraform:/TF
     setup:
+      - sudo ln -sf /TF /home/admin/terraform
       - bash -x /SCRIPT/install-terraform.sh
