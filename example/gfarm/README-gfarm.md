@@ -1,4 +1,21 @@
-# Gfarm on Incus
+# Gfarm development environment on Incus
+
+## Host overview (Container and VM)
+
+- Gfarm gfmd x 3
+- Gfarm gfsd x 4
+- Gfarm client x 1
+- Lustre mds,mgs x 1
+- Lustre oss x 1
+- Lustre client x 1
+  - Lustre HSM + gfarm2fs
+
+## Requirement
+
+- RAM: 16GB
+- DISK: 100GB
+
+## Setup Gfarm
 
 - See incus-auto.yaml, incus-auto.gfarm.yaml and incus-auto.lustre.yaml
 - (Optional) Create incus-auto.override.yaml to override incus-auto.yaml
@@ -23,7 +40,7 @@
 - ctrl-d (exit from gfclient01)
 - ctrl-d (exit from manage)
 
-## Lustre HSM for Gfarm
+## Setup Lustre
 
 - Run `make build-lustre`
 - Run `make launch-lustre`

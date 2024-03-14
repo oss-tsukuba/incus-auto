@@ -1,12 +1,10 @@
 # incus-auto
 
-incus-auto is automating deployment system by Incus or LXD.
+incus-auto is automating deployment system using Incus.
 
 ## Requirement
 
-- RAM: 16GB
-- DISK: 100GB
-- Incus
+- Incus (or LXD)
 - (Option) Nested Virtualization
   - when using VM on VM
 
