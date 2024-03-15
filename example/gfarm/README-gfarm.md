@@ -56,15 +56,17 @@
     - (ex. sudo lfs setstripe -c 2 .)
   - sudo lfs hsm_archive FILENAME
   - sudo lfs hsm_state FILENAME
-    - exists archived
+    - "exists archived"
   - find /tmp/gfarmsys/LustreHSM/shadow/
   - sudo lfs hsm_release FILENAME
   - sudo lfs hsm_state FILENAME
-    - released exists archived
+    - "released exists archived"
   - sudo lfs hsm_restore FILENAME
-    - exists archived
+  - sudo lfs hsm_state FILENAME
+    - "exists archived"
   - sudo lfs hsm_remove FILENAME
-    - file: (0x00000000),
+  - sudo lfs hsm_state FILENAME
+    - "file: (0x00000000),"
   - Details: <https://doc.lustre.org/lustre_manual.xhtml#hsm_introduction>
 - ctrl-d (exit from lclient1)
 
