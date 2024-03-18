@@ -8,7 +8,7 @@ incus-auto is automating deployment system using Incus.
 - (Option) Nested Virtualization
   - when using VM on VM
 
-## Usage Summary
+## Summary
 
 - Install Incus
   - <https://linuxcontainers.org/incus/docs/main/installing/>
@@ -28,10 +28,12 @@ incus-auto is automating deployment system using Incus.
     - `mkdir /mnt/disk2/incus-mypool`
     - `incus storage create mypool dir source=/mnt/disk2/incus-mypool`
 - Prepare remote server if needed
-- Create `incus-auto.yaml`
+- Create `incus-auto.yaml` and `incus-auto.override.yaml`
   - Define config (profile, network, disk, ...)
-  - (Optional) Define `buildimage`
-  - Define `host`
+    - Define `config`
+      - (Option) Set `default_pool`
+    - (Option) Define `buildimage`
+    - Define `host`
   - Example: `./example/gfarm/incus-auto.*yaml`
     - Detail: `./example/gfarm/README-gfarm.md`
 - (Recommendation) Install apt-cacher-ng and set http_proxy to accelerate
@@ -41,10 +43,6 @@ incus-auto is automating deployment system using Incus.
   - `incus-auto build -a`
 - Launch containers or virtual machines
   - `incus-auto launch -a`
-
-## Install incus-auto
-
-install `bin/incus-auto` to the directory set in PATH.
 
 ## Add remote Incus server
 
