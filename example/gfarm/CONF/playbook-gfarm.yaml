@@ -495,9 +495,10 @@
         state: link
       loop:  # [src, dest]
         - ["certificates", "certs/gfarm"]
-        - ["hostcert.pem", "private/gfmd.key"]
+        - ["hostcert.pem", "certs/gfmd.crt"]
+        - ["hostkey.pem", "private/gfmd.key"]
         - ["gfsd/gfsdcert.pem", "certs/gfsd.crt"]
-        - ["gfsd/gfsdkey.pem", "certs/gfsd.key"]
+        - ["gfsd/gfsdkey.pem", "private/gfsd.key"]
 
     - name: Copy cacert.pem to hosts
       copy:
@@ -632,7 +633,8 @@
           auth enable kerberos_auth *
           auth_trial_order tls_client_certificate sharedsecret
           #auth_trial_order sharedsecret gsi_auth
-          log_auth_verbose disable
+          #log_auth_verbose enable
+          #log_level debug
 
     - name: backup gfarm2.conf
       fetch:
