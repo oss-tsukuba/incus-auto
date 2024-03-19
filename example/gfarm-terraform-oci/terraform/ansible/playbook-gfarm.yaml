@@ -686,6 +686,7 @@
           auth enable kerberos_auth *
           auth_trial_order tls_client_certificate sharedsecret
           #auth_trial_order sharedsecret gsi_auth
+          log_auth_verbose disable
 
     - name: backup gfarm2.conf
       fetch:
