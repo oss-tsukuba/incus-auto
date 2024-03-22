@@ -17,6 +17,9 @@ ssh_authorized_keys = "id_ecdsa.pub"
 # Override variables.tf
 #gfmd_ocpus = 2
 
+# volume size in GB
+#gfsd_disk = 100
+
 # Oracle-Linux-8.9-2024.01.26-0 (x86_64) ap-tokyo-1
 #source_id = "ocid1.image.oc1.ap-tokyo-1.aaaaaaaaki7d7tmydzgtgkxli3pfdi75xtpjyukzt64pv2uixayk6pqak7qa"
 #shape = "VM.Standard.E4.Flex"
