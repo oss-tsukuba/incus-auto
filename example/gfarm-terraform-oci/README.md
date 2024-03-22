@@ -94,7 +94,7 @@ At tf container:
 ```
 [gfarmsys@gfclient01 ~]$ gfmdhost -l
 + master -     m siteA        gfmd1.example.org 601
-+ slave  async c siteA        gfmd2.example.org 601
++ slave  sync  c siteA        gfmd2.example.org 601
 + slave  async c siteB        gfmd3.example.org 601
 
 [gfarmsys@gfclient01 ~]$ gfhost -lv
