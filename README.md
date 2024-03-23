@@ -102,15 +102,18 @@ incus-auto -h
 
 ## WSL2
 
-- When using VM
+- When using VM, Custom WSL2-Linux-Kernel is required
+  - "vhost virtio-vsock driver" is required
+    - `Error: Failed to run: modprobe -b vhost_vsock: exit status 1 (modprobe: FATAL: Module vhost_vsock not found in directory /lib/modules/5.15.146.1-microsoft-standard-WSL2)`
   - Windows 11 is required
     - for `nestedVirtualization=true` (default) (.wslconfig)
     - not work on Windows 10
-  - `Error: Failed to run: modprobe -b vhost_vsock: exit status 1 (modprobe: FATAL: Module vhost_vsock not found in directory /lib/modules/5.15.146.1-microsoft-standard-WSL2)`
-  - Build custom Linux Kernel (to enable vhost_vsock module)
+
+- How to Build custom WSL2-Linux-Kernel (to enable vhost_vsock module)
     - See: https://gist.github.com/jacky9813/927261020bb1dacc1a7baedef657b732
     - (my operation log)
-```
+
+```bash
 sudo apt update
 sudo apt install git bc build-essential flex bison libssl-dev libelf-dev dwarves
 uname -a
@@ -131,8 +134,10 @@ cp arch/x86/configs/config-wsl arch/x86/configs/config-wsl-custom
 sudo apt install libncurses-dev
 make KCONFIG_CONFIG=arch/x86/configs/config-wsl-custom menuconfig
 ```
+
   - Device Drivers -> VHOST drivers -> <M> vhost virtio-vsock driver
-```
+
+```bash
 make KCONFIG_CONFIG=arch/x86/configs/config-wsl-custom -j$(nproc)
 sudo make KCONFIG_CONFIG=arch/x86/configs/config-wsl-custom modules_install
 
@@ -145,15 +150,18 @@ vi  /mnt/c/Users/USERNAME/.wslconfig
 [wsl2]
 kernel=C:\\\\Users\\\\USERNAME\\\\wsl2-kernel\\\\bzImage-5.15.133-WSL2-custom
 ```
+
 - Start Ubuntu on WSL2
 - in Ubuntu
   - `sudo iptables -P FORWARD ACCEPT`
   - Edit /etc/wsl.conf
-  ```
+
+  ```text
   [boot]
   memory=16GB
   systemd=true
   ```
+
 - `wsl --shutdown` at Windows Powershell
 - Start Ubuntu on WSL2
 - Install Incus
