@@ -179,10 +179,10 @@ class CUI():
         if ret != 0:
             msg = f'{str(args)}: {str(err)}'
             if ignore_error:
-                self.logger.info('IGNORE: Error: ' + msg)
+                self.logger.debug(f'IGNORE (exit status={ret}): {msg}')
                 return
             else:
-                raise Exception('Error: ' + msg)
+                raise Exception(f'Error (exit status={ret}): {msg}')
         if err:
             self.logger.info(err)
         self.logger.debug(f'Success: {str(args)}')
