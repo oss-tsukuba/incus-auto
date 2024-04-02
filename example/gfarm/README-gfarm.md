@@ -17,16 +17,16 @@
 
 ## Setup Gfarm
 
+- Install incus-auto
 - See incus-auto.yaml, incus-auto.gfarm.yaml and incus-auto.lustre.yaml
-- (Optional) Create incus-auto.override.yaml to override incus-auto.yaml
+- (Optional) Create incus-auto.override.yaml if you need
+  - Create pool if you need, and override `default_pool`
 - See parameters of SCRIPT/lib.sh
 - (Optional) Create CONF/config.sh to override parameters
-- Install incus
-- Install pigz
+- Install `incus, make and pigz`
+  - Ex.: Run `sudo apt-get install incus make pigz`
 - Run `incus config set images.compression_algorithm pigz`
 - Run `make git-clone` to get Gfarm
-- Create incus-auto.override.yaml if you need
-  - Create pool if you need, and override `default_pool`
 - Run `make init`
 - Run `make build-gfarm`
 - Run `make launch-gfarm`
