@@ -18,5 +18,5 @@ for inst in $(instance_list); do
     # ex. inst=manage["manage.example.org"]
     group=$(echo $inst | cut -d\[ -f 1)
     name=$(echo $inst | sed 's/'$group'\["//; s/"\]//')
-    ssh-keyscan $(public_ip $inst)
+    ssh-keyscan $(public_ip $inst) 2> /dev/null
 done
