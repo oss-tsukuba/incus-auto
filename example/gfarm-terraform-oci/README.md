@@ -51,9 +51,9 @@ cat ociapi_public.pem
     - overridable variables
 
 ```
-make terraform-init
-make terraform-plan
-make terrarorm-apply
+terraform init
+terraform plan
+terraform apply
 make update-ssh_known_hosts
 make update-ssh_config
 make update-ansible-inventory
@@ -71,8 +71,8 @@ At gfmanage instance on OCI:
 cd ~/terraform/ansible/
 sudo cloud-init status --wait
 make ansible-init
-make ansible-disable-selinux
-make ansible-reboot
+make ansible-disable-selinux	# for performance
+make ansible-reboot		# for performance
 make ansible-gfarm-install
 make ansible-gfarm-setup
 ```
