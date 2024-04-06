@@ -32,7 +32,7 @@ config:
       description: "gfarm profile1"
       config:
         limits.memory: 1GB
-        limits.cpu: 6
+        limits.cpu: 4
         ### NOTE: same as "idmap: true"
         # raw.idmap: uid 1000 0
         ### Examples:
