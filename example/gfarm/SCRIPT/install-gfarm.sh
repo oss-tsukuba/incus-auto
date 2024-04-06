@@ -250,7 +250,7 @@ mkdir -p build
 cd build
 scitokens_prefix=/usr
 cmake -DCMAKE_INSTALL_PREFIX="$scitokens_prefix" ..
-make -j $MAKE_NUM_JOBS
+make
 SUDO make install
 
 ###################################################################
