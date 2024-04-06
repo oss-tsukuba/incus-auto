@@ -1,6 +1,6 @@
 buildimage:
   IMG-gfarm:
-    image: images:ubuntu/24.04
+    image: images:ubuntu/22.04
     series: debian
     vm: false
     devices:
