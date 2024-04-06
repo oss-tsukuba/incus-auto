@@ -12,11 +12,13 @@ incus-auto is automating deployment system using Incus.
 
 - Install Incus
   - <https://linuxcontainers.org/incus/docs/main/installing/>
+- Install pigz for performance
+  - `apt-get install pigz`
 - Run `incus config set images.compression_algorithm pigz`
 - Install python3-docopt, python3-schema, python3-yaml
-  - Debian:
+  - Debian series (Ubuntu, etc.):
     - `apt-get install python3 python3-docopt python3-schema python3-yaml`
-  - RHEL:
+  - Fedora series (RHEL, RockyLinux, AlmaLinux, etc.):
     - `yum install epel-release`
     - `yum install python3 python3-docopt python3-schema python3-pyyaml`
 - Install incus-auto
