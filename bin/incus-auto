@@ -344,6 +344,7 @@ class IncusAuto(CUI):
                 'uid': 2000,
                 'ssh_authorized_keys': 'ssh_authorized_keys',
                 'etchosts': True,
+                'network': {},
             },
             'buildimage': {
                 '__ANY__': {
