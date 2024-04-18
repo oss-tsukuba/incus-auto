@@ -342,6 +342,7 @@ class IncusAuto(CUI):
                 'idmap': False,
                 'user': 'admin',  # main guest user
                 'uid': 2000,
+                # '' means "disabled"
                 'ssh_authorized_keys': 'ssh_authorized_keys',
                 'etchosts': True,
                 'network': {},
@@ -359,6 +360,7 @@ class IncusAuto(CUI):
             'host': {
                 '__ANY__': {
                     'vm': False,
+                    'sshd': True,
                     'devices': {  # not null
                         # 'root': {
                         #     'size': '5GB',
@@ -382,8 +384,9 @@ class IncusAuto(CUI):
     def check_required(self):
         self.authorized_keys = self.convert_fullpath(
             self.conf('/config/ssh_authorized_keys'))
-        if not os.access(self.authorized_keys, os.R_OK):
-            raise Exception(f'Error: cannot read: {self.authorized_keys}')
+        if self.authorized_keys is not None:
+            if not os.access(self.authorized_keys, os.R_OK):
+                raise Exception(f'Error: cannot read: {self.authorized_keys}')
 
     # DO NOT OVERWRITE
     def conf(self, confpath, default=None, notfound=False):
@@ -587,6 +590,8 @@ class IncusAuto(CUI):
 
     def convert_fullpath(self, path):
         if path is None:
+            return None
+        if path == '':
             return None
         if path.startswith('/'):
             return path
@@ -994,7 +999,11 @@ class IncusAuto(CUI):
                             ignore_error=True)
             self.incus_exec(fullname, 'df -h')
 
-    def install_ssh(self, info, name, fullname):
+    def install_sshd(self, info, name, fullname):
+        if self.authorized_keys is None \
+           or not self.tobool(info['sshd']):
+            self.logger.debug(f'{name}: sshd is not installed (disabled)')
+            return
         self.incus_exec(fullname, f'hostnamectl set-hostname {name}')
         self.incus_exec(fullname, 'systemctl restart systemd-hostnamed')
         if info['series'] == 'rhel':
@@ -1022,11 +1031,12 @@ class IncusAuto(CUI):
         sshdir = homedir + '/.ssh'
         self.incus_exec(fullname, f'mkdir -p {sshdir}')
         # file copy
-        self.incus(['file', 'push', self.authorized_keys,
-                    fullname + sshdir + '/authorized_keys'])
-        self.incus_exec(fullname, f'chown -R {user}:{user} {sshdir}')
-        self.incus_exec(fullname, f'chmod 700 {sshdir}')
-        self.incus_exec(fullname, f'chmod 600 {sshdir}/authorized_keys')
+        if self.authorized_keys is not None:
+            self.incus(['file', 'push', self.authorized_keys,
+                        fullname + sshdir + '/authorized_keys'])
+            self.incus_exec(fullname, f'chown -R {user}:{user} {sshdir}')
+            self.incus_exec(fullname, f'chmod 700 {sshdir}')
+            self.incus_exec(fullname, f'chmod 600 {sshdir}/authorized_keys')
 
         # if info['series'] == 'rhel':
         #     self.incus_exec(fullname, f'usermod -a -G wheel {user}')
@@ -1217,7 +1227,7 @@ class IncusAuto(CUI):
             self.setup_user(info, fullname)
             if not self.control_buildimage:
                 self.logger.info(f'[STEP-3.B] sshd: {name}')
-                self.install_ssh(info, name, fullname)
+                self.install_sshd(info, name, fullname)
                 self.update_etchosts(info, fullname)
 
             # run /host|buildimage/NAME/setup
