@@ -151,16 +151,16 @@ gfarmsys@tf:~/terraform$ gfhost -lv
 ## Destroy all
 
 - At tf container in Incus
-  - `make terraform-destroy`
-- At gfmanage on OCI
-  - `make CLEAN`
-  - Reusable files (not deleted)
-    - terraform/id_ecdsa
-    - terraform/id_ecdsa.pub
-    - terraform/ociapi_public.pem
-    - terraform/ociapi_private.pem
-    - terraform/terraform.tfvars
-    - terraform/.terraform
+  - `make terraform-destroy` to delete OCI instances
+- At host OS
+  - `make CLEAN` to delete Incus container
+- Reusable files (not deleted)
+  - terraform/id_ecdsa
+  - terraform/id_ecdsa.pub
+  - terraform/ociapi_public.pem
+  - terraform/ociapi_private.pem
+  - terraform/terraform.tfvars
+  - terraform/.terraform
 
 ## TODO
 
