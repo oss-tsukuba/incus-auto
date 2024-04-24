@@ -86,57 +86,57 @@ variable "gfclient_ocpus" {
 }
 
 # https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/core_instance#memory_in_gbs
-variable "gfmd_mem" {
+variable "gfmd_memory_in_gbs" {
   description = "memory_in_gbs for gfmd"
   type        = number
   default     = 4
 }
 
-variable "gfsd_mem" {
+variable "gfsd_memory_in_gbs" {
   description = "memory_in_gbs for gfsd"
   type        = number
   default     = 3
 }
 
-variable "gfclient_mem" {
+variable "gfclient_memory_in_gbs" {
   description = "memory_in_gbs for gfclient"
   type        = number
   default     = 3
 }
 
 # https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/core_instance#boot_volume_size_in_gbs
-variable "gfmd_disk" {
+variable "gfmd_volume_size_in_gbs" {
   description = "boot_volume_size_in_gbs for gfmd"
   type        = number
   default     = null
 }
 
-variable "gfsd_disk" {
+variable "gfsd_volume_size_in_gbs" {
   description = "boot_volume_size_in_gbs for gfsd"
   type        = number
   default     = null
 }
 
-variable "gfclient_disk" {
+variable "gfclient_volume_size_in_gbs" {
   description = "boot_volume_size_in_gbs for gfclient"
   type        = number
   default     = null
 }
 
 # https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/core_instance#boot_volume_vpus_per_gb
-variable "gfmd_disk_vpus" {
+variable "gfmd_volume_vpus_per_gb" {
   description = "boot_volume_vpus_per_gb for gfmd"
   type        = number
   default     = 10
 }
 
-variable "gfsd_disk_vpus" {
+variable "gfsd_volume_vpus_per_gb" {
   description = "boot_volume_vpus_per_gb for gfsd"
   type        = number
   default     = 10
 }
 
-variable "gfclient_disk_vpus" {
+variable "gfclient_volume_vpus_per_gb" {
   description = "boot_volume_vpus_per_gb for gfclient"
   type        = number
   default     = 10

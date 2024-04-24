@@ -50,13 +50,13 @@ resource "oci_core_instance" "instance_gfmd" {
     shape = var.gfmd_shape != "" ? var.gfmd_shape : var.shape
     shape_config {
         ocpus                 = var.gfmd_ocpus
-        memory_in_gbs         = var.gfmd_mem
+        memory_in_gbs         = var.gfmd_memory_in_gbs
     }
     source_details {
         source_id = var.gfmd_source_id != "" ? var.gfmd_source_id : var.source_id
         source_type = "image"
-        boot_volume_size_in_gbs = var.gfmd_disk
-        boot_volume_vpus_per_gb = var.gfmd_disk_vpus
+        boot_volume_size_in_gbs = var.gfmd_volume_size_in_gbs
+        boot_volume_vpus_per_gb = var.gfmd_volume_vpus_per_gb
     }
     metadata = {
         ssh_authorized_keys = file(var.ssh_authorized_keys)
@@ -79,13 +79,13 @@ resource "oci_core_instance" "instance_gfsd" {
     shape = var.gfsd_shape != "" ? var.gfsd_shape : var.shape
     shape_config {
         ocpus                 = var.gfsd_ocpus
-        memory_in_gbs         = var.gfsd_mem
+        memory_in_gbs         = var.gfsd_memory_in_gbs
     }
     source_details {
         source_id = var.gfsd_source_id != "" ? var.gfsd_source_id : var.source_id
         source_type = "image"
-        boot_volume_size_in_gbs = var.gfsd_disk
-        boot_volume_vpus_per_gb = var.gfsd_disk_vpus
+        boot_volume_size_in_gbs = var.gfsd_volume_size_in_gbs
+        boot_volume_vpus_per_gb = var.gfsd_volume_vpus_per_gb
     }
     metadata = {
         ssh_authorized_keys = file(var.ssh_authorized_keys)
@@ -108,13 +108,13 @@ resource "oci_core_instance" "instance_gfclient" {
     shape = var.gfclient_shape != "" ? var.gfclient_shape : var.shape
     shape_config {
         ocpus                 = var.gfclient_ocpus
-        memory_in_gbs         = var.gfclient_mem
+        memory_in_gbs         = var.gfclient_memory_in_gbs
     }
     source_details {
         source_id = var.gfclient_source_id != "" ? var.gfclient_source_id : var.source_id
         source_type = "image"
-        boot_volume_size_in_gbs = var.gfclient_disk
-        boot_volume_vpus_per_gb = var.gfclient_disk_vpus
+        boot_volume_size_in_gbs = var.gfclient_volume_size_in_gbs
+        boot_volume_vpus_per_gb = var.gfclient_volume_vpus_per_gb
     }
     metadata = {
         ssh_authorized_keys = file(var.ssh_authorized_keys)
