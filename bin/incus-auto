@@ -517,6 +517,9 @@ class IncusAuto(CUI):
         return self.incus(fullargs, input=input, output=output,
                           ignore_error=ignore_error)
 
+    def incus_start(self, fullname):
+        self.incus(['start', fullname])
+
     def incus_stop(self, fullname, timeout=-1, ignore_error=False):
         args = ['stop', fullname, '--verbose']
         if timeout == -1:
@@ -914,9 +917,9 @@ class IncusAuto(CUI):
             self.incus_exec(fullname, self.opt['<args>'],
                             user_is_root=self.user_is_root)
 
-    def incus_launch(self, info, name, fullname):
+    def incus_create(self, info, name, fullname):
         image = info['image']
-        args = ['launch', image, fullname]
+        args = ['create', image, fullname]
         for p in info.get('profile', {}):
             args += ['-p', self.project_prefix + p]
         for devname, params in info.get('devices', {}).items():
@@ -957,10 +960,25 @@ class IncusAuto(CUI):
         container_uid = self.conf('/config/uid')
         if idmap_uid is not None:
             args += ['-c', f'raw.idmap=both {idmap_uid} {container_uid}']
-
         if self.tobool(info['vm']):
             args += ['--vm']
         self.incus(args)
+
+        if self.tobool(info['vm']) \
+           and self.incus_cdrom_agent_is_required(fullname):
+            # incus config device add INSTANCE \
+            #   agent disk source=agent:config
+            args2 = ['config', 'device', 'add', fullname,
+                     'agent', 'disk', 'source=agent:config']
+            self.incus(args2)
+
+    def incus_cdrom_agent_is_required(self, fullname):
+        # image.requirements.cdrom_agent for Incus VM
+        # incus config get INSTANCE image.requirements.cdrom_agent
+        args = ['config', 'get', fullname, 'image.requirements.cdrom_agent']
+        b = self.incus(args, output=True).strip()
+        self.logger.info(f'{fullname}: image.requirements.cdrom_agent={b}')
+        return self.tobool(b)
 
     def mount_volume(self, fullname, info):
         # SEE ALSO: convert_disk_source()
@@ -1199,23 +1217,24 @@ class IncusAuto(CUI):
                 # check required values (MUST)
                 info['series']
             self.logger.info(f'[STEP-1] launch: {name}')
-            self.incus_launch(info, name, fullname)
+            self.incus_create(info, name, fullname)
             self.create_block_device(info, name, fullname)
+            self.mount_volume(fullname, info)
+            self.incus_start(fullname)
 
         for name, fullname, info in self.name_iter(self.use_all):
             self.logger.info(f'[STEP-2] initialize network and volume: {name}')
             self.incus_wait_for_wakeup(fullname, info)
             self.setup_network_static(info, fullname)
-            self.incus_stop(fullname)
-            self.mount_volume(fullname, info)
-            self.incus(f'start {fullname}')
 
         for name, fullname, info in self.name_iter(self.use_all):
             if self.tobool(info['vm']):
                 # VM may fail to mount volumes
                 self.logger.info(f'[STEP-2.B] restart: {name}')
                 self.incus_wait_for_wakeup(fullname, info)
-                self.incus(f'restart {fullname}')
+                # self.incus(f'restart {fullname}')
+                self.incus_stop(fullname)
+                self.incus_start(fullname)
 
         for name, fullname, info in self.name_iter(self.use_all):
             self.logger.info(f'[STEP-3] setup: {name}')
@@ -1235,7 +1254,7 @@ class IncusAuto(CUI):
                 if cmd == '__RESTART__':
                     self.logger.info(f'[STEP-3.C] setup(__RESTART__): {name}')
                     self.incus_stop(fullname)
-                    self.incus(f'start {fullname}')
+                    self.incus_start(fullname)
                     self.incus_wait_for_wakeup(fullname, info)
                 else:
                     self.logger.info(f'[STEP-3.D] setup(str(cmd)): {name}')
@@ -1246,7 +1265,7 @@ class IncusAuto(CUI):
                 self.incus_stop(fullname)
                 # publish buildimage
                 aliases = info.get('publish-alias', None)
-                if aliases is None:
+                if aliases is None or len(aliases) == 0:
                     self.logger.info('not published (no publish-alias): '
                                      + f'{name}')
                 else:
@@ -1262,12 +1281,25 @@ class IncusAuto(CUI):
                                        ignore_error=True)
                             args.extend(['--alias', full_alias])
                         self.incus(args)
+                        if self.tobool(info['vm']) \
+                           and self.incus_cdrom_agent_is_required(fullname):
+                            full_alias = self.project_prefix + aliases[0]
+                            self.set_cdrom_agent(remote, full_alias, True)
 
                     if remotes is None:
                         publish(None)
                     else:
                         for remote in remotes:
                             publish(remote)
+
+    def set_cdrom_agent(self, remote, full_alias, bool_val):
+        if remote is not None and remote != '':
+            remote = f'{remote}:'
+        else:
+            remote = ''
+        image_name = f'{remote}{full_alias}'
+        self.incus(['image', 'set-property', image_name,
+                    'requirements.cdrom_agent', str(bool_val).lower()])
 
     def cmd_build(self):
         self.control_buildimage = True

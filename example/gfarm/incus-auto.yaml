@@ -59,12 +59,6 @@ config:
         eth1:
           network: gfarm2
           type: nic
-    vm-agent:  # for VM on Incus
-      description: "VM agent"
-      devices:
-        agent:
-          type: disk
-          source: agent:config
   # remote:  #TODO
   #   incus2:
   #     network:

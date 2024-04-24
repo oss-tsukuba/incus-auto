@@ -10,14 +10,13 @@
 - Lustre client x 1
   - Lustre HSM + gfarm2fs
 
-## Requirement
+## Requirements
 
 - RAM: 16GB
 - DISK: 100GB
 
 ## Setup Gfarm
 
-- Install incus-auto
 - See incus-auto.yaml, incus-auto.gfarm.yaml and incus-auto.lustre.yaml
 - (Optional) Create incus-auto.override.yaml if you need
   - Create pool if you need, and override `default_pool`

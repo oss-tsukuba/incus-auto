@@ -7,7 +7,6 @@ buildimage:
     profile:
       - prof1
       - prof2net
-      - vm-agent
     devices:
       root:
         size: 6GB  # test override
@@ -51,7 +50,6 @@ buildimage:
     profile:
       - prof1
       - prof2net
-      - vm-agent
     config:
       # limits.memory: 4GB
       # limits.cpu: 4
@@ -75,7 +73,6 @@ x-lustre: &x-lustre
   profile:
     - prof1
     - prof2net
-    - vm-agent
   #remote: <NOT DEFINED>  # NOTE: use default server
   #remote: incus2 # TODO
   volume:
@@ -174,7 +171,6 @@ host:
     profile:
       - prof1
       - prof2net
-      - vm-agent
     volume:
       - ./CONF:/CONF
       - ./SRC:/SRC

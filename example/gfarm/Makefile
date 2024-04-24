@@ -43,7 +43,7 @@ init:
 show-config-gfarm:
 	$(IAGF) config
 build-gfarm:
-	$(IAGF) build -a
+	$(IAGF) build -a $(DEBUG)
 launch-gfarm:
 	$(IAGF) launch -a $(DEBUG)
 update-etchosts-gfarm:
@@ -71,7 +71,7 @@ regress:
 show-config-lustre:
 	$(IALS) config
 build-lustre:
-	$(IALS) build -a
+	$(IALS) build -a $(DEBUG)
 build-lustre-para:
 	./build-lustre.sh build
 launch-lustre:

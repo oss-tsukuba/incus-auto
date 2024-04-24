@@ -2,11 +2,15 @@
 
 incus-auto is automating deployment system using Incus.
 
-## Requirement
+## Requirements
 
 - Incus (or LXD)
 - (Option) Nested Virtualization
   - when using VM on VM
+
+## Features
+
+- Automatic source=agent:config for Incus VM
 
 ## Summary
 
