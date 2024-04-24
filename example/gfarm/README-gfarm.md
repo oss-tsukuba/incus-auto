@@ -33,7 +33,7 @@
 - Run `make setup-gfarm`
 - Regression test:
   - Run `make send-ssh-privkey`
-  - Run `make gfarm-regress`
+  - Run `make regress`
 - Run `make gfclient`
   - or Run `make` (login to the manage container) and `ssh gfclient01`
   - Enjoy Gfarm operations ...
