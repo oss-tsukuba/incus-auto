@@ -179,7 +179,7 @@ CACHE_DIR=/CACHE/${ID}/gfarm  # ID from /etc/os-release
 
 RSYNC_OPT=
 if $DISTCLEAN; then
-    RSYNC_OPT="--delete"
+    RSYNC_OPT="--delete --exclude docker/dev/mnt"
 fi
 
 mkdir -p $GFARM_WORKDIR
