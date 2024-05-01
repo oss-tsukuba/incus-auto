@@ -382,8 +382,12 @@ class IncusAuto(CUI):
         self.stop_timeout = 300  # TODO opt
 
     def check_required(self):
-        self.authorized_keys = self.convert_fullpath(
-            self.conf('/config/ssh_authorized_keys'))
+        conf_use_sshd = self.conf('/config/use_sshd', False)
+        if conf_use_sshd:
+            self.authorized_keys = self.convert_fullpath(
+                self.conf('/config/ssh_authorized_keys'))
+        else:
+            self.authorized_keys = None
         if self.authorized_keys is not None:
             if not os.access(self.authorized_keys, os.R_OK):
                 raise Exception(f'Error: cannot read: {self.authorized_keys}')
@@ -596,9 +600,11 @@ class IncusAuto(CUI):
             return None
         if path == '':
             return None
-        if path.startswith('/'):
-            return path
-        return os.path.join(self.basedir, path)
+        path = os.path.expandvars(path)
+        path = os.path.expanduser(path)
+        if not path.startswith('/'):
+            path = os.path.join(self.basedir, path)
+        return os.path.realpath(path)
 
     def convert_default_pool(self, pool):
         if pool == '__DEFAULT__':
@@ -919,7 +925,7 @@ class IncusAuto(CUI):
 
     def incus_create(self, info, name, fullname):
         image = info['image']
-        args = ['create', image, fullname]
+        args = ['init', image, fullname]
         for p in info.get('profile', {}):
             args += ['-p', self.project_prefix + p]
         for devname, params in info.get('devices', {}).items():
@@ -1017,12 +1023,14 @@ class IncusAuto(CUI):
                             ignore_error=True)
             self.incus_exec(fullname, 'df -h')
 
+    def use_sshd(self, info):
+        return self.authorized_keys is not None \
+            and self.tobool(info['sshd'])
+
     def install_sshd(self, info, name, fullname):
-        if self.authorized_keys is None \
-           or not self.tobool(info['sshd']):
+        if not self.use_sshd(info):
             self.logger.debug(f'{name}: sshd is not installed (disabled)')
             return
-        self.incus_exec(fullname, f'hostnamectl set-hostname {name}')
         self.incus_exec(fullname, 'systemctl restart systemd-hostnamed')
         if info['series'] == 'rhel':
             self.incus_exec(fullname, 'yum install -y openssh-server', retry=5)
@@ -1226,6 +1234,7 @@ class IncusAuto(CUI):
             self.logger.info(f'[STEP-2] initialize network and volume: {name}')
             self.incus_wait_for_wakeup(fullname, info)
             self.setup_network_static(info, fullname)
+            self.incus_exec(fullname, f'hostnamectl set-hostname {name}')
 
         for name, fullname, info in self.name_iter(self.use_all):
             if self.tobool(info['vm']):
