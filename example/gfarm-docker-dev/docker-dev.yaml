@@ -1,0 +1,39 @@
+config:
+  incus_command: lxc
+  project: gfarm-dev
+  default_pool: default
+  use_sshd: false
+  profile:
+    prof:
+      config:
+        security.nesting: true
+        security.privileged: true
+      devices:
+        root:
+          type: disk
+          path: /
+          pool: __DEFAULT__
+        script:
+          type: disk
+          source: ./SCRIPT
+          path: /SCRIPT
+        eth0:
+          network: lxdbr0
+          type: nic
+
+host:
+  work:
+    #image: images:rockylinux/9
+    image: ubuntu:24.04
+    series: rhel
+    vm: false
+    profile:
+      - prof
+    devices:
+      root:
+        size: 50GB
+    volume:
+      - ~/gfarm:/GFARM
+    setup:
+      - sh /SCRIPT/install-docker.sh
+      - sh /SCRIPT/setup-gfarm-docker-dev.sh
