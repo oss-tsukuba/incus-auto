@@ -342,6 +342,7 @@ class IncusAuto(CUI):
                 'idmap': False,
                 'user': 'admin',  # main guest user
                 'uid': 2000,
+                'use_sshd': True,
                 # '' means "disabled"
                 'ssh_authorized_keys': 'ssh_authorized_keys',
                 'etchosts': True,
@@ -1234,7 +1235,6 @@ class IncusAuto(CUI):
             self.logger.info(f'[STEP-2] initialize network and volume: {name}')
             self.incus_wait_for_wakeup(fullname, info)
             self.setup_network_static(info, fullname)
-            self.incus_exec(fullname, f'hostnamectl set-hostname {name}')
 
         for name, fullname, info in self.name_iter(self.use_all):
             if self.tobool(info['vm']):
@@ -1246,8 +1246,9 @@ class IncusAuto(CUI):
                 self.incus_start(fullname)
 
         for name, fullname, info in self.name_iter(self.use_all):
+            if self.tobool(info['vm']):
+                self.incus_wait_for_wakeup(fullname, info)
             self.logger.info(f'[STEP-3] setup: {name}')
-            self.incus_wait_for_wakeup(fullname, info)
             if self.tobool(info['vm']) and info['series'] == 'rhel':
                 # growpart for rhel VM
                 self.logger.info(f'[STEP-3.A] growpart: {name}')
@@ -1257,6 +1258,7 @@ class IncusAuto(CUI):
                 self.logger.info(f'[STEP-3.B] sshd: {name}')
                 self.install_sshd(info, name, fullname)
                 self.update_etchosts(info, fullname)
+            self.incus_exec(fullname, f'hostnamectl set-hostname {name}')
 
             # run /host|buildimage/NAME/setup
             for cmd in info.get('setup', []):
