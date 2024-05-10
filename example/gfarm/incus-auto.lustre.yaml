@@ -2,6 +2,7 @@ buildimage:
   IMG-lserver:
     depend: [IMG-gfarm]
     image: images:rockylinux/8
+    image_lxd: images:almalinux/8
     series: rhel
     vm: true
     profile:
@@ -27,9 +28,10 @@ buildimage:
     publish-alias:  # MUST
       - IMG-lserver  # short name (without project_name prefix)
       - IMG-lustre-server
-  TMP-gfarm-rocky:  # speedup for build gfarm for VM (VM is slow)
+  TMP-gfarm:  # speedup for build gfarm for VM (VM is slow)
     depend: IMG-gfarm
     image: images:rockylinux/8
+    image_lxd: images:almalinux/8
     series: rhel
     vm: false  # container
     profile:
@@ -43,8 +45,9 @@ buildimage:
       - bash -x /SCRIPT/install-gfarm.sh --build-cache --no-manpage
     # not publish
   IMG-lclient:
-    depend: [TMP-gfarm-rocky,IMG-lserver]
+    depend: [TMP-gfarm,IMG-lserver]
     image: images:rockylinux/8
+    image_lxd: images:almalinux/8
     series: rhel
     vm: true
     profile:

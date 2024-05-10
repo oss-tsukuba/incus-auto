@@ -79,6 +79,8 @@ GRUB_DISABLE_SUBMENU=true
 GRUB_DEFAULT=2
 #GRUB_TIMEOUT=10
 EOF
-SUDO grub2-mkconfig -o /boot/efi/EFI/rocky/grub.cfg
+
+# $ID: from /etc/os-release
+SUDO grub2-mkconfig -o /boot/efi/EFI/${ID}/grub.cfg
 
 REGPATH_usrlocalbin

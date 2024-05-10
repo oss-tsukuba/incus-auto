@@ -3,7 +3,8 @@ IA = ../../bin/incus-auto
 IAGF = $(IA) -c $(shell ./CONFIG.sh gfarm)
 IALS = $(IA) -c $(shell ./CONFIG.sh lustre)
 IAALL= $(IA) -c $(shell ./CONFIG.sh all)
-POOL = mypool
+CMD = $(shell $(IALS) config | grep incus_command | awk '{print $$2}')
+POOL = $(shell $(IALS) config | grep default_pool | awk '{print $$2}')
 FSNAME = testfs
 MDTNAME = mdt.$(FSNAME)-MDT0000
 INV = CACHE/tmp-inventory.yaml  # SEE ALSO: SCRIPT/lib.sh
@@ -82,9 +83,9 @@ delete-lustre:
 	$(IALS) stop -a -f
 	$(IALS) delete -a
 delete-lustre-block:
-	incus storage volume delete $(POOL) gfarm-lustre-mdt || true
-	incus storage volume delete $(POOL) gfarm-lustre-oss0 || true
-	incus storage volume delete $(POOL) gfarm-lustre-oss1 || true
+	$(CMD) storage volume delete $(POOL) gfarm-lustre-mdt || true
+	$(CMD) storage volume delete $(POOL) gfarm-lustre-oss0 || true
+	$(CMD) storage volume delete $(POOL) gfarm-lustre-oss1 || true
 start-lustre-hsm:
 	$(IALS) exec mgs --root -- lctl set_param $(MDTNAME).hsm_control=enabled
 	$(IALS) exec mgs --root -- lctl get_param $(MDTNAME).hsm_control

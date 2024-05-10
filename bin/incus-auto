@@ -179,7 +179,7 @@ class CUI():
         if ret != 0:
             msg = f'{str(args)}: {str(err)}'
             if ignore_error:
-                self.logger.debug(f'IGNORE (exit status={ret}): {msg}')
+                self.logger.debug(f'Ignored (exit status={ret}): {msg}')
                 return
             else:
                 raise Exception(f'Error (exit status={ret}): {msg}')
@@ -381,6 +381,7 @@ class IncusAuto(CUI):
         self.project_prefix = self.conf('/config/project') + '-'
         self.incus_command = self.conf('/config/incus_command')
         self.stop_timeout = 300  # TODO opt
+        self.start_timeout = 120  # TODO opt
 
     def check_required(self):
         conf_use_sshd = self.conf('/config/use_sshd', False)
@@ -558,14 +559,20 @@ class IncusAuto(CUI):
     def incus_wait_for_wakeup(self, fullname, info):
         net_if = self.convert_net_if('eth0', info)
         first = True
+        count = 0
         while not self.incus_is_running(fullname):
-            if first or self.loglevel == logging.DEBUG:
+            count += 1
+            if count == 1 or self.loglevel == logging.DEBUG:
                 self.logger.info(f'Waiting for startup: {fullname}')
-                first = False
             else:
                 print('.', end='', flush=True)
+            if count % self.start_timeout == 0:
+                self.logger.warning(
+                    f'{fullname} is no responding, restarting...')
+                self.incus_stop(fullname)
+                self.incus_start(fullname)
             time.sleep(1)
-        if not first:
+        if count != 1:
             print('')
         first = True
         while self.incus_get_ipv4(fullname, net_if) is None:
@@ -792,19 +799,30 @@ class IncusAuto(CUI):
     def cmd_destroy(self):
         # delete buildimages
         self.use_all = True
-        # self.incus_each('stop', ['-f'], build=True, ignore_error=True)
         self.incus_each('delete', ['-f'], build=True, ignore_error=True)
         # delete profiles
         for profname in self.conf('/config/profile').keys():
             fullname = self.project_prefix + profname
-            print(f'incus profile delete {fullname}')
-            self.incus(f'profile delete {fullname}', ignore_error=True,
-                       output=True)
+            try:
+                self.incus(f'profile show {fullname}', output=False)
+                exist = True
+            except Exception:
+                exist = False
+            if exist:
+                self.incus(f'profile delete {fullname}', ignore_error=False,
+                           output=True)
+                print(f'{self.incus_command} profile delete {fullname}')
         # delete networks
         for netname in self.conf('/config/network').keys():
-            print(f'incus network delete {netname}')
-            self.incus(f'network delete {netname}', ignore_error=True,
-                       output=True)
+            try:
+                self.incus(f'network show {netname}', output=False)
+                exist = True
+            except Exception:
+                exist = False
+            if exist:
+                self.incus(f'network delete {netname}', ignore_error=False,
+                           output=True)
+                print(f'{self.incus_command} network delete {netname}')
 
     def cmd_start(self):
         self.incus_each('start', ['--verbose'],
@@ -925,7 +943,12 @@ class IncusAuto(CUI):
                             user_is_root=self.user_is_root)
 
     def incus_create(self, info, name, fullname):
-        image = info['image']
+        if self.incus_command == 'lxc':
+            image = info.get('image_lxd', None)
+        else:
+            image = None
+        if image is None:
+            image = info['image']
         args = ['init', image, fullname]
         for p in info.get('profile', {}):
             args += ['-p', self.project_prefix + p]
@@ -1032,7 +1055,6 @@ class IncusAuto(CUI):
         if not self.use_sshd(info):
             self.logger.debug(f'{name}: sshd is not installed (disabled)')
             return
-        self.incus_exec(fullname, 'systemctl restart systemd-hostnamed')
         if info['series'] == 'rhel':
             self.incus_exec(fullname, 'yum install -y openssh-server', retry=5)
             self.incus_exec(fullname, 'systemctl enable sshd')
@@ -1254,11 +1276,12 @@ class IncusAuto(CUI):
                 self.logger.info(f'[STEP-3.A] growpart: {name}')
                 self.growpart(fullname)
             self.setup_user(info, fullname)
+            self.incus_exec(fullname, 'systemctl restart systemd-hostnamed')
+            self.incus_exec(fullname, f'hostnamectl set-hostname {name}')
             if not self.control_buildimage:
                 self.logger.info(f'[STEP-3.B] sshd: {name}')
                 self.install_sshd(info, name, fullname)
                 self.update_etchosts(info, fullname)
-            self.incus_exec(fullname, f'hostnamectl set-hostname {name}')
 
             # run /host|buildimage/NAME/setup
             for cmd in info.get('setup', []):
