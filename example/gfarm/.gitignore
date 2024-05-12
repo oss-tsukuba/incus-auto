@@ -7,4 +7,5 @@
 /CACHE/lustre-*
 /CACHE/e2fsprogs-*
 /CACHE/rocky
+/CACHE/almalinux
 /CACHE/tmp-inventory.yaml
