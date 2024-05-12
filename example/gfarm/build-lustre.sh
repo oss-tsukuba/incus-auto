@@ -70,7 +70,7 @@ case $TARGET in
 
         $B IMG-lserver > $LOG1 2>&1 &
         p1=$!
-        ($B TMP-gfarm-rocky && $B IMG-lclient) > $LOG2 2>&1 &
+        ($B TMP-gfarm && $B IMG-lclient) > $LOG2 2>&1 &
         p2=$!
         tail -f $LOG1 $LOG2 &
         t=$!
