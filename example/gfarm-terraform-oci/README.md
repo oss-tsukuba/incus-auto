@@ -46,7 +46,7 @@ cat ociapi_public.pem
   - TCP Source=???.???.???.???/?? DestPort=601 (if you need) (for gfmd)
 - Create `terraform.tfvars` file to set parameters
   - Sample: `terraform.tfvars.sample`
-  - Variables: `variables.tf`
+  - Defined Variables: `variables.tf`
     - required variables
     - overridable variables
 - Execute commands
@@ -109,18 +109,17 @@ At tf container:
 
 ```
 gfarmsys@gfmanage:~/terraform/ansible$ make gfarm-config-init
+gfarmsys@gfmanage:~/terraform/ansible$ grid-proxy-init
 gfarmsys@gfmanage:~/terraform/ansible$ gfhost -lv
 ```
 
 #### At tf container (access Gfarm via Internet) (Ubuntu)
 
 ```
-make gfarm-install
-make gfarm-config-fetch
-make update-etchosts-for-gfarm
-```
-
-```
+gfarmsys@tf:~/terraform$ make gfarm-install
+gfarmsys@tf:~/terraform$ make gfarm-config-fetch
+gfarmsys@tf:~/terraform$ make update-etchosts-for-gfarm
+gfarmsys@tf:~/terraform$ grid-proxy-init
 gfarmsys@tf:~/terraform$ gfhost -lv
 ```
 
