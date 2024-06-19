@@ -39,16 +39,17 @@ cat ociapi_public.pem
   - Subnet example: 10.0.1.0/24
 - Update Ingress Rules (in Security Lists)
   - TCP Source=10.0.0.0/8 (for each OCI instances)
-  - UCP Source=10.0.0.0/8 (for each OCI instances)
+  - UDP Source=10.0.0.0/8 (for each OCI instances)
   - TCP Source=???.???.???.???/?? DestPort=22 (if you need) (for sshd)
   - TCP Source=???.???.???.???/?? DestPort=600 (if you need) (for gfsd)
   - UDP Source=???.???.???.???/?? DestPort=600 (if you need) (for gfsd)
   - TCP Source=???.???.???.???/?? DestPort=601 (if you need) (for gfmd)
 - Create `terraform.tfvars` file to set parameters
   - Sample: `terraform.tfvars.sample`
-  - Valiables: `variables.tf`
+  - Variables: `variables.tf`
     - required variables
     - overridable variables
+- Execute commands
 
 ```
 terraform init
