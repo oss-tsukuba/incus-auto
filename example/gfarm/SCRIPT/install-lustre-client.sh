@@ -15,7 +15,7 @@ cat <<EOF | SUDO tee /etc/yum.repos.d/lustre.repo
 [lustre-client]
 name=lustre-client
 #baseurl=http://metaserver/repo/lustre-client
-baseurl=http://downloads.whamcloud.com/public/lustre/latest-release/el8.9/client
+baseurl=http://downloads.whamcloud.com/public/lustre/latest-release/${EL_VERSION}/client
 enabled=0
 gpgcheck=0
 

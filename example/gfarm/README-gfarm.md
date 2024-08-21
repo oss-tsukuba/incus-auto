@@ -74,3 +74,8 @@
 
 - Run `make down` to remove only containers
 - Run `make CLEAN` to destroy the environemnt
+
+## When Lustre is updated
+
+- Edit `SCRIPT/install-lustre-common.sh`
+  - update LUSTRE_VER and E2FSPROGS_VER

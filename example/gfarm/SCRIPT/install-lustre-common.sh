@@ -1,17 +1,24 @@
 #!/bin/bash
 
-LUSTRE_VER=lustre-2.15.4
-DIST=el8.9
-E2FSPROGS_VER=1.47.0.wc6
+# SEE: http://downloads.whamcloud.com/public/lustre/
+LUSTRE_VER=lustre-2.15.5
+
+# SEE: https://downloads.whamcloud.com/public/e2fsprogs/
+E2FSPROGS_VER=1.47.1.wc1
+
+EL_VERSION=el${VERSION_ID}  # from /etc/os-release
+DIST=${EL_VERSION}
+
+EL_VER_MAJOR=$(echo $EL_VERSION | cut -d '.' -f 1)
 
 E2FSPROGS_DIR=/CACHE/e2fsprogs-${E2FSPROGS_VER}
 LUSTRE_SERVER_DIR=/CACHE/${LUSTRE_VER}-server
 LUSTRE_CLIENT_DIR=/CACHE/${LUSTRE_VER}-client
 
-# for rpm
+# to get rpm (not using yum)
 LUSTRE_SERVER_URL=http://downloads.whamcloud.com/public/lustre/${LUSTRE_VER}/${DIST}/server/RPMS/x86_64/
 LUSTRE_CLIENT_URL=http://downloads.whamcloud.com/public/lustre/${LUSTRE_VER}/${DIST}/client/RPMS/x86_64/
-E2FSPROGS_URL=https://downloads.whamcloud.com/public/e2fsprogs/${E2FSPROGS_VER}/el8/RPMS/x86_64/
+E2FSPROGS_URL=https://downloads.whamcloud.com/public/e2fsprogs/${E2FSPROGS_VER}/${EL_VER_MAJOR}/RPMS/x86_64/
 
 install_lustre_common() {
     # for developer

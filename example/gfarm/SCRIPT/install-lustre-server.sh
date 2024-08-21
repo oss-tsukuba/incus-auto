@@ -7,7 +7,7 @@ cat <<EOF | SUDO tee /etc/yum.repos.d/lustre.repo
 [lustre-server]
 name=lustre-server
 #baseurl=http://metaserver/repo/lustre-server
-baseurl=http://downloads.whamcloud.com/public/lustre/latest-release/el8.9/server
+baseurl=http://downloads.whamcloud.com/public/lustre/latest-release/${EL_VERSION}/server
 enabled=0
 gpgcheck=0
 proxy=_none_
@@ -15,7 +15,7 @@ proxy=_none_
 [lustre-client]
 name=lustre-client
 #baseurl=http://metaserver/repo/lustre-client
-baseurl=http://downloads.whamcloud.com/public/lustre/latest-release/el8.9/client
+baseurl=http://downloads.whamcloud.com/public/lustre/latest-release/${EL_VERSION}/client
 enabled=0
 gpgcheck=0
 
