@@ -12,6 +12,9 @@
 
 At host OS:
 
+- See `../../README.md` to setup incus-auto
+- Run the following commands:
+
 ```
 make git-clone
 make ssh-keygen

@@ -6,16 +6,31 @@ incus-auto is automating deployment system using Incus.
 
 - Incus (or LXD)
 - (Option) Nested Virtualization
-  - when using VM on VM
+  - If using VM on VM (Virtual machine)
+  - Example of Hyper-V:
+    - `Set-VMProcessor -VMName VM-NAME -ExposeVirtualizationExtensions $true`
 
 ## Features
 
 - Automatic source=agent:config for Incus VM
 
-## Summary
+## Setup
 
 - Install Incus
   - <https://linuxcontainers.org/incus/docs/main/installing/>
+  - `qemu-system` is required for VM
+    - `sudo systemctl restart incus` may be needed.
+- Edit /etc/subuid and /etc/subgid for incus if needed
+
+  ```text
+  root:1000:65535
+  root:1000000:65536
+  ```
+
+- Initialize Incus
+  - Example: `incus admin init`
+    - Default storage pool `default` is used.
+    - Default network bridge `incusbr0` is not used.
 - Install pigz for performance
   - `apt-get install pigz`
 - Run `incus config set images.compression_algorithm pigz`
