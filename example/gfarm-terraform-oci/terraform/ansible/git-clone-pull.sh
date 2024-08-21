@@ -5,6 +5,14 @@ set -x
 
 PULL=${1-} # "pull"
 
+GITURL_GFARM_SSH=git@github.com:oss-tsukuba
+GITURL_GFARM_HTTPS=https://github.com/oss-tsukuba
+
+GITURL_SCITOKENS=https://github.com/scitokens
+
+#GITURL_GFARM=$GITURL_GFARM_SSH
+GITURL_GFARM=$GITURL_GFARM_HTTPS
+
 CLN()
 {
     URL="$1"
@@ -26,14 +34,15 @@ CLN()
 DIR=$(dirname $0)
 cd "${DIR}/SRC"
 
-CLN git@github.com:oss-tsukuba/gfarm.git                  .     2.8
-CLN git@github.com:oss-tsukuba/gfarm2fs.git               gfarm master
-CLN git@github.com:oss-tsukuba/jwt-logon.git              gfarm main
-CLN git@github.com:oss-tsukuba/jwt-agent.git              gfarm main
-CLN git@github.com:oss-tsukuba/cyrus-sasl-xoauth2-idp.git gfarm feature/keycloak
-CLN git@github.com:scitokens/scitokens-cpp.git            gfarm master
-CLN git@github.com:oss-tsukuba/jwt-server.git             gfarm main
+CLN ${GITURL_GFARM}/gfarm.git                  .     2.8
+CLN ${GITURL_GFARM}/gfarm2fs.git               gfarm master
+CLN ${GITURL_GFARM}/jwt-logon.git              gfarm main
+CLN ${GITURL_GFARM}/jwt-agent.git              gfarm main
+CLN ${GITURL_GFARM}/cyrus-sasl-xoauth2-idp.git gfarm feature/keycloak
+CLN ${GITURL_GFARM}/jwt-server.git             gfarm main
+CLN ${GITURL_SCITOKENS}/scitokens-cpp.git      gfarm master
 
-#CLN git@github.com:oss-tsukuba/lustre-release.git         .     hsm-posix-for-gfarm2fs
-#CLN git@github.com:oss-tsukuba/nextcloud-gfarm.git        .     master
-#CLN git@github.com:oss-tsukuba/gfarm-gridftp-dsi.git      .     master
+#CLN ${GITURL_GFARM}/lustre-release.git         .     hsm-posix-for-gfarm2fs
+
+#CLN ${GITURL_GFARM}/nextcloud-gfarm.git        .     master
+#CLN ${GITURL_GFARM}/gfarm-gridftp-dsi.git      .     master
