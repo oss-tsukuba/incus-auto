@@ -1,0 +1,13 @@
+services:
+  tf:
+    hostname: tf
+    container_name: tf
+    build:
+      dockerfile: docker/Dockerfile
+      args:
+        USERNAME: $USER
+    tty: true
+    init: true
+    #user: "${UID}:${GID}"
+    volumes:
+      - ./terraform:/TF:rw
