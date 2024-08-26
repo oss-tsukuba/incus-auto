@@ -12,6 +12,8 @@ git-clone:
 git-pull:
 	./terraform/ansible/git-clone-pull.sh pull
 
+ociapi-keygen:
+	bash ./terraform/setup-oci-api.sh
 ssh-keygen:
 	ssh-keygen -t ecdsa -f terraform/id_ecdsa -N ""
 incus-init:
@@ -29,3 +31,16 @@ CLEAN: DOWN
 # 	make CLEAN
 # 	make incus-init
 # 	make incus-create
+
+docker-build:
+	docker compose build
+
+docker-up:
+	docker compose up -d
+	docker compose exec -u ${USER} tf sudo ln -sf /TF /home/${USER}/terraform
+
+docker-shell:
+	docker compose exec -it -u ${USER} -w /home/${USER} tf bash
+
+docker-down:
+	docker compose down

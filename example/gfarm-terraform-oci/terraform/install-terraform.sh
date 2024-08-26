@@ -3,7 +3,14 @@
 set -eu
 set -x
 
-sudo apt-get install -y gnupg bash-completion make jq rsync
+if type sudo; then
+    SUDO=sudo
+else
+    SUDO=
+fi
+
+$SUDO apt-get update
+$SUDO apt-get install -y gnupg bash-completion make jq rsync wget vim lsb-release bash-completion
 
 KEYRING=${HOME}/hashicorp-archive-keyring.gpg
 wget -O- https://apt.releases.hashicorp.com/gpg \
@@ -13,12 +20,12 @@ wget -O- https://apt.releases.hashicorp.com/gpg \
 #gpg --no-default-keyring --keyring ${KEYRING} --fingerprint | grep "$FP"
 gpg --no-default-keyring --keyring ${KEYRING} --fingerprint | grep " 798A EC65 4E5C 1542 8C8E "
 
-sudo cp -f ${KEYRING} /usr/share/keyrings/
+$SUDO cp -f ${KEYRING} /usr/share/keyrings/
 
 echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] \
 https://apt.releases.hashicorp.com $(lsb_release -cs) main" | \
-sudo tee /etc/apt/sources.list.d/hashicorp.list
+$SUDO tee /etc/apt/sources.list.d/hashicorp.list
 
-sudo apt-get update
-sudo apt-get install -y terraform
+$SUDO apt-get update
+$SUDO apt-get install -y terraform
 terraform -install-autocomplete || true

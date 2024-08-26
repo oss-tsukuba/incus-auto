@@ -3,8 +3,8 @@ RSYNC = rsync -e ./ocissh -av
 ssh-gfmanage:
 	./ocissh gfmanage
 
-ociapi-keygen:
-	bash ./setup-oci-api.sh
+#ociapi-keygen:
+#	bash ./setup-oci-api.sh
 terraform-init:
 	terraform init
 terraform-plan:

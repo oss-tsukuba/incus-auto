@@ -5,6 +5,9 @@ set -x
 
 # SEE: https://oracle-japan.github.io/ocitutorials/intermediates/terraform/
 
+D=$(dirname $0)
+cd "$D"
+
 PUBKEY=./ociapi_public.pem
 PRIVKEY=./ociapi_private.pem
 
