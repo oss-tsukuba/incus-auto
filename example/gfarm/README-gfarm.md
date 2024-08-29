@@ -6,7 +6,7 @@
 - Gfarm gfsd x 4
 - Gfarm client x 1
 - Lustre mds,mgs x 1
-- Lustre oss x 1
+- Lustre oss x 2
 - Lustre client x 1
   - Lustre HSM + gfarm2fs
 
