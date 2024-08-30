@@ -189,6 +189,7 @@ gfarmsys@tf:~/terraform$ gfhost -lv
 
 - In a tf container in Incus
   - `make terraform-destroy` to delete OCI instances
+  - NOTE: `terraform destroy` fails.
 - In a host OS
   - `make CLEAN` to delete Incus container
 - Reusable files are not deleted:
