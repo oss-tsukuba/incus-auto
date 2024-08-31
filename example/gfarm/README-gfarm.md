@@ -40,11 +40,14 @@
 - ctrl-d (exit from gfclient01)
 - ctrl-d (exit from manage)
 
-## Setup Lustre
+## Setup Lustre environment
 
 - Run `make build-lustre`
 - Run `make launch-lustre`
 - Run `make setup-gfarm-all`
+
+## How to use Lustre HSM for gfarm2fs
+
 - (Another terminal) run `make start-lustre-hsm`
   - foregroud
   - ctrl-c to stop
