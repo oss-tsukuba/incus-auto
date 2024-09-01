@@ -55,6 +55,8 @@
 - Enjoy Lustre operations ...
   - sudo mkdir tmp
   - sudo chmod 1777 tmp
+  - cd tmp
+  - ((run test) sudo /SCRIPT/test-hsm.sh 5)
   - (file creation, Lustre operations, etc. ...)
     - (ex. sudo lfs setstripe -c 2 .)
   - sudo lfs hsm_archive FILENAME
