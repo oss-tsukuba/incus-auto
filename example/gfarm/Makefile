@@ -89,7 +89,7 @@ delete-lustre-block:
 start-lustre-hsm:
 	$(IALS) exec mgs --root -- lctl set_param $(MDTNAME).hsm_control=enabled
 	$(IALS) exec mgs --root -- lctl get_param $(MDTNAME).hsm_control
-	$(IALS) exec lclient1 -- bash /SCRIPT/hsm-start.sh
+	$(IALS) exec lclient1 --root -- bash /SCRIPT/hsm-start.sh
 
 setup-gfarm-all:
 	$(IAALL) wait -a
