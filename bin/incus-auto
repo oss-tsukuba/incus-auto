@@ -347,6 +347,8 @@ class IncusAuto(CUI):
                 'ssh_authorized_keys': 'ssh_authorized_keys',
                 'etchosts': True,
                 'network': {},
+                'stop_timeout': 300,
+                'start_timeout': 300,
             },
             'buildimage': {
                 '__ANY__': {
@@ -380,8 +382,10 @@ class IncusAuto(CUI):
                     'Error: buildimage and host cannot be duplicated: ' + name)
         self.project_prefix = self.conf('/config/project') + '-'
         self.incus_command = self.conf('/config/incus_command')
-        self.stop_timeout = 300  # TODO opt
-        self.start_timeout = 120  # TODO opt
+        #self.stop_timeout = 300  # TODO opt
+        #self.start_timeout = 300  # TODO opt
+        self.stop_timeout = self.conf('/config/stop_timeout')
+        self.start_timeout = self.conf('/config/start_timeout')
 
     def check_required(self):
         conf_use_sshd = self.conf('/config/use_sshd', False)
@@ -526,13 +530,13 @@ class IncusAuto(CUI):
     def incus_start(self, fullname):
         self.incus(['start', fullname])
 
-    def incus_stop(self, fullname, timeout=-1, ignore_error=False):
+    def incus_stop(self, fullname, force=False, timeout=-1, ignore_error=False):
         args = ['stop', fullname, '--verbose']
         if timeout == -1:
             timeout = self.stop_timeout
         if timeout is not None and timeout > 0:
             args += ['--timeout', str(timeout)]
-        if self.force:
+        if self.force or force:
             args.append('--force')
         self.incus(args, ignore_error=ignore_error)
 
@@ -569,7 +573,7 @@ class IncusAuto(CUI):
             if count % self.start_timeout == 0:
                 self.logger.warning(
                     f'{fullname} is no responding, restarting...')
-                self.incus_stop(fullname)
+                self.incus_stop(fullname, force=True)
                 self.incus_start(fullname)
             time.sleep(1)
         if count != 1:
