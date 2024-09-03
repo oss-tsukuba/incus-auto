@@ -33,7 +33,7 @@ state() {
     lfs hsm_state $T
 
     RETRY=5
-    RESULT=false
+    RESULT=3
     for j in $(seq $RETRY); do
 	L=$(dirname $A)/$(readlink $A)
 	ls -l $A
@@ -52,6 +52,7 @@ state() {
 		ls -l $L
 		RESULT=2
 	    else
+		RESULT=0
 		break
 	    fi
 	fi
