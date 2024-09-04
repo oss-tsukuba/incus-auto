@@ -38,6 +38,16 @@ ansible-init:
 	make gen-inventory
 	$(IAALL) exec gfmanage -- bash -x /SCRIPT/setup-ansible.sh
 
+stop:
+	$(IAALL) -ab stop
+	$(IAALL) -a stop
+start:
+	# $(IALS) -a start
+	# $(IAGF) -a start
+	$(IAALL) -a start
+	$(IAALL) wait -a
+	make ps
+
 init:
 	$(IAGF) init
 
