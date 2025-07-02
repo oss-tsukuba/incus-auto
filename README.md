@@ -20,7 +20,7 @@ incus-auto is automating deployment system using Incus.
   - <https://linuxcontainers.org/incus/docs/main/installing/>
   - `qemu-system` is required for VM
     - `sudo systemctl restart incus` may be needed.
-- Edit /etc/subuid and /etc/subgid for incus if needed
+- Edit /etc/subuid, /etc/subgid and `sudo systemctl restart incus` for Incus if needed
 
   ```text
   root:1000:65535
