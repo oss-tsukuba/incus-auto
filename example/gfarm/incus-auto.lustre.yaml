@@ -76,6 +76,7 @@ x-lustre: &x-lustre
   profile:
     - prof1
     - prof2net
+    - prof3net  # not used
   #remote: <NOT DEFINED>  # NOTE: use default server
   #remote: incus2 # TODO
   volume:
@@ -107,9 +108,10 @@ host:
     network-static:
       eth0:
         ipv4.address: 10.123.123.241/24
-        ipv4.gateway: 10.123.123.1
+        ipv4.gateway: __DEFAULT__
+        domain: __DEFAULT__
         dns:
-        - 8.8.8.8
+          - __DEFAULT__
     setup:
       - bash -x /SCRIPT/setup-lustre-mgs.sh testfs
       - __RESTART__
@@ -128,9 +130,10 @@ host:
     network-static:
       eth0:
         ipv4.address: 10.123.123.242/24
-        ipv4.gateway: 10.123.123.1
+        ipv4.gateway: __DEFAULT__
+        domain: __DEFAULT__
         dns:
-        - 8.8.8.8
+          - __DEFAULT__
     block-device:
       gfarm-lustre-oss0:
         pool: __DEFAULT__
@@ -150,12 +153,16 @@ host:
     devices:
       root:
         size: 6GB  # equal to or larger than the image
+    # devices:
+    #   eth0:
+    #     ipv4.address: 10.123.123.243  # NOTE: for ipv4.dhcp=true
     network-static:
       eth0:
         ipv4.address: 10.123.123.243/24
-        ipv4.gateway: 10.123.123.1
+        ipv4.gateway: __DEFAULT__
+        domain: __DEFAULT__
         dns:
-        - 8.8.8.8
+          - __DEFAULT__
     block-device:
       gfarm-lustre-oss1:
         pool: __DEFAULT__

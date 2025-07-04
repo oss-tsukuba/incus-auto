@@ -33,6 +33,10 @@ install_lustre_common() {
     DNF install -y \
          perl-interpreter \
          libnl3
+
+    # for ansible
+    DNF install -y \
+	python3
 }
 
 WGET="wget --tries=5"

@@ -58,6 +58,7 @@ host:
     alternative:
       - gfmd1.test
       - gfmd1.example.org
+      - gfmd1.example.com
     # remote: incus1 #TODO
     # target: incus2 #TODO cluster
     # devices:
@@ -65,10 +66,11 @@ host:
     #     ipv4.address: 10.123.123.101   # unstable (not recommended)
     # network-static:  # recommended
     #   eth0:
-    #     ipv4.address: 10.123.123.201/24
-    #     ipv4.gateway: 10.123.123.1
+    #     ipv4.address: 10.123.123.101/24
+    #     ipv4.gateway: __DEFAULT__
+    #     domain:  __DEFAULT__
     #     dns:
-    #     - 8.8.8.8
+    #       - __DEFAULT__
     envvar:
       gfmd_cluster: siteA
   gfmd2:
@@ -122,10 +124,12 @@ host:
     network-static:
       eth0:
         ipv4.address: 10.123.123.251/24
-        ipv4.gateway: 10.123.123.1
+        ipv4.gateway: __DEFAULT__
+        domain:  __DEFAULT__
         dns:
-        - 8.8.8.8
-        - 8.8.4.4
+          - __DEFAULT__
+          - 8.8.8.8
+          - 8.8.4.4
       eth1:
         ipv4.address: 10.210.210.251/24
     setup:

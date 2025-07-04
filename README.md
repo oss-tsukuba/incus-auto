@@ -38,8 +38,8 @@ incus-auto is automating deployment system using Incus.
   - Debian series (Ubuntu, etc.):
     - `apt-get install python3 python3-docopt python3-schema python3-yaml`
   - Fedora series (RHEL, RockyLinux, AlmaLinux, etc.):
-    - `yum install epel-release`
-    - `yum install python3 python3-docopt python3-schema python3-pyyaml`
+    - `dnf install epel-release`
+    - `dnf install python3 python3-docopt python3-schema python3-pyyaml`
 - Install incus-auto
   - Example:
     - `install -m 755 bin/incus-auto /usr/local/bin/`

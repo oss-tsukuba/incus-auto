@@ -5,8 +5,8 @@
 # apt-get install python3 python3-docopt python3-schema python3-yaml
 #
 # --- for RHEL,CentOS series ---
-# yum install     epel-release
-# yum install     python3 python3-docopt python3-schema python3-pyyaml
+# dnf install     epel-release
+# dnf install     python3 python3-docopt python3-schema python3-pyyaml
 #
 # --- Or, install to ~/.local just for user's environment ---
 # (required: python3-pip)
@@ -24,6 +24,7 @@ from io import StringIO
 import time
 import inspect
 import shlex
+from collections import OrderedDict
 
 from docopt import docopt
 from schema import Schema, Or
@@ -48,6 +49,8 @@ Usage:
   {f} config [options]
   {f} ansible-inventory [options]
   {f} inv [options]
+  {f} update-dnsmasq [options]
+  {f} print-etchosts [options]
   {f} etchosts [options]
   {f} <command> <name> [options]
   {f} <command> --all [options]
@@ -79,8 +82,10 @@ Command:
   config             check and show configuration parameters
   ansible-inventory  for ansible-inventory -i -
   inv                alias of ansible-inventory
-  etchosts           print list for /etc/hosts
-  update-etchosts    update /etc/hosts for hosts
+  update-dnsmasq     update DNS entries in incus network
+  print-etchosts     print list for /etc/hosts (not update)
+  etchosts           alias of print-etchosts
+  update-etchosts    update /etc/hosts for hosts (default: disabled)
   stop               stop hosts
   start              start hosts
   restart            restart hosts
@@ -110,7 +115,9 @@ opt_schema = Schema({
     'config': bool,
     'ansible-inventory': bool,
     'inv': bool,
+    'print-etchosts': bool,
     'etchosts': bool,
+    'update-dnsmasq': bool,
     '<name>': Or(str, None),
     '<args>': [str],
     '--': bool,
@@ -179,7 +186,7 @@ class CUI():
         if ret != 0:
             msg = f'{str(args)}: {str(err)}'
             if ignore_error:
-                self.logger.debug(f'Ignored (exit status={ret}): {msg}')
+                self.logger.info(f'Ignored (exit status={ret}): {msg}')
                 return
             else:
                 raise Exception(f'Error (exit status={ret}): {msg}')
@@ -345,7 +352,9 @@ class IncusAuto(CUI):
                 'use_sshd': True,
                 # '' means "disabled"
                 'ssh_authorized_keys': 'ssh_authorized_keys',
-                'etchosts': True,
+                'domain': 'test',
+                'network-default': None,
+                'etchosts': False,
                 'network': {},
                 'stop_timeout': 300,
                 'start_timeout': 300,
@@ -450,7 +459,7 @@ class IncusAuto(CUI):
         else:  # specified hosts
             target_dict = {}
             for name in self.names:
-                target_dict[name] = d[name]
+                target_dict[name] = d.get(name)
             for name in self.depend_name_sort(target_dict):
                 self.check_defined(name, target_path)
                 yield (name, self.project_prefix + name, d[name])
@@ -460,7 +469,7 @@ class IncusAuto(CUI):
 
     def check_defined(self, name, dpath):
         if not self.is_defined(name, dpath):
-            raise Exception(f'Undefined {dpath}: {name}')
+            raise Exception(f'Undefined in conf: {dpath}/{name}')
 
     def incus(self, args, input=None, output=None, ignore_error=False):
         if isinstance(args, str):
@@ -551,12 +560,14 @@ class IncusAuto(CUI):
         except Exception:
             return False
 
+    # TODO reanme to convert_real_ifname()
     def convert_net_if(self, net_if, info):
         if not self.tobool(info['vm']):
             return net_if
         table = {
             'eth0': 'enp5s0',
             'eth1': 'enp6s0',
+            'eth2': 'enp7s0',
         }
         return table[net_if]
 
@@ -590,6 +601,7 @@ class IncusAuto(CUI):
         if not first:
             print('')
 
+    # TODO get_ipv4(), net_if -> ifname
     def incus_get_ipv4(self, fullname, net_if, ls_info=None):
         if ls_info is None:
             ls_info = self.incus_ls_info()
@@ -606,6 +618,34 @@ class IncusAuto(CUI):
                     return a['address']
             break
         return None
+
+    def convert_netname_to_ifname(self, fullname, netname, ls_info=None):
+        if ls_info is None:
+            ls_info = self.incus_ls_info()
+        for hostinfo in ls_info:
+            if fullname != hostinfo['name']:
+                continue
+            expanded_devices = hostinfo.get('expanded_devices')
+            if expanded_devices is None:
+                continue
+            for devname, param in expanded_devices.items():
+                if param.get('type') == 'nic':
+                    netname2 = param.get('network')
+                    if netname2 == netname:
+                        return devname  # found
+        return None
+
+    ### not used
+    # def convert_ifname_to_netname(self, fullname, ifname, ls_info=None):
+    #     if ls_info is None:
+    #         ls_info = self.incus_ls_info()
+    #     for hostinfo in ls_info:
+    #         if fullname != hostinfo['name']:
+    #             continue
+    #         netname = self.dictpath(
+    #             hostinfo, ['expanded_devices', ifname, 'network'])
+    #         return netname  # may be none
+    #     return None
 
     def convert_fullpath(self, path):
         if path is None:
@@ -663,7 +703,9 @@ class IncusAuto(CUI):
             'config': self.cmd_config,
             'ansible-inventory': self.cmd_ansible_inventory,
             'inv': self.cmd_ansible_inventory,
-            'etchosts': self.cmd_etchosts,
+            'update-dnsmasq': self.cmd_update_dnsmasq,
+            'print-etchosts': self.cmd_print_etchosts,
+            'etchosts': self.cmd_print_etchosts,
             'update-etchosts': self.cmd_update_etchosts,
             'build': self.cmd_build,
             'launch': self.cmd_launch,
@@ -681,7 +723,8 @@ class IncusAuto(CUI):
                            'config',
                            'ansible-inventory',
                            'inv',
-                           'etchosts',
+                           'print-etchosts',
+                           'update-dnsmasq',
                            ]
         cmd_name = None
         for n in simple_commands:
@@ -696,30 +739,37 @@ class IncusAuto(CUI):
     def cmd_config(self):
         print(yaml.dump(self.conf_dict, sort_keys=False))
 
-    def conf_ipv4(self, name):
+    # TODO get_static_ipv4(self, name, ifname)
+    def get_static_ipv4(self, name):
         ip = self.conf(f'/host/{name}/network-static/eth0/ipv4.address')
         if ip is None:
             ip = self.conf(f'/host/{name}/devices/eth0/ipv4.address')
         if ip is None:
-            return None
+            return None  # not defined
         return ip.split('/')[0]
 
     def cmd_ansible_inventory(self):
         user = self.conf('/config/user')
+        domain = self.conf('/config/domain')
         inv = {
             'all': {
                 'vars': {
                     'ansible_user': user,
+                    'domain': domain,
                 },
             },
         }
-        envvar1 = self.conf('/config/envvar')
-        if envvar1 is not None:
-            inv['all']['vars'].update(envvar1)
+        envvar_for_all = self.conf('/config/envvar')
+        if envvar_for_all is not None:
+            inv['all']['vars'].update(envvar_for_all)
 
         for name, fullname, info in self.name_iter(True):
             groups = info.get('group')
-            envvar2 = info.get('envvar')
+            envvar = info.get('envvar')
+            if envvar is None:
+                envvar = {}
+            fqdn = name + '.' + domain
+            envvar['_fqdn'] = fqdn
 
             if groups is None:
                 continue
@@ -740,10 +790,7 @@ class IncusAuto(CUI):
                 d[lastgrp] = gval
                 hosts = gval.get('hosts', {})
                 gval['hosts'] = hosts
-                if envvar2 is None:
-                    hosts[name] = None
-                else:
-                    hosts[name] = envvar2
+                hosts[name] = envvar
 
         def hide_null(self, _):
             return self.represent_scalar('tag:yaml.org,2002:null', '')
@@ -752,24 +799,26 @@ class IncusAuto(CUI):
         print(yaml.dump(inv, sort_keys=False))
 
     def gen_etchosts(self):
+        domain = self.conf(f'/config/domain')
         hosts = []
         ls_info = self.incus_ls_info()
         for name, fullname, info in self.name_iter(True):
-            net_if = self.convert_net_if('eth0', info)
-            ip = self.incus_get_ipv4(fullname, net_if, ls_info)
-            if ip is None:
-                ip = self.conf_ipv4(name)
-            if ip is None:
-                continue  # skip
+            ipv4 = self.get_static_ipv4(name)
+            if ipv4 is None:
+                net_if = self.convert_net_if('eth0', info)
+                ipv4 = self.incus_get_ipv4(fullname, net_if, ls_info)
+                if ipv4 is None:
+                    continue  # skip
             # aliases
             alt = self.conf(f'/host/{name}/alternative')
             alt_str = ''
             if alt is not None:
                 alt_str = ' ' + ' '.join(alt)
-            hosts.append(f'{ip}    {name} {fullname}{alt_str}')
+            fqdn = name + '.' + domain
+            hosts.append(f'{ipv4}    {name} {fqdn} {fullname}{alt_str}')
         return hosts
 
-    def cmd_etchosts(self):
+    def cmd_print_etchosts(self):
         self.use_all = True
         for host in self.gen_etchosts():
             print(host)
@@ -850,8 +899,10 @@ class IncusAuto(CUI):
 
     def cmd_update_etchosts(self):
         for name, fullname, info in self.name_iter(self.use_all):
-            print(f'update /etc/hosts: {name}')
             self.update_etchosts(info, fullname)
+
+    def cmd_update_dnsmasq(self):
+        self.update_dnsmasq()
 
     def cmd_ls(self):
         if self.use_all or len(self.names) == 0:
@@ -1033,7 +1084,7 @@ class IncusAuto(CUI):
 
     def growpart(self, fullname):
         self.incus_exec(fullname,
-                        'yum install -y e2fsprogs cloud-utils-growpart gdisk',
+                        'dnf install -y e2fsprogs cloud-utils-growpart gdisk',
                         retry=5)
         mount = self.incus_exec(fullname, 'mount', output=True)
         device = None
@@ -1060,7 +1111,7 @@ class IncusAuto(CUI):
             self.logger.debug(f'{name}: sshd is not installed (disabled)')
             return
         if info['series'] == 'rhel':
-            self.incus_exec(fullname, 'yum install -y openssh-server', retry=5)
+            self.incus_exec(fullname, 'dnf install -y openssh-server', retry=5)
             self.incus_exec(fullname, 'systemctl enable sshd')
             self.incus_exec(fullname, 'systemctl restart sshd')
         elif info['series'] == 'debian':
@@ -1111,19 +1162,44 @@ class IncusAuto(CUI):
                         input=str_input, output=False)
         self.incus_exec(fullname, f'chmod 600 {sudoers}')
 
-    def netconf_rhel(self, fullname, ifname, param, info):
+    def netconf_common(self, fullname, ifname, param, info):
         ipv4_address = param.get('ipv4.address')
+        ipv4_gateway = param.get('ipv4.gateway')
+        if ipv4_gateway == '__DEFAULT__':
+            ipv4_gateway = self.get_default_gateway()
+
+        dns_list_orig = param.get('dns', [])
+        if dns_list_orig is None or len(dns_list_orig) == 0:
+            dns_list_orig = []
+        dns_dict = OrderedDict()
+        for dns in dns_list_orig:
+            if dns == '__DEFAULT__':
+                dns = self.get_default_gateway()
+            dns_dict[dns] = None
+        dns_list = list(dns_dict.keys())
+
+        domain = param.get('domain')
+        if domain == '__DEFAULT__':
+            if dns is not None:
+                domain = self.conf('/config/domain')
+            else:
+                domain = None
+
+        real_ifname = self.convert_net_if(ifname, info)
+        return ipv4_address, ipv4_gateway, dns_list, domain, real_ifname
+
+    def netconf_rhel(self, fullname, ifname, param, info):
+        ipv4_address, ipv4_gateway, dns_list, domain, real_ifname = \
+            self.netconf_common(fullname, ifname, param, info)
+
         if ipv4_address is None:
             self.logger.debug(f'{ifname}: no static ipv4.address')
             return  # disabled ... not configure
-        ipv4_gateway = param.get('ipv4.gateway')
-        dns_list = param.get('dns')
-        if dns_list is not None:
-            dns = ','.join(dns_list)
-        else:
-            dns = None
-        real_ifname = self.convert_net_if(ifname, info)
 
+        if dns_list is not None:
+            dns_str = ','.join(dns_list)
+        else:
+            dns_str = None
         lines = self.incus_exec(fullname,
                                 'nmcli --fields UUID,DEVICE connection show',
                                 output=True)
@@ -1147,15 +1223,16 @@ class IncusAuto(CUI):
         if ipv4_gateway is not None:
             self.incus_exec(fullname, 'nmcli connection modify '
                             + f'{uuid} ipv4.gateway {ipv4_gateway}')
-        if dns is not None:
+        if dns_str is not None:
             self.incus_exec(fullname, 'nmcli connection modify'
-                            + f' {uuid} ipv4.dns "{dns}"')
+                            + f' {uuid} ipv4.dns "{dns_str}"')
+        if domain is not None:
+            self.incus_exec(fullname, 'nmcli connection modify'
+                            + f' {uuid} ipv4.dns-search "{domain}"')
 
     def netconf_debian(self, fullname, ifname, param, info, netplan_dict):
-        ipv4_address = param.get('ipv4.address')
-        ipv4_gateway = param.get('ipv4.gateway')
-        dns_list = param.get('dns')
-        real_ifname = self.convert_net_if(ifname, info)
+        ipv4_address, ipv4_gateway, dns_list, domain, real_ifname = \
+            self.netconf_common(fullname, ifname, param, info)
 
         if ipv4_address is not None:
             new_yaml = f'''network:
@@ -1175,6 +1252,10 @@ class IncusAuto(CUI):
                 d2['routes'] = [{'to': 'default', 'via': ipv4_gateway}]
             if dns_list is not None:
                 d2['nameservers'] = {'addresses': dns_list}
+            if domain is not None:
+                nameservers = d2.get('nameservers', {})
+                nameservers.update({'search': [domain]})
+                d2['nameservers'] = nameservers
         else:
             new_yaml = f'''network:
   version: 2
@@ -1193,7 +1274,7 @@ class IncusAuto(CUI):
             return
 
         if info['series'] == 'rhel':
-            self.incus_exec(fullname, 'yum install -y NetworkManager', retry=5)
+            self.incus_exec(fullname, 'dnf install -y NetworkManager', retry=5)
             self.incus_exec(fullname, 'systemctl enable NetworkManager')
             self.incus_exec(fullname, 'systemctl restart NetworkManager')
             for ifname, param in netstatic.items():
@@ -1217,9 +1298,86 @@ class IncusAuto(CUI):
             self.incus_exec(fullname, f'tee {netplan_path}', input=str_input)
             self.incus_exec(fullname, 'netplan apply')
 
+    def get_network_names(self):
+        networks = self.conf("/config/network")
+        if networks is None:
+            return None
+        return networks.keys()
+
+    def get_default_netname(self):
+        netname = self.conf("/config/network-default")
+        if netname is not None:
+            return netname
+        networks = self.get_network_names()
+        if networks is None:
+            return None
+        for netname in networks:
+            return netname  # first netname
+        return None
+
+    def get_default_gateway(self):
+        netname = self.get_default_netname()
+        ipv4 = self.conf(f'/config/network/{netname}/config/ipv4.address')
+        if ipv4 is None:
+            return None
+        return ipv4.split("/")[0]
+
+    def gen_dnsmasq(self, addresses: dict[str, list], domain):
+        filtered = {}
+        for ipaddr, names in addresses.items():
+            filtered[ipaddr] = set(names)  # unique hostnames
+        dnsmasq = []
+        if domain is not None:
+            router_ipv4 = self.get_default_gateway()
+            if router_ipv4:
+                dnsmasq.append(f"server=/{domain}/{router_ipv4}")
+            dnsmasq.append(f"domain={domain}")
+        for ipaddr, names in filtered.items():
+            for name in names:
+                dnsmasq.append(f"address=/{name}/{ipaddr}")
+
+        return "\n".join(dnsmasq)
+
+    def update_dnsmasq(self):
+        ls_info = self.incus_ls_info()
+        domain = self.conf(f'/config/domain')
+        netname = self.get_default_netname()
+        addresses = {}  # ipv4 to hostnames
+        for name, fullname, info in self.name_iter(True):
+            ipv4 = self.get_static_ipv4(name)
+            if ipv4 is None:
+                ifname = self.convert_netname_to_ifname(fullname, netname, ls_info)
+                if ifname is None:  # not started
+                    continue  # skip
+                ifname = self.convert_net_if(ifname, info)
+                ipv4 = self.incus_get_ipv4(fullname, ifname, ls_info)
+                if ipv4 is None:  # not started
+                    continue  # skip
+            hostnames = []
+            fqdn = name + '.' + domain
+            hostnames.append(fqdn)  # add FQDN
+            # aliases
+            alt = self.conf(f'/host/{name}/alternative')
+            if alt is not None:
+                hostnames.extend(alt)
+            addresses[ipv4] = hostnames
+
+        config_str = self.gen_dnsmasq(addresses, domain)
+        self.logger.info(f"Set raw.dnsmasq for `{netname}` network:\n{config_str}")
+        self.incus(["network", "set", netname, "raw.dnsmasq", "-"], input=config_str)
+
+        # delete old configurations if network-default is changed
+        for netname2 in self.get_network_names():
+            if netname2 == netname:
+                continue
+            self.logger.info(f"Unset raw.dnsmasq for `{netname2}` network:")
+            self.incus(["network", "unset", netname2, "raw.dnsmasq"])
+
     def update_etchosts(self, info, fullname):
-        if not self.tobool(self.conf('/config/etchosts', default=True)):
+        if not self.tobool(self.conf('/config/etchosts', default=False)):
+            self.logger.info("/config/etchosts is false (disabled)")
             return  # disabled
+
         # backup and restore
         self.incus_exec(fullname, 'cp -n /etc/hosts /etc/hosts.orig',
                         ignore_error=True)
@@ -1228,6 +1386,7 @@ class IncusAuto(CUI):
         etchosts_str = '\n' + '\n'.join(etchosts) + '\n'
         self.incus_exec(fullname, 'tee -a /etc/hosts',
                         input=etchosts_str, output=False)
+        self.logger.info(f'/etc/hosts is updated: {fullname}')
 
     def create_block_device(self, info, name, fullname):
         bd = info.get('block-device', None)
@@ -1261,6 +1420,8 @@ class IncusAuto(CUI):
             self.logger.info(f'[STEP-2] initialize network and volume: {name}')
             self.incus_wait_for_wakeup(fullname, info)
             self.setup_network_static(info, fullname)
+
+        self.update_dnsmasq()
 
         for name, fullname, info in self.name_iter(self.use_all):
             if self.tobool(info['vm']):

@@ -3,6 +3,7 @@ config:
   idmap: true
   user: gfarmsys  # NOTE: default=admin
   ssh_authorized_keys: terraform/id_ecdsa.pub
+  etchosts: true
   network:
     gfarmoci: # fullname
       description: "network for terraform Gfarm on OCI"

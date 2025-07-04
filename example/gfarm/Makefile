@@ -30,6 +30,10 @@ image:
 	@$(IAALL) ps -b
 show-config-all:
 	$(IAALL) config
+update-dnsmasq:
+	$(IAALL) update-dnsmasq
+print-etchosts:
+	@$(IAALL) print-etchosts
 update-etchosts-all:
 	$(IAALL) update-etchosts -a
 gen-inventory:
@@ -103,7 +107,7 @@ start-lustre-hsm:
 
 setup-gfarm-all:
 	$(IAALL) wait -a
-	make update-etchosts-all
+	make update-dnsmasq
 	make ansible-init
 	$(IAGF) exec gfmanage -- bash /SCRIPT/get-ready.sh all
 	$(IAGF) exec gfmanage -- bash /SCRIPT/setup-gfarm-by-ansible.sh all

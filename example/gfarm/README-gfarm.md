@@ -1,13 +1,13 @@
 # Gfarm development environment on Incus
 
-## Host overview (Container and VM)
+## Host overview (Container and VM on Incus)
 
 - Gfarm gfmd x 3
 - Gfarm gfsd x 4
 - Gfarm client x 1
-- Lustre mds,mgs x 1
-- Lustre oss x 2
-- Lustre client x 1
+- Lustre mds,mgs x 1 (VM)
+- Lustre oss x 2 (VM)
+- Lustre client x 1 (VM)
   - Lustre HSM + gfarm2fs
 
 ## Requirements
@@ -24,9 +24,9 @@
 - See incus-auto.yaml, incus-auto.gfarm.yaml and incus-auto.lustre.yaml
 - (Optional) Create incus-auto.override.yaml if you need
   - Create pool if you need, and override `default_pool`
-- See parameters of SCRIPT/lib.sh
-- (Optional) Create CONF/config.sh to override parameters
-- Run `make git-clone` to get Gfarm
+- (Optional) Create CONF/config.sh to override parameters of SCRIPT/lib.sh
+- Run `make git-clone` to get source code of Gfarm and its related source code
+  - (Optional) Run `make git-pull` to get latest source code
 - Run `make init`
 - Run `make build-gfarm`
 - Run `make launch-gfarm`

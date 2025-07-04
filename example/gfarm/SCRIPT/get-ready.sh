@@ -12,7 +12,7 @@ shift
 
 LIMIT=$(ANSIBLE_LIMIT "$TARGET")
 
-while ! ansible-playbook -i $INV $LIMIT /CONF/playbook-ready.yaml -vv "$@" > /dev/null 2>&1; do
+while ! $CMD_PLAYBOOK -i $INV $LIMIT /CONF/playbook-ready.yaml -vv "$@" > /dev/null 2>&1; do
     echo -n .
     sleep 1
 done

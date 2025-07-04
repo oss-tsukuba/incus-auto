@@ -8,18 +8,14 @@ config:
   #uid: 1000  # NOTE: default
   #ssh_authorized_keys: ssh_authorized_keys  # NOTE: default
   ssh_authorized_keys: sample-id_ecdsa.pub
-  # etchosts: true  # NOTE: default
+  domain: gfarm.test  # NOTE: default: test (ex. host1.test)
+  network-default: gfarm1  # NOTE: default: first network
+  # etchosts: false
   # envvar:
   #   http_proxy: http://...
   #   https_proxy: http://...
   network:
-    gfarm1: # fullname (without project name)
-      description: "gfarm net1"
-      config:
-        ipv4.address: 10.123.123.1/24
-        ipv4.dhcp.ranges: 10.123.123.101-10.123.123.200
-        ipv4.nat: true
-    gfarm2:
+    gfarm2: # network name (without project name)
       description: "gfarm net2"
       config:
         ipv4.address: 10.210.210.1/24
@@ -27,9 +23,23 @@ config:
         ipv4.nat: false
         ipv6.nat: false
         ipv6.address: none
+    gfarm1:
+      description: "gfarm net1 (default network)"
+      config:
+        ipv4.address: 10.123.123.1/24
+        ipv4.dhcp.ranges: 10.123.123.101-10.123.123.200
+        ipv4.nat: true
+    gfarm3:
+      description: "gfarm net3"
+      config:
+        ipv4.address: 10.210.211.1/24
+        ipv4.dhcp: false
+        ipv4.nat: false
+        ipv6.nat: false
+        ipv6.address: none
   profile:
     prof1: # convert to {project name}-{profile name}
-      description: "gfarm profile1"
+      description: "gfarm profile1 (disk)"
       config:
         limits.memory: 1GB
         limits.cpu: 4
@@ -51,13 +61,19 @@ config:
           source: ./SCRIPT  # NOTE: convert to absolute path
           path: /SCRIPT
     prof2net:
-      description: "gfarm profile2"
+      description: "gfarm profile2 (network)"
       devices:
         eth0:
           network: gfarm1
           type: nic
         eth1:
           network: gfarm2
+          type: nic
+    prof3net:
+      description: "gfarm profile3 (network)"
+      devices:
+        eth2:
+          network: gfarm3
           type: nic
   # remote:  #TODO
   #   incus2:

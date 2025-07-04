@@ -8,6 +8,7 @@
     SHARED_KEY: .gfarm_shared_key
     SYS_USER: "{{ ansible_user }}"
     SYS_HOME: "/home/{{ SYS_USER }}"
+    DOMAIN: ".{{ domain }}"
     USERS:
       - "{{ SYS_USER }}"
       - user1
@@ -262,7 +263,7 @@
       become_user: root
       shell: grid-default-ca -ca {{ CA_HASH }}
 
-    - name: patch for grid-cert-requiest
+    - name: patch for grid-cert-request
       become: yes
       become_user: root
       command: sed -i 's/:\/var\/adm\/wtmp:\/var\/log\/messages//' /usr/bin/grid-cert-request
@@ -277,7 +278,7 @@
     - name: hostcert request
       become: yes
       become_user: root
-      shell: yes | grid-cert-request -host {{ inventory_hostname }}
+      shell: yes | grid-cert-request -host {{ inventory_hostname }}{{ DOMAIN }} -force
       when: not hostcert_stat.stat.exists
 
     - name: Check the existence of gfsdcert
@@ -290,7 +291,7 @@
     - name: gfsdcert request
       become: yes
       become_user: root
-      shell: yes | grid-cert-request -service {{ SERVICE }} -host {{ inventory_hostname }}
+      shell: yes | grid-cert-request -service {{ SERVICE }} -host {{ inventory_hostname }}{{ DOMAIN }} -force
       when: not gfsdcert_stat.stat.exists
 
     - name: Create local SIGN_WORKDIR
@@ -357,7 +358,7 @@
         owner: _gfarmfs
         group: _gfarmfs
 
-- name: Create GSI clinet certificates
+- name: Create GSI client certificates
   hosts: gfclient01
   tags: gsi_ca
   gather_facts: no
@@ -555,8 +556,6 @@
     GFDUMP_FILE: "{{ SETUP_TMP }}/gfdump_file"
     SUB_GFMD_LIST: "{{ groups['group_gfmd'] | reject('equalto', 'gfmd1') | list }}"
     GFSD_LIST: "{{ groups['group_gfsd'] }}"
-    #HOST_PREFIX: "gfarm-"   #TODO remove??
-    HOST_PREFIX: ""
   tags: config
   tasks:
     - name: config-gfarm
@@ -644,14 +643,12 @@
 
     - name: main metadata server
       # TODO use "{{ ansible_host | default(inventory_hostname) }}"
-      # TODO remove {{ HOST_PREFIX }}
-      command: gfmdhost -m {{ HOST_PREFIX }}gfmd1 -C {{ hostvars['gfmd1']['gfmd_cluster'] }}
+      command: gfmdhost -m gfmd1{{ DOMAIN }} -C {{ hostvars['gfmd1']['gfmd_cluster'] }}
 
     - name: sub metadata servers
       shell: |
         set -e
-        # TODO remove {{ HOST_PREFIX }}
-        GFMD={{ HOST_PREFIX }}{{ item }}
+        GFMD={{ item }}{{ DOMAIN }}
         EXIST=$(gfmdhost -l | awk '{print $6}' | grep ^${GFMD}\$) || true
         if [ -n "$EXIST" ]; then
           gfmdhost -m $GFMD -C {{ hostvars[item]['gfmd_cluster'] }}
@@ -718,8 +715,7 @@
       become_user: root
       shell: |
         set -e
-        #TODO
-        GFSD={{ HOST_PREFIX }}{{ inventory_hostname }}
+        GFSD={{ inventory_hostname }}{{ DOMAIN }}
         EXIST=$(sudo -u {{ SYS_USER }} gfhost | grep ^${GFSD}\$) || true
         if [ ! -n "$EXIST" ]; then
           config-gfsd
@@ -745,8 +741,7 @@
       # TODO config-gfsd -h -l
       shell: |
         set -e
-        # TODO remove {{ HOST_PREFIX }}
-        GFSD={{ HOST_PREFIX }}{{ item }}
+        GFSD={{ item }}{{ DOMAIN }}
         EXIST=$(gfhost -l | awk '{print $5}' | grep ^${GFSD}\$) || true
         ARCH={{ hostvars[item]['arch'] }}
         if [ ! -n "$EXIST" ]; then

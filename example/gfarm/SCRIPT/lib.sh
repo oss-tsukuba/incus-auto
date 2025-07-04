@@ -19,6 +19,12 @@ OPENSSL_PACKAGE_NAME=
 MAKE_NUM_JOBS=4
 RETRY_CMD=5
 
+CMD_ANSIBLE=~/.local/bin/ansible
+CMD_PLAYBOOK=~/.local/bin/ansible-playbook
+
+ANSIBLE_CONFIG=/CONF/ansible.cfg
+export ANSIBLE_CONFIG
+
 # override
 CONFIG_OVERRIDE=${CONF_DIR}/config.sh
 if [ -f "$CONFIG_OVERRIDE" ]; then
