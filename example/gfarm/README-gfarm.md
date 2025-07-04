@@ -75,6 +75,11 @@
   - Details: <https://doc.lustre.org/lustre_manual.xhtml#hsm_introduction>
 - ctrl-d (exit from lclient1)
 
+## gfperf
+
+- `make setup-gfperf`
+- Open the URL in web browser via http proxy on gfclient01
+
 ## Good-bye
 
 - Run `make down` to remove only containers

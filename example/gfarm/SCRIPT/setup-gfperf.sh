@@ -49,6 +49,6 @@ fi
 cat $tmpfile | crontab -
 rm -rf $tmpfile
 
-
+echo
 IP=$(MYIP)
-echo "URL: http://gfclient1/gfperf/ via squid (http proxy: http://${IP}:3128)"
+echo "URL: http://gfclient01.gfarm.test/gfperf/ via squid (http proxy: http://${IP}:3128)"

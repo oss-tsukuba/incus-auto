@@ -12,7 +12,7 @@ clean() {
 }
 
 mkt() {
-    mktemp tmp.XXXXXXXXXX.${1}
+    mktemp ${1}.tmp.XXXXXXXXXX.log
 }
 
 trap clean EXIT

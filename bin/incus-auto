@@ -560,19 +560,17 @@ class IncusAuto(CUI):
         except Exception:
             return False
 
-    # TODO reanme to convert_real_ifname()
-    def convert_net_if(self, net_if, info):
+    def convert_real_ifname(self, ifname, info):
         if not self.tobool(info['vm']):
-            return net_if
+            return ifname
         table = {
             'eth0': 'enp5s0',
             'eth1': 'enp6s0',
             'eth2': 'enp7s0',
         }
-        return table[net_if]
+        return table[ifname]
 
     def incus_wait_for_wakeup(self, fullname, info):
-        net_if = self.convert_net_if('eth0', info)
         first = True
         count = 0
         while not self.incus_is_running(fullname):
@@ -590,7 +588,8 @@ class IncusAuto(CUI):
         if count != 1:
             print('')
         first = True
-        while self.incus_get_ipv4(fullname, net_if) is None:
+        ifname = self.get_default_ifname(fullname)
+        while self.incus_get_ipv4(fullname, info, ifname) is None:
             if first or self.loglevel == logging.DEBUG:
                 self.logger.info('Waiting until seeing IP address:'
                                  + f' {fullname}')
@@ -601,15 +600,16 @@ class IncusAuto(CUI):
         if not first:
             print('')
 
-    # TODO get_ipv4(), net_if -> ifname
-    def incus_get_ipv4(self, fullname, net_if, ls_info=None):
+    # current IP address from "incus ls"
+    def incus_get_ipv4(self, fullname, host_info, ifname, ls_info=None):
         if ls_info is None:
             ls_info = self.incus_ls_info()
+        real_ifname = self.convert_real_ifname(ifname, host_info)
         for hostinfo in ls_info:
             if fullname != hostinfo['name']:
                 continue
             addresses = self.dictpath(
-                hostinfo, ['state', 'network', net_if, 'addresses'])
+                hostinfo, ['state', 'network', real_ifname, 'addresses'])
             if addresses is None:
                 break
             for a in addresses:
@@ -633,7 +633,7 @@ class IncusAuto(CUI):
                     netname2 = param.get('network')
                     if netname2 == netname:
                         return devname  # found
-        return None
+        return None  # not found ... the host is not created
 
     ### not used
     # def convert_ifname_to_netname(self, fullname, ifname, ls_info=None):
@@ -739,11 +739,10 @@ class IncusAuto(CUI):
     def cmd_config(self):
         print(yaml.dump(self.conf_dict, sort_keys=False))
 
-    # TODO get_static_ipv4(self, name, ifname)
-    def get_static_ipv4(self, name):
-        ip = self.conf(f'/host/{name}/network-static/eth0/ipv4.address')
+    def get_static_ipv4(self, name, ifname):
+        ip = self.conf(f'/host/{name}/network-static/{ifname}/ipv4.address')
         if ip is None:
-            ip = self.conf(f'/host/{name}/devices/eth0/ipv4.address')
+            ip = self.conf(f'/host/{name}/devices/{ifname}/ipv4.address')
         if ip is None:
             return None  # not defined
         return ip.split('/')[0]
@@ -797,26 +796,6 @@ class IncusAuto(CUI):
 
         yaml.add_representer(type(None), hide_null)
         print(yaml.dump(inv, sort_keys=False))
-
-    def gen_etchosts(self):
-        domain = self.conf(f'/config/domain')
-        hosts = []
-        ls_info = self.incus_ls_info()
-        for name, fullname, info in self.name_iter(True):
-            ipv4 = self.get_static_ipv4(name)
-            if ipv4 is None:
-                net_if = self.convert_net_if('eth0', info)
-                ipv4 = self.incus_get_ipv4(fullname, net_if, ls_info)
-                if ipv4 is None:
-                    continue  # skip
-            # aliases
-            alt = self.conf(f'/host/{name}/alternative')
-            alt_str = ''
-            if alt is not None:
-                alt_str = ' ' + ' '.join(alt)
-            fqdn = name + '.' + domain
-            hosts.append(f'{ipv4}    {name} {fqdn} {fullname}{alt_str}')
-        return hosts
 
     def cmd_print_etchosts(self):
         self.use_all = True
@@ -940,10 +919,13 @@ class IncusAuto(CUI):
                 if state is None:
                     state = 'INITIALIZING'
             state_dict[fullname] = state
-            net_if = self.convert_net_if('eth0', info)
-            ipv4 = self.incus_get_ipv4(fullname, net_if, ls_info)
-            if ipv4 is None:
+            ifname = self.get_default_ifname(fullname, ls_info)
+            if ifname is None:
                 ipv4 = ''
+            else:
+                ipv4 = self.incus_get_ipv4(fullname, info, ifname, ls_info)
+                if ipv4 is None:
+                    ipv4 = ''
             ipv4_dict[fullname] = ipv4
             fullname_len = len(fullname)
             if fullname_len > fullname_max:
@@ -1185,7 +1167,7 @@ class IncusAuto(CUI):
             else:
                 domain = None
 
-        real_ifname = self.convert_net_if(ifname, info)
+        real_ifname = self.convert_real_ifname(ifname, info)
         return ipv4_address, ipv4_gateway, dns_list, domain, real_ifname
 
     def netconf_rhel(self, fullname, ifname, param, info):
@@ -1315,6 +1297,11 @@ class IncusAuto(CUI):
             return netname  # first netname
         return None
 
+    # ifname in configuration file (not real_ifname)
+    def get_default_ifname(self, fullname, ls_info=None):
+        netname = self.get_default_netname()
+        return self.convert_netname_to_ifname(fullname, netname, ls_info)
+
     def get_default_gateway(self):
         netname = self.get_default_netname()
         ipv4 = self.conf(f'/config/network/{netname}/config/ipv4.address')
@@ -1344,13 +1331,13 @@ class IncusAuto(CUI):
         netname = self.get_default_netname()
         addresses = {}  # ipv4 to hostnames
         for name, fullname, info in self.name_iter(True):
-            ipv4 = self.get_static_ipv4(name)
+            # same as "ifname = self.get_default_ifname(fullname, ls_info)"
+            ifname = self.convert_netname_to_ifname(fullname, netname, ls_info)
+            if ifname is None:  # the host is not created
+                continue  # skip
+            ipv4 = self.get_static_ipv4(name, ifname)
             if ipv4 is None:
-                ifname = self.convert_netname_to_ifname(fullname, netname, ls_info)
-                if ifname is None:  # not started
-                    continue  # skip
-                ifname = self.convert_net_if(ifname, info)
-                ipv4 = self.incus_get_ipv4(fullname, ifname, ls_info)
+                ipv4 = self.incus_get_ipv4(fullname, info, ifname, ls_info)
                 if ipv4 is None:  # not started
                     continue  # skip
             hostnames = []
@@ -1372,6 +1359,28 @@ class IncusAuto(CUI):
                 continue
             self.logger.info(f"Unset raw.dnsmasq for `{netname2}` network:")
             self.incus(["network", "unset", netname2, "raw.dnsmasq"])
+
+    def gen_etchosts(self):
+        domain = self.conf(f'/config/domain')
+        hosts = []
+        ls_info = self.incus_ls_info()
+        for name, fullname, info in self.name_iter(True):
+            ifname = self.get_default_ifname(fullname, ls_info)
+            if ifname is None:
+                continue  # not created
+            ipv4 = self.get_static_ipv4(name, ifname)
+            if ipv4 is None:
+                ipv4 = self.incus_get_ipv4(fullname, info, ifname, ls_info)
+                if ipv4 is None:
+                    continue  # not started
+            # aliases
+            alt = self.conf(f'/host/{name}/alternative')
+            alt_str = ''
+            if alt is not None:
+                alt_str = ' ' + ' '.join(alt)
+            fqdn = name + '.' + domain
+            hosts.append(f'{ipv4}    {name} {fqdn} {fullname}{alt_str}')
+        return hosts
 
     def update_etchosts(self, info, fullname):
         if not self.tobool(self.conf('/config/etchosts', default=False)):

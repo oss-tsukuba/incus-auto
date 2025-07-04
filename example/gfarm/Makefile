@@ -112,10 +112,15 @@ setup-gfarm-all:
 	$(IAGF) exec gfmanage -- bash /SCRIPT/get-ready.sh all
 	$(IAGF) exec gfmanage -- bash /SCRIPT/setup-gfarm-by-ansible.sh all
 
+gfhost:
+	$(IAALL) exec gfclient01 -- gfhost -lv
+	$(IAALL) exec lclient1 -- gfhost -lv
+
 down:
 	$(IAALL) stop -a -f
 	$(IAALL) delete -a
 	make delete-lustre-block
+
 CLEAN: down
 	$(IAALL) destroy
 
@@ -126,7 +131,7 @@ REBUILD-GFARM:
 	make build-gfarm
 	make launch-gfarm
 	make setup-gfarm
-	make setup-gfperf
+	#make setup-gfperf
 
 REBUILD-ALL:
 	make CLEAN
@@ -137,7 +142,12 @@ REBUILD-ALL:
 	make build-lustre
 	make launch-lustre
 	make setup-gfarm-all
-	make setup-gfperf
+	#make setup-gfperf
+	make ps
+	make gfhost
 
 REBUILD-PARA-ALL:
 	./build-para.sh
+	#make setup-gfperf
+	make ps
+	make gfhost

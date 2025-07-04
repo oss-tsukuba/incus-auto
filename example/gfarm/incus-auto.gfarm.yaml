@@ -99,10 +99,20 @@ host:
   gfclient01:
     <<: [*x-gfarm]
     group: gfarm/group_gfclient
+    network-static:
+      eth0:
+        ipv4.address: 10.123.123.201/24
+        ipv4.gateway: __DEFAULT__
+        domain:  __DEFAULT__
+        dns:
+          - __DEFAULT__
     setup:
       - bash -x /SCRIPT/install-squid.sh
       ### available after `make setup`
       #- bash -x /SCRIPT/setup-gfperf.sh
+  gfclient02:
+    <<: [*x-gfarm]
+    group: gfarm/group_gfclient
 
   # keycloak:
   #   <<: [*x-extra]
