@@ -1,0 +1,47 @@
+services:
+  gfarm-http-gateway:
+    container_name: gfarm-http-gateway
+    build: 
+      context: .
+      dockerfile: Dockerfile
+      args:
+        GFARM_SRC_LOCAL: "vendor/gfarm"
+        GFARM_SRC_URL: ""
+        GFARM_SRC_GIT_URL: ""
+    command: --host 0.0.0.0 --port 8000 --root-path /gfarm --log-level debug --forwarded-allow-ips="*"
+    volumes:
+      - ${GFARM2CONF}:/config/gfarm2.conf:ro
+      - ${GFARMCERTDIR}:/config/certs:ro
+      - ${GFARMHTTPCONF}:/config/gfarm-http-gateway.conf:ro
+      - ${MINICA}:/config/dev_ca.crt:ro
+      - ${ICONS}:/config/file_icons.json:ro
+    restart: unless-stopped
+
+  nginx-proxy:
+    container_name: nginx-proxy
+    image: nginx:latest
+    ports:
+      - 443:443
+      - 80:80
+    volumes:
+      - ${NGINXCONF}:/etc/nginx/conf.d/default.conf:ro
+      - ${GATEWAYCERTDIR}:/etc/nginx/certs:ro
+    depends_on:
+      - gfarm-http-gateway
+
+  redis:
+    container_name: redis
+    image: redis
+    command: ["redis-server", "/config/redis.conf"]
+    volumes:
+      - ${REDISCONF}:/config/redis.conf:ro
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "PING"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+volumes:
+  redis-data:

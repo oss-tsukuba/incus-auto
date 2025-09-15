@@ -1,0 +1,89 @@
+---
+# - name: Prepare
+#   hosts: all
+#   tags:
+#     - gsi_ca
+#   gather_facts: false
+#   vars: &common_variables
+#     SHARED_KEY: .gfarm_shared_key
+#     SYS_USER: "{{ ansible_user }}"
+#     SYS_HOME: "/home/{{ SYS_USER }}"
+#     DOMAIN: ".{{ domain }}"
+#     USERS:
+#       - "{{ SYS_USER }}"
+#       - user1
+#       - user2
+#     ALL_USERS: "{{ USERS + ['_gfarmmd', '_gfarmfs'] }}"
+#     SETUP_TMP: "{{ SYS_HOME }}/gfarm-setup-tmp"
+#     GSDIR: /etc/grid-security
+#     TLSDIR: /etc/pki/tls
+#     CERTDIR: "{{ GSDIR }}/certificates"
+#     HOSTCERT: "{{ GSDIR }}/hostcert.pem"
+#     SERVICE: gfsd
+#     GFSD_CERT: "{{ GSDIR }}/{{ SERVICE }}/{{ SERVICE }}cert.pem"
+#     DIGEST: sha256
+#     SIGN_WORKDIR: "{{ SETUP_TMP }}/ca_sign"
+#     CA_DIR: /var/lib/globus/simple_ca
+#     gfarm_install: no
+#     TIME_ZONE: "Asia/Tokyo"
+#   tasks:
+#     - name: Install rsync
+#       become: yes
+#       become_user: root
+#       package:
+#         name: rsync
+#         state: present
+#     - name: mkdir
+#       become: yes
+#       become_user: root
+#       file:
+#         path: "{{ SETUP_TMP }}"
+#         state: directory
+#         mode: "0700"
+#         owner: "{{ SYS_USER }}"
+#         group: "{{ SYS_USER }}"
+#     - name: Set timezone
+#       community.general.timezone:
+#         name: "{{ TIME_ZONE }}"
+#       become: true
+
+######################################################################
+
+- name: Set CA certificate
+  hosts: gfarm
+  gather_facts: yes
+  become: yes
+  vars:
+    MINICACERT: /CONF/minica/certs/minica.pem
+
+  tasks:
+    - name: Install CA certificate on Debian-based systems
+      when: ansible_os_family == "Debian"
+      block:
+        - name: Create CA cert directory
+          file:
+            path: /usr/local/share/ca-certificates/gfarm
+            state: directory
+            mode: '0755'
+
+        - name: Copy CA certificate
+          copy:
+            src: "{{ MINICACERT }}"
+            dest: /usr/local/share/ca-certificates/gfarm/minica.crt
+            mode: '0644'
+
+        - name: Update CA certificates
+          command: update-ca-certificates
+
+    - name: Install CA certificate on RHEL-based systems
+      when: ansible_os_family == "RedHat"
+      block:
+        - name: Copy CA certificate
+          copy:
+            src: "{{ MINICACERT }}"
+            dest: /usr/share/pki/ca-trust-source/anchors/minica.crt
+            mode: '0644'
+
+        - name: Update CA trust
+          command: update-ca-trust
+

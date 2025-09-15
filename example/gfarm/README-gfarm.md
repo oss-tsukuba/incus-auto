@@ -9,6 +9,8 @@
 - Lustre oss x 2 (VM)
 - Lustre client x 1 (VM)
   - Lustre HSM + gfarm2fs
+- Keycloak
+- gfarm-http-gateway
 
 ## Requirements
 
@@ -45,6 +47,15 @@
 - Run `make build-lustre`
 - Run `make launch-lustre`
 - Run `make setup-gfarm-all`
+
+## Setup gfarm-http-gateway environment
+
+Run the following after **Setup Gfarm environment**: 
+- Run `make launch-keycloak`
+- Run `make launch-gfhg`
+- Run `make update-dnsmasq`
+- Run `make add-certs`
+- Run `make setup-gfhg`
 
 ## How to use Lustre HSM for gfarm2fs
 

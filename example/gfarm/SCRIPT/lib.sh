@@ -125,6 +125,9 @@ ANSIBLE_LIMIT() {
         lustre)
             LIMIT="--limit lustre"
             ;;
+        gfhg)
+            LIMIT="--limit control:gfhg:!lustre"
+            ;;
     esac
     echo $LIMIT
 }

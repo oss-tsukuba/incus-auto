@@ -1,0 +1,51 @@
+services:
+  keycloak:
+    container_name: keycloak
+    hostname: keycloak
+    build: 
+      context: .
+      dockerfile: dockerfile.keycloak
+    environment:
+      DB_VENDOR: h2
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: admin
+    ports:
+      - 8080:8080
+      - 8443:8443
+    networks:
+      - gfarm_net
+  keycloak-config:
+    container_name: keycloak-config
+    build: https://github.com/oss-tsukuba/gfarm.git#2.8:docker/dist/jwt-server/setup-keycloak/
+    volumes:
+      - /certs/minica.pem:/myca.pem:ro
+      - /keycloak/realm-config:/realm-config
+      - /GFARM/docker/dist/jwt-server/setup-keycloak/:/setup-keycloak
+    working_dir: /app
+    networks:
+      - gfarm_net
+    depends_on:
+      - keycloak
+    command: >
+      /bin/bash -c "
+      /venv/bin/python /setup-keycloak/keycloak-config.py /realm-config/keycloak-config.yaml &&
+      /venv/bin/python /realm-config/keycloak-set-redirecturls.py /realm-config/keycloak-config.yaml /realm-config/keycloak-redirecturls.yaml
+      "
+      
+  nginx-proxy:
+    container_name: nginx-proxy
+    image: nginx:latest
+    ports:
+      - 443:443
+    volumes:
+      - /keycloak/nginx:/etc/nginx/conf.d:ro
+      - /certs:/etc/nginx/certs:ro
+    networks:
+      - gfarm_net
+    depends_on:
+      - keycloak
+    
+
+networks:
+  gfarm_net:
+    name: gfarm_net

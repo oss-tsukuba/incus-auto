@@ -46,3 +46,5 @@ CLN ${GITURL_GFARM}/lustre-release.git         .     hsm-posix-for-gfarm2fs
 
 CLN ${GITURL_GFARM}/nextcloud-gfarm.git        .     master
 CLN ${GITURL_GFARM}/gfarm-gridftp-dsi.git      .     master
+
+CLN ${GITURL_GFARM}/gfarm-http-gateway.git     .     main

@@ -1,0 +1,4 @@
+client_id: hpci-pub
+redirect_urls:
+  - https://gfarm-http-gateway.gfarm.test/
+  - https://gfarm-http-gateway.gfarm.test/gfarm/

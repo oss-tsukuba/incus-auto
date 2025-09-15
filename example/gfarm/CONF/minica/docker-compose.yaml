@@ -1,0 +1,7 @@
+services:
+  minica:
+    build:
+      context: .
+      dockerfile: dockerfile.minica
+    container_name: minica
+    working_dir: /certs

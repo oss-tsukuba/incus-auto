@@ -2,6 +2,9 @@ DEBUG = -l debug
 IA = ../../bin/incus-auto
 IAGF = $(IA) -c $(shell ./CONFIG.sh gfarm)
 IALS = $(IA) -c $(shell ./CONFIG.sh lustre)
+IAKC = $(IA) -c $(shell ./CONFIG.sh keycloak)
+IAHG = $(IA) -c $(shell ./CONFIG.sh gfhg)
+IAHGALL = $(IA) -c $(shell ./CONFIG.sh gfhgall)
 IAALL= $(IA) -c $(shell ./CONFIG.sh all)
 CMD = $(shell $(IALS) config | grep incus_command | awk '{print $$2}')
 POOL = $(shell $(IALS) config | grep default_pool | awk '{print $$2}')
@@ -111,6 +114,37 @@ setup-gfarm-all:
 	make ansible-init
 	$(IAGF) exec gfmanage -- bash /SCRIPT/get-ready.sh all
 	$(IAGF) exec gfmanage -- bash /SCRIPT/setup-gfarm-by-ansible.sh all
+
+launch-keycloak:
+	$(IAKC) launch -a $(DEBUG)
+delete-keycloak:
+	$(IAKC) stop -a -f
+	$(IAKC) delete -a
+
+launch-gfhg:
+	$(IAHG) launch -a $(DEBUG)
+delete-gfhg:
+	$(IAHG) stop -a -f
+	$(IAHG) delete -a
+
+setup-gfhg:
+	$(IAHG) wait -a
+	make ansible-init
+	$(IAALL) exec gfmanage -- bash /SCRIPT/get-ready.sh gfhg
+	$(IAALL) exec gfmanage -- bash /SCRIPT/setup-gfarm-by-ansible.sh gfhg
+	$(IAHG) exec gfhg -- bash /SCRIPT/setup-gfarm-http-gateway.sh
+
+add-certs:
+	$(IAALL) exec gfmanage -- bash /SCRIPT/add-minica-certs-by-ansible.sh gfarm
+
+launch-gfhg-all:
+	make launch-gfarm
+	make setup-gfarm
+	make launch-keycloak
+	make launch-gfhg
+	make update-dnsmasq
+	make add-certs
+	make setup-gfhg
 
 gfhost:
 	$(IAALL) exec gfclient01 -- gfhost -lv

@@ -358,6 +358,21 @@
         owner: _gfarmfs
         group: _gfarmfs
 
+- name: copy CA certificates
+  hosts: gfhg
+  gather_facts: no
+  vars:
+    <<: [*common_variables]
+  tags: gsi_ca
+  serial: 1  # batch size 1 to sign for X.509 serial number
+  tasks:
+    - name: Copy host certificate
+      become: yes
+      become_user: root
+      copy:
+        src: "{{ CERTDIR }}/"
+        dest: "{{ TLSDIR }}/gfarm/"
+
 - name: Create GSI client certificates
   hosts: gfclient01
   tags: gsi_ca
@@ -630,7 +645,7 @@
           auth enable sasl_auth *
           auth enable kerberos *
           auth enable kerberos_auth *
-          auth_trial_order tls_client_certificate sharedsecret
+          auth_trial_order sasl_auth sasl tls_client_certificate sharedsecret
           #auth_trial_order sharedsecret gsi_auth
           #log_auth_verbose enable
           #log_level debug
@@ -690,7 +705,7 @@
       command: gfdump.postgresql -r -f "{{ GFDUMP_FILE }}"
 
 - name: Synchronize gfarm2.conf
-  hosts: gfarm
+  hosts: gfarm, gfhg
   gather_facts: yes
   vars:
     <<: [*gfmd_variables]
@@ -769,3 +784,9 @@
         name: gfsd
         state: restarted
         enabled: yes
+
+- name: Register SASL user name
+  hosts: gfmd1
+  tasks:
+    - name: Register SASL user name
+      command: gfuser -A {{ ansible_user }} SASL user1

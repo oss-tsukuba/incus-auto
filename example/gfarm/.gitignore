@@ -4,6 +4,7 @@
 /SRC/lustre-release
 /SRC/gfarm-gridftp-dsi
 /SRC/nextcloud-gfarm
+/SRC/gfarm-http-gateway
 /CACHE/lustre-*
 /CACHE/e2fsprogs-*
 /CACHE/rocky

@@ -1,0 +1,23 @@
+host:
+  gfhg:
+    image: images:ubuntu/22.04
+    image_lxd: ubuntu:22.04  # for LXD
+    alternative:
+      - gfarm-http-gateway.gfarm.test
+    # dnsmasq_network: gfarm1
+    series: debian
+    vm: false
+    devices:
+    profile:
+      - prof1
+      - prof2net
+    config:
+      security.nesting: true
+      security.privileged: true
+    volume:
+      - ./CONF:/CONF
+      - ./SRC:/SRC
+    group: group_gfhg
+    setup:
+      - sh /SCRIPT/install-docker.sh
+      # - sh /SCRIPT/setup-gfarm-http-gateway.sh

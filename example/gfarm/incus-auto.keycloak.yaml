@@ -1,0 +1,26 @@
+host:
+  keycloak:
+    #image: images:rockylinux/9
+    image: images:ubuntu/24.04
+    series: debian
+    alternative:
+      - keycloak.gfarm.test
+    dnsmasq_network: gfarm1
+    vm: false
+    profile:
+      - prof1
+      - prof2net
+    config:
+      security.nesting: true
+      security.privileged: true
+    devices:
+      root:
+        size: 50GB
+    volume:
+      - ./SRC/gfarm:/GFARM
+      - ./CONF:/CONF
+    group: group_keycloak
+    setup:
+      - sh /SCRIPT/install-docker.sh
+      # - sh /SCRIPT/install-podman.sh
+      - sh /SCRIPT/setup-keycloak.sh
