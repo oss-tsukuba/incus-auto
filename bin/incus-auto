@@ -1500,6 +1500,9 @@ class IncusAuto(CUI):
                         for remote in remotes:
                             publish(remote)
 
+        for name, fullname, info in self.name_iter(self.use_all):
+            self.logger.info(f'Setup is complete: {name}')
+
     def set_cdrom_agent(self, remote, full_alias, bool_val):
         if remote is not None and remote != '':
             remote = f'{remote}:'
