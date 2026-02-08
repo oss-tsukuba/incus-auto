@@ -28,7 +28,10 @@ In the OCI Web Interface:
   - Paste the public key
 - Create VCN and Create Subnet (if you need)
   - <https://cloud.oracle.com/networking/vcns>
-  - Subnet example: 10.0.1.0/24
+  - VCN example:
+    - CIDR: 10.0.0.0/16
+  - Subnet example:
+    - CIDR: 10.0.1.0/24
 - Update Ingress Rules (in Security Lists for a subnet of VCN)
   - TCP Source=10.0.0.0/8 (for each OCI instances)
   - UDP Source=10.0.0.0/8 (for each OCI instances)
