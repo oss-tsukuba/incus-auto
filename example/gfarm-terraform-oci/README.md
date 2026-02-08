@@ -97,8 +97,11 @@ terraform apply
   (Enter `yes`)
 make update-ssh_known_hosts
   (Enter `yes`) (If it fails, check the Ingress rule)
+  (./tmp-ssh_known_hosts will be created)
 make update-ssh_config
+  (./tmp-ssh_config will be created)
 make update-ansible-inventory
+  (./ansible/tmp-ansible-inventory.yaml will be created)
 make send-files
 ```
 
@@ -125,7 +128,7 @@ In a tf container:
 - ./ocissh gfmanage
   - management host (Ansible, CA)
 - ./ocissh gfclient01
-- ./ocissh gfmd1
+- ./ocissh gfmd01
 - ./ocissh gfsd01
 
 ### How to access Gfarm
@@ -134,9 +137,9 @@ In a tf container:
 
 ```
 [gfarmsys@gfclient01 ~]$ gfmdhost -l
-+ master -     m siteA        gfmd1.example.org 601
-+ slave  sync  c siteA        gfmd2.example.org 601
-+ slave  async c siteB        gfmd3.example.org 601
++ master -     m siteA        gfmd01.example.org 601
++ slave  sync  c siteA        gfmd02.example.org 601
++ slave  async c siteB        gfmd03.example.org 601
 
 [gfarmsys@gfclient01 ~]$ gfhost -lv
 0.01/0.18/0.39 T aarch64 1 gfsd01.example.org 600 0(10.0.1.120)

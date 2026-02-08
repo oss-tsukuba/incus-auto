@@ -5,13 +5,18 @@ data "oci_identity_availability_domains" "ads" {
 
 locals {
     ad = var.availability_domain != "" ? var.availability_domain : data.oci_identity_availability_domains.ads.availability_domains[0].name
+    manage_name = "gfmanage"
+    gfmd_name_prefix = "gfmd"
+    gfsd_name_prefix = "gfsd"
+    gfclient_name_prefix = "gfclient"
 }
 
 # https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/core_instance
 resource "oci_core_instance" "instance_manage" {
-    display_name       = "gfmanage"
+    display_name       = "${var.display_name_prefix}${local.manage_name}"
     create_vnic_details {
-        #hostname_label = "gfmanage.${var.domain}"
+        # Use oci_dns_rrset
+        #hostname_label = "${local.manage_name}.${var.domain}"
         #assign_private_dns_record = true
         assign_public_ip = true
         subnet_id = var.subnet_id
@@ -20,16 +25,17 @@ resource "oci_core_instance" "instance_manage" {
     compartment_id = var.compartment_id
     shape = var.manage_shape != "" ? var.manage_shape : var.shape
     shape_config {
-        ocpus                 = 1
-        memory_in_gbs         = 2
+        ocpus                 = var.manage_ocpus
+        memory_in_gbs         = var.manage_memory_in_gbs
     }
     source_details {
-        source_id = var.manage_source_id
+        source_id = var.manage_source_id != "" ? var.manage_source_id : var.source_id
         source_type = "image"
-        boot_volume_size_in_gbs = null  # default
-        boot_volume_vpus_per_gb = null  # default
+        boot_volume_size_in_gbs = var.manage_volume_size_in_gbs
+        boot_volume_vpus_per_gb = var.manage_volume_vpus_per_gb
     }
     metadata = {
+        name = local.manage_name
         ssh_authorized_keys = file(var.ssh_authorized_keys)
         user_data           = base64encode(data.template_file.cloud-init_manage.rendered)
     }
@@ -38,9 +44,9 @@ resource "oci_core_instance" "instance_manage" {
 
 resource "oci_core_instance" "instance_gfmd" {
     count = var.gfmd_num
-    display_name       = "${format("gfmd%01d", count.index + 1)}"
+    display_name       = "${var.display_name_prefix}${local.gfmd_name_prefix}${format("%02d", count.index + 1)}"
     create_vnic_details {
-        #hostname_label     = "${format("gfmd%01d", count.index + 1)}.${var.domain}"
+        #hostname_label     = "${local.gfmd_name_prefix}${format("%02d", count.index + 1)}.${var.domain}"
         #assign_private_dns_record = true
         assign_public_ip = true
         subnet_id = var.subnet_id
@@ -59,17 +65,18 @@ resource "oci_core_instance" "instance_gfmd" {
         boot_volume_vpus_per_gb = var.gfmd_volume_vpus_per_gb
     }
     metadata = {
+        name = "${local.gfmd_name_prefix}${format("%02d", count.index + 1)}"
         ssh_authorized_keys = file(var.ssh_authorized_keys)
-        user_data           = base64encode(data.template_file.cloud-init_gfarm-oraclelinux.rendered)
+        user_data           = base64encode(data.template_file.cloud-init_gfarm["gfmd"].rendered)
     }
     preserve_boot_volume = false
 }
 
 resource "oci_core_instance" "instance_gfsd" {
     count = var.gfsd_num
-    display_name       = "${format("gfsd%02d", count.index + 1)}"
+    display_name       = "${var.display_name_prefix}${local.gfsd_name_prefix}${format("%02d", count.index + 1)}"
     create_vnic_details {
-        #hostname_label     = "${format("gfsd%02d", count.index + 1)}.${var.domain}"
+        #hostname_label     = "${local.gfsd_name_prefix}${format("%02d", count.index + 1)}.${var.domain}"
         #assign_private_dns_record = true
         assign_public_ip = true
         subnet_id = var.subnet_id
@@ -88,17 +95,18 @@ resource "oci_core_instance" "instance_gfsd" {
         boot_volume_vpus_per_gb = var.gfsd_volume_vpus_per_gb
     }
     metadata = {
+        name = "${local.gfsd_name_prefix}${format("%02d", count.index + 1)}"
         ssh_authorized_keys = file(var.ssh_authorized_keys)
-        user_data           = base64encode(data.template_file.cloud-init_gfarm-oraclelinux.rendered)
+        user_data           = base64encode(data.template_file.cloud-init_gfarm["gfsd"].rendered)
     }
     preserve_boot_volume = false
 }
 
 resource "oci_core_instance" "instance_gfclient" {
     count = var.gfclient_num
-    display_name       = "${format("gfclient%02d", count.index + 1)}"
+    display_name       = "${var.display_name_prefix}${local.gfclient_name_prefix}${format("%02d", count.index + 1)}"
     create_vnic_details {
-        #hostname_label     = "${format("gfclient%02d", count.index + 1)}.${var.domain}"
+        #hostname_label     = "${local.gfclient_name_prefix}${format("%02d", count.index + 1)}.${var.domain}"
         #assign_private_dns_record = true
         assign_public_ip = true
         subnet_id = var.subnet_id
@@ -117,8 +125,9 @@ resource "oci_core_instance" "instance_gfclient" {
         boot_volume_vpus_per_gb = var.gfclient_volume_vpus_per_gb
     }
     metadata = {
+        name = "${local.gfclient_name_prefix}${format("%02d", count.index + 1)}"
         ssh_authorized_keys = file(var.ssh_authorized_keys)
-        user_data           = base64encode(data.template_file.cloud-init_gfarm-oraclelinux.rendered)
+        user_data           = base64encode(data.template_file.cloud-init_gfarm["gfclient"].rendered)
     }
     preserve_boot_volume = false
 }
@@ -163,12 +172,13 @@ locals {
 # https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/dns_rrset
 resource "oci_dns_rrset" "gfarm_dns_record" {
     count = length(local.all_instances)
-    domain = "${local.all_instances[count.index].display_name}.${var.domain}"
+    domain = "${local.all_instances[count.index].metadata.name}.${var.domain}"
     rtype = "A"
     zone_name_or_id = oci_dns_zone.gfarm_zone.id
-    compartment_id = var.compartment_id
+    # Deprecated; compartment is inferred from the zone and this argument is ignored. Will be removed in a future release.
+    #compartment_id = var.compartment_id
     items {
-        domain = "${local.all_instances[count.index].display_name}.${var.domain}"
+        domain = "${local.all_instances[count.index].metadata.name}.${var.domain}"
         rdata = local.all_instances[count.index].private_ip
         rtype = "A"
         ttl = 3600

@@ -158,7 +158,7 @@
 
 ######################################################################
 - name: Create .gfarm_shared_key
-  hosts: gfmd1
+  hosts: gfmd01
   gather_facts: no
   vars: *common_variables
   tasks:
@@ -177,7 +177,7 @@
       loop: "{{ ALL_USERS }}"
 
 - name: Copy .gfarm_shared_key to servers
-  hosts: gfmd:gfsd:!gfmd1
+  hosts: gfmd:gfsd:!gfmd01
   gather_facts: no
   vars: *common_variables
   tasks:
@@ -577,7 +577,7 @@
 
 ######################################################################
 - name: DN of gfarmsys user
-  hosts: gfclient01 gfmd1
+  hosts: gfclient01 gfmd01
   gather_facts: no
   vars:
     <<: [*common_variables]
@@ -601,7 +601,7 @@
     GFMD_CONF: /usr/local/etc/gfmd.conf
     GFARM2_CONF: /usr/local/etc/gfarm2.conf
     GFDUMP_FILE: "{{ SETUP_TMP }}/gfdump_file"
-    SUB_GFMD_LIST: "{{ groups['gfmd'] | reject('equalto', 'gfmd1') | map('extract', hostvars, 'ansible_host') | list }}"
+    SUB_GFMD_LIST: "{{ groups['gfmd'] | reject('equalto', 'gfmd01') | map('extract', hostvars, 'ansible_host') | list }}"
     GFMD_FQDN_LIST: "{{ groups['gfmd'] | map('extract', hostvars, 'ansible_host') | list }}"
     GFSD_LIST: "{{ groups['gfsd'] }}"
     #GFSD_FQDN_LIST: "{{ groups['gfsd'] | map('extract', hostvars, 'ansible_host') | list }}"
@@ -649,8 +649,8 @@
         state: started
         enabled: yes
 
-- name: Setup gfmd1
-  hosts: gfmd1
+- name: Setup gfmd01
+  hosts: gfmd01
   gather_facts: no
   vars:
     <<: [*gfmd_variables]
@@ -705,7 +705,7 @@
         GFMD={{ item }}
         EXIST=$(gfmdhost -l | awk '{print $6}' | grep ^${GFMD}\$) || true
         case "$GFMD" in
-          gfmd2.*)
+          gfmd02.*)
             SITE=siteA
             ;;
           *)
@@ -735,8 +735,8 @@
         dest: "{{ GFDUMP_FILE }}"
         flat: yes
 
-- name: setup gfmd2...
-  hosts: gfmd:!gfmd1
+- name: setup gfmd02...
+  hosts: gfmd:!gfmd01
   gather_facts: no
   vars:
     <<: [*gfmd_variables]
@@ -793,7 +793,7 @@
         arch: "{{ ansible_architecture }}"
 
 - name: register gfsd
-  hosts: gfmd1
+  hosts: gfmd01
   gather_facts: no
   vars:
     <<: [*gfmd_variables]

@@ -36,6 +36,7 @@ update-all:
 	make update-ansible-inventory
 
 gfarm-install:
+	id -un | grep ^gfarmsys$
 	@bash ./ansible/confirm.sh
 	bash ./ansible/SRC/install-gfarm.sh
 gfarm-config-fetch:

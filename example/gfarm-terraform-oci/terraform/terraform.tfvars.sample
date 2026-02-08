@@ -1,5 +1,8 @@
 # For details: variables.tf
 
+domain = "gfarm.test"
+display_name_prefix = "test1-"
+
 # Required for provider.tf
 tenancy_ocid = "ocid1.tenancy.oc1..aaaaaaaa"
 user_ocid = "ocid1.user.oc1..aaaaaaaa"
@@ -15,12 +18,28 @@ view_id = "ocid1.dnsview.oc1.ap-tokyo-1.aaaaaaaa"
 ssh_authorized_keys = "id_ecdsa.pub"
 
 # Override variables.tf
-#gfmd_ocpus = 2
+manage_ocpus = 1
+gfmd_ocpus = 6
+gfsd_ocpus = 4
+gfclient_ocpus = 2
 
-# volume size in GB
-#gfsd_volume_size_in_gbs = 100
+manage_volume_size_in_gbs = 50
+gfmd_volume_size_in_gbs = 60
+gfsd_volume_size_in_gbs = 200
+gfclient_volume_size_in_gbs = 70
 
-# Oracle-Linux-8.9-2024.01.26-0 (x86_64) ap-tokyo-1
-#source_id = "ocid1.image.oc1.ap-tokyo-1.aaaaaaaaki7d7tmydzgtgkxli3pfdi75xtpjyukzt64pv2uixayk6pqak7qa"
-#shape = "VM.Standard.E4.Flex"
-#oracle_linux_version = "OL8"
+manage_volume_vpus_per_gb = 10
+gfmd_volume_vpus_per_gb = 40
+gfsd_volume_vpus_per_gb = 30
+gfclient_volume_vpus_per_gb = 20
+
+manage_memory_in_gbs = 5
+gfmd_memory_in_gbs = 8
+gfsd_memory_in_gbs = 6
+gfclient_memory_in_gbs = 4
+
+#shape = "VM.Standard.A1.Flex"
+
+#source_id = "ocid1.image.oc1.ap-osaka-1.aaaaaaaa6ienxdzhzxmzsgf77faavf3wujjtxlfmfn2egflnuda4cagwlxra"
+#manage_source_id = "ocid1.image.oc1.ap-osaka-1.aaaaaaaa6ienxdzhzxmzsgf77faavf3wujjtxlfmfn2egflnuda4cagwlxra"
+#oracle_linux_version = "OL9"

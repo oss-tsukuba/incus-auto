@@ -5,8 +5,9 @@ PROG=$(basename $0)
 trap '[ $status = 0 ] && echo Done || echo NG: $PROG; \
 	gfrm -f $TFILE; exit $status' 0 1 2 15
 
-GFSD1=gfsd01.example.org
-GFSD2=gfsd02.example.org
+GFSDS=$(gfsched -w)
+GFSD1=$(echo "$GFSDS" | sed -n '1p')
+GFSD2=$(echo "$GFSDS" | sed -n '2p')
 
 TFILE=/tmp/corrupted-file
 #ENV="GFARM_TEST_MDS2=c6:601 GFARM_TEST_MDS3=c7:601 \

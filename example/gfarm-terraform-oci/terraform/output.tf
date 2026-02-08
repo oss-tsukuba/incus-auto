@@ -23,7 +23,7 @@ output "host" {
     # groups
     "manage" = {
       for inst in concat([oci_core_instance.instance_manage]) :
-        "${inst.display_name}.${var.domain}" => {
+        "${inst.metadata.name}.${var.domain}" => {
           "public_ip" = inst.public_ip
           "private_ip" = inst.private_ip
           "user" = var.admin_user
@@ -32,7 +32,7 @@ output "host" {
     }
     "gfmd" = {
       for inst in concat(oci_core_instance.instance_gfmd) :
-        "${inst.display_name}.${var.domain}" => {
+        "${inst.metadata.name}.${var.domain}" => {
           "public_ip" = inst.public_ip
           "private_ip" = inst.private_ip
           "user" = var.admin_user
@@ -40,7 +40,7 @@ output "host" {
     }
     "gfsd" = {
       for inst in concat(oci_core_instance.instance_gfsd) :
-        "${inst.display_name}.${var.domain}" => {
+        "${inst.metadata.name}.${var.domain}" => {
           "public_ip" = inst.public_ip
           "private_ip" = inst.private_ip
           "user" = var.admin_user
@@ -48,7 +48,7 @@ output "host" {
     }
     "gfclient" = {
       for inst in concat(oci_core_instance.instance_gfclient) :
-        "${inst.display_name}.${var.domain}" => {
+        "${inst.metadata.name}.${var.domain}" => {
           "public_ip" = inst.public_ip
           "private_ip" = inst.private_ip
           "user" = var.admin_user

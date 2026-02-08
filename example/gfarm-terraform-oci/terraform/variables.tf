@@ -42,6 +42,12 @@ variable "domain" {
   default     = "example.org"
 }
 
+variable "display_name_prefix" {
+  description = "Display name prefix"
+  type        = string
+  default     = ""
+}
+
 variable "admin_user" {
   description = "Admin user"
   type        = string
@@ -67,6 +73,12 @@ variable "gfclient_num" {
 }
 
 # https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/core_instance#ocpus
+variable "manage_ocpus" {
+  description = "Number of OCPUs for manage host"
+  type        = number
+  default     = 1
+}
+
 variable "gfmd_ocpus" {
   description = "Number of OCPUs for gfmd"
   type        = number
@@ -86,6 +98,12 @@ variable "gfclient_ocpus" {
 }
 
 # https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/core_instance#memory_in_gbs
+variable "manage_memory_in_gbs" {
+  description = "memory_in_gbs for manage host"
+  type        = number
+  default     = 4
+}
+
 variable "gfmd_memory_in_gbs" {
   description = "memory_in_gbs for gfmd"
   type        = number
@@ -95,16 +113,22 @@ variable "gfmd_memory_in_gbs" {
 variable "gfsd_memory_in_gbs" {
   description = "memory_in_gbs for gfsd"
   type        = number
-  default     = 3
+  default     = 4
 }
 
 variable "gfclient_memory_in_gbs" {
   description = "memory_in_gbs for gfclient"
   type        = number
-  default     = 3
+  default     = 4
 }
 
 # https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/core_instance#boot_volume_size_in_gbs
+variable "manage_volume_size_in_gbs" {
+  description = "boot_volume_size_in_gbs for manage host"
+  type        = number
+  default     = null
+}
+
 variable "gfmd_volume_size_in_gbs" {
   description = "boot_volume_size_in_gbs for gfmd"
   type        = number
@@ -124,9 +148,16 @@ variable "gfclient_volume_size_in_gbs" {
 }
 
 # https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/core_instance#boot_volume_vpus_per_gb
+variable "manage_volume_vpus_per_gb" {
+  description = "boot_volume_vpus_per_gb for manage host"
+  type        = number
+  default     = 10
+}
+
 variable "gfmd_volume_vpus_per_gb" {
   description = "boot_volume_vpus_per_gb for gfmd"
   type        = number
+  # 10...120
   default     = 10
 }
 
@@ -143,9 +174,34 @@ variable "gfclient_volume_vpus_per_gb" {
 }
 
 variable "oracle_linux_version" {
-    description = "Oracle Linux Version (OL8, OL9)"
+    description = "Default Oracle Linux Version"
     type        = string
+    # OL8, OL9
     default     = "OL9"
+}
+
+variable "manage_ol_ver" {
+    description = "Oracle Linux Version for manage host"
+    type        = string
+    default     = ""
+}
+
+variable "gfmd_ol_ver" {
+    description = "Oracle Linux Version for gfmd"
+    type        = string
+    default     = ""
+}
+
+variable "gfsd_ol_ver" {
+    description = "Oracle Linux Version for gfsd"
+    type        = string
+    default     = ""
+}
+
+variable "gfclient_ol_ver" {
+    description = "Oracle Linux Version for gfclient"
+    type        = string
+    default     = ""
 }
 
 # https://docs.oracle.com/ja-jp/iaas/Content/Compute/References/computeshapes.htm
@@ -160,7 +216,7 @@ variable "shape" {
 variable "gfmd_shape" {
   description = "from https://docs.oracle.com/ja-jp/iaas/Content/Compute/References/computeshapes.htm#flexible"
   type        = string
-  # ARM processor
+  # (default from "shape")
   default     = ""
 }
 
@@ -168,7 +224,7 @@ variable "gfmd_shape" {
 variable "gfsd_shape" {
   description = "from https://docs.oracle.com/ja-jp/iaas/Content/Compute/References/computeshapes.htm#flexible"
   type        = string
-  # ARM processor
+  # (default from "shape")
   default     = ""
 }
 
@@ -176,14 +232,14 @@ variable "gfsd_shape" {
 variable "gfclient_shape" {
   description = "from https://docs.oracle.com/ja-jp/iaas/Content/Compute/References/computeshapes.htm#flexible"
   type        = string
-  # ARM processor
+  # (default from "shape")
   default     = ""
 }
 
 variable "manage_shape" {
   description = "from https://docs.oracle.com/ja-jp/iaas/Content/Compute/References/computeshapes.htm#flexible"
   type        = string
-  # ARM processor
+  # ARM processor ("": default from "shape")
   default     = "VM.Standard.A1.Flex"
 }
 
@@ -193,45 +249,59 @@ variable "source_id" {
   description = "from https://docs.oracle.com/en-us/iaas/images/"
   type        = string
 
-  # for ARM processor
   # Oracle-Linux-8.9-aarch64-2024.01.26-0
-  # https://docs.oracle.com/iaas/images/image/b2b2f4cb-515b-49e0-b08c-1fb07be8da5d/
-  # ap-tokyo-1
+  #   https://docs.oracle.com/iaas/images/image/b2b2f4cb-515b-49e0-b08c-1fb07be8da5d/
+  #   ap-tokyo-1
   # default     = "ocid1.image.oc1.ap-tokyo-1.aaaaaaaaeu6r3tmcbrhc2msuvchzbg2zksa5ypuarj2r75v7tnhonq6ih3oq"
 
   # Oracle-Linux-9.3-aarch64-2024.01.26-0
-  # https://docs.oracle.com/en-us/iaas/images/image/374162b8-944e-4c4e-9587-e055f65e6ead/
-  # ap-tokyo-1
-  default     = "ocid1.image.oc1.ap-tokyo-1.aaaaaaaakoj4yfoziwsrfzxk7n5aq2qp3habdji67366mon22rkni6fxd3bq"
+  #   https://docs.oracle.com/en-us/iaas/images/image/374162b8-944e-4c4e-9587-e055f65e6ead/
+  #   ap-tokyo-1
+  # default     = "ocid1.image.oc1.ap-tokyo-1.aaaaaaaakoj4yfoziwsrfzxk7n5aq2qp3habdji67366mon22rkni6fxd3bq"
+
+  # Oracle-Linux-9.6-aarch64-2025.11.20-0
+  #   https://docs.oracle.com/en-us/iaas/images/oracle-linux-9x/oracle-linux-9-6-aarch64-2025-11-20-0.htm
+  #   ap-osaka-1
+  default = "ocid1.image.oc1.ap-osaka-1.aaaaaaaa6ienxdzhzxmzsgf77faavf3wujjtxlfmfn2egflnuda4cagwlxra"
 }
 
 # individually overridable
 variable "manage_source_id" {
-  description = "override source_id"
+  description = "override source_id for manage host"
   type        = string
+
   # Canonical-Ubuntu-22.04-aarch64-2024.01.12-0
-  # https://docs.oracle.com/en-us/iaas/images/image/75c27c16-e357-44a6-8003-6da76f2f139d/
-  # ap-tokyo-1
-  default     = "ocid1.image.oc1.ap-tokyo-1.aaaaaaaavo7svqug5ulgyw4zq4mcfn2glflxxtaahuyoejf4purtgu2urk4q"
+  #   https://docs.oracle.com/en-us/iaas/images/image/75c27c16-e357-44a6-8003-6da76f2f139d/
+  #   ap-tokyo-1
+  # default = "ocid1.image.oc1.ap-tokyo-1.aaaaaaaavo7svqug5ulgyw4zq4mcfn2glflxxtaahuyoejf4purtgu2urk4q"
+  #   ap-osaka-1
+  # default = "ocid1.image.oc1.ap-osaka-1.aaaaaaaa4u7o3hvb2oupr3zus5cw2olbak3cppz3253zhx5rrakzglrtw6lq"
+
+  # Canonical-Ubuntu-24.04-Minimal-aarch64-2025.10.31-0
+  #   https://docs.oracle.com/en-us/iaas/images/ubuntu-2404/canonical-ubuntu-24-04-minimal-aarch64-2025-10-31-0.htm
+  #   ap-osaka-1
+  # default = "ocid1.image.oc1.ap-osaka-1.aaaaaaaawzfbc5pjimseh6eisfqhfztalzx46h5bhntvxomckmulk7hqtyoa"
+
+  default = ""
 }
 
 # individually overridable
 variable "gfmd_source_id" {
-  description = "override source_id"
+  description = "override source_id for gfmd"
   type        = string
   default     = ""
 }
 
 # individually overridable
 variable "gfsd_source_id" {
-  description = "override source_id"
+  description = "override source_id for gfsd"
   type        = string
   default     = ""
 }
 
 # individually overridable
 variable "gfclient_source_id" {
-  description = "override source_id"
+  description = "override source_id for gfclient"
   type        = string
   default     = ""
 }
