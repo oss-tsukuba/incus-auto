@@ -29,7 +29,7 @@ config:
 
 host:
   tf:
-    image: images:ubuntu/22.04
+    image: images:ubuntu/24.04
     series: debian
     profile:
       - prof1
