@@ -1,6 +1,7 @@
 IA = ../../bin/incus-auto
 TFEXEC = $(IA) exec tf --
 TFBASH = $(TFEXEC) bash
+DOCKER_CMD = docker
 
 shell:
 	$(IA) shell tf
@@ -33,14 +34,14 @@ CLEAN: DOWN
 # 	make incus-create
 
 docker-build:
-	docker compose build
+	$(DOCKER_CMD) compose build
 
 docker-up:
-	docker compose up -d
-	docker compose exec -u ${USER} tf sudo ln -sf /TF /home/${USER}/terraform
+	$(DOCKER_CMD) compose up -d
+	$(DOCKER_CMD) compose exec -u ${USER} tf sudo ln -sf /TF /home/${USER}/terraform
 
 docker-shell:
-	docker compose exec -it -u ${USER} -w /home/${USER} tf bash
+	$(DOCKER_CMD) compose exec -it -u ${USER} -w /home/${USER} tf bash
 
 docker-down:
-	docker compose down
+	$(DOCKER_CMD) compose down
