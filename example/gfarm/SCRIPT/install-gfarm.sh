@@ -75,6 +75,10 @@ install_package_debian() {
     APTGET install -y \
 	 make
 
+    # for jwt-logon and jwt-agent
+    APTGET install -y \
+           pandoc
+
     # for scitokens-cpp
     APTGET install -y \
 	 g++ \
@@ -123,6 +127,10 @@ install_package_rhel() {
     DNF install -y \
 	 make
 
+    # for jwt-logon and jwt-agent
+    DNF install -y \
+        pandoc
+
     # for scitokens-cpp
     DNF install -y \
 	 gcc-c++ \
@@ -134,7 +142,6 @@ install_package_rhel() {
     # for cyrus-sasl-xoauth2-idp
     DNF install -y \
 	 libtool
-
 
     # for GSI environment
     DNF install -y \
