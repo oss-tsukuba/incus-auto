@@ -36,7 +36,7 @@ update-all:
 	make update-ansible-inventory
 
 gfarm-install:
-	id -un | grep ^gfarmsys$
+	echo $${HOSTNAME} | grep -q ^tf$
 	@bash ./ansible/confirm.sh
 	bash ./ansible/SRC/install-gfarm.sh
 gfarm-config-fetch:
