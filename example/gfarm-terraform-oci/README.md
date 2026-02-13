@@ -93,7 +93,7 @@ In a tf container:
 cd ~/terraform
 terraform init
 terraform plan
-terraform apply
+terraform apply -parallelism=2
   (Enter `yes`)
 make update-ssh_known_hosts
   (Enter `yes`) (If it fails, check the Ingress rule)

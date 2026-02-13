@@ -11,11 +11,11 @@ terraform-init:
 terraform-plan:
 	terraform plan
 terraform-apply:
-	terraform apply
+	terraform apply -parallelism=2
 terraform-destroy:
 	@bash ./ansible/confirm.sh
-	terraform destroy -target oci_dns_rrset.gfarm_dns_record -auto-approve
-	terraform destroy -auto-approve
+	terraform destroy -auto-approve -parallelism=2 -target oci_dns_rrset.gfarm_dns_record
+	terraform destroy -auto-approve -parallelism=2
 
 print-etchosts:
 	@bash ./print-etchosts.sh
