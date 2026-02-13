@@ -1,4 +1,5 @@
 RSYNC = rsync -e ./ocissh -av
+USER ?= $(shell whoami)
 
 ssh-gfmanage:
 	./ocissh gfmanage
@@ -45,7 +46,7 @@ gfarm-config-fetch:
 	$(RSYNC) gfmanage:gfarm-setup-tmp/gfarm2.conf ~/.gfarm2rc
 	$(RSYNC) gfmanage:gfarm-setup-tmp/dot_globus/gfarmsys/ ~/.globus/
 	$(RSYNC) gfmanage:/etc/grid-security/certificates/ ~/.globus/certificates/
-	grep -r ^tls_ca_certificate_path ~/.gfarm2rc || echo "tls_ca_certificate_path /home/gfarmsys/.globus/certificates/" >> ~/.gfarm2rc
+	grep -r ^tls_ca_certificate_path ~/.gfarm2rc || echo "tls_ca_certificate_path /home/$(USER)/.globus/certificates/" >> ~/.gfarm2rc
 update-etchosts-for-gfarm:
 	@bash ./ansible/confirm.sh
 	bash ./update-etchosts.sh
