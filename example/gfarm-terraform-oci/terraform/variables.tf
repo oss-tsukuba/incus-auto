@@ -340,7 +340,7 @@ variable "subnet_id" {
 
 # OCID from https://cloud.oracle.com/dns/views
 variable "view_id" {
-  description = "OCID from https://cloud.oracle.com/dns/views"
+  description = "OCID for your VCN from https://cloud.oracle.com/dns/views"
   type        = string
   # required
 }

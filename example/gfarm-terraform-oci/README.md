@@ -7,14 +7,24 @@
 - Step 3: Create OCI (Oracle Cloud Infrastructure) instances by Terraform
 - Step 4: Setup Gfarm environment on OCI instances by Ansible
 
+Note: This guide assumes that you are running this container on your local machine,
+because Incus (or LXD) doesn't work on Oracle Cloud instance by default.
+
+- References:
+  - <https://discuss.linuxcontainers.org/t/container-cant-get-ipv4-address-on-ubuntu-24-04-lts-on-oracle-cloud/21674>
+  - <https://discuss.linuxcontainers.org/t/lxd-on-oracle-free-tier-service/16164/14>
+
 ### Step 1
 
 In a host OS:
 
 - Install `GNU make`
+- Start by cloning this repository to your local machine.
 - Run the following commands:
 
-```
+```bash
+cd incus-auto/example/gfarm-terraform-oci
+
 make git-clone
 make ssh-keygen
 make ociapi-keygen
@@ -33,12 +43,14 @@ In the OCI Web Interface:
   - Subnet example:
     - CIDR: 10.0.1.0/24
 - Update Ingress Rules (in Security Lists for a subnet of VCN)
-  - TCP Source=10.0.0.0/8 (for each OCI instances)
-  - UDP Source=10.0.0.0/8 (for each OCI instances)
-  - TCP Source=???.???.???.???/?? DestPort=22 (if you need) (for sshd)
-  - TCP Source=???.???.???.???/?? DestPort=600 (if you need) (for gfsd)
-  - UDP Source=???.???.???.???/?? DestPort=600 (if you need) (for gfsd)
-  - TCP Source=???.???.???.???/?? DestPort=601 (if you need) (for gfmd)
+  - TCP Source=10.0.0.0/8
+    - `10.0.0.0/8` means allowing connections from all your instances on the OCI VCN)
+  - UDP Source=10.0.0.0/8
+  - When accessing Gfarm from sources other than OCI, please allow the source addresses (???.???.???.???/32) or CIDRs as follows:
+    - TCP Source=???.???.???.???/?? DestPort=22  (for sshd)
+    - TCP Source=???.???.???.???/?? DestPort=600 (for gfsd)
+    - UDP Source=???.???.???.???/?? DestPort=600 (for gfsd)
+    - TCP Source=???.???.???.???/?? DestPort=601 (for gfmd)
 
 In a host OS:
 
@@ -51,9 +63,12 @@ In a host OS:
     - required variables
     - overridable variables
 
-### Step 2 by Incus
+### Step 2: Choose whether to use Incus or Docker
 
-In a host OS:
+- Option 2-a: Incus
+- Option 2-b: Docker
+
+#### 2-a: For Incus
 
 - See `../../README.md` to setup incus-auto
 - Run the following commands:
@@ -64,7 +79,7 @@ make incus-create
 make shell
 ```
 
-### Step 2 by Docker (instead of Incus)
+#### 2-b: For Docker
 
 - (Perform Step 1)
 - Install Docker
@@ -107,7 +122,7 @@ make send-files
 
 ### Step 4
 
-In a gfmanage instance on OCI:
+In the gfmanage instance on OCI:
 
 ```
 ### In a tf container
